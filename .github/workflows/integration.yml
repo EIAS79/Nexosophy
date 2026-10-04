@@ -1,0 +1,145 @@
+name: Backend Integration
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/api/**'
+      - 'apps/worker/**'
+      - 'apps/realtime/**'
+      - 'packages/config/**'
+      - 'packages/contracts/**'
+      - 'packages/db/**'
+      - 'packages/observability/**'
+      - 'packages/auth/**'
+      - 'packages/billing/**'
+      - 'packages/storage/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'compose.yaml'
+      - '.github/workflows/integration.yml'
+  pull_request:
+    paths:
+      - 'apps/api/**'
+      - 'apps/worker/**'
+      - 'apps/realtime/**'
+      - 'packages/config/**'
+      - 'packages/contracts/**'
+      - 'packages/db/**'
+      - 'packages/observability/**'
+      - 'packages/auth/**'
+      - 'packages/billing/**'
+      - 'packages/storage/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'compose.yaml'
+      - '.github/workflows/integration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-integration-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integration:
+    name: PostgreSQL + Redis integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: nexosophy
+          POSTGRES_USER: nexosophy
+          POSTGRES_PASSWORD: nexosophy
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U nexosophy -d nexosophy"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      NODE_ENV: test
+      APP_ENV: local
+      LOG_LEVEL: info
+      API_HOST: 127.0.0.1
+      API_PORT: 4000
+      DATABASE_URL: postgresql://nexosophy:nexosophy@127.0.0.1:5432/nexosophy
+      REDIS_URL: redis://127.0.0.1:6379
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 12.7.0
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply database migrations
+        run: pnpm --filter @nexosophy/db db:migrate
+
+      - name: Build API
+        run: pnpm --filter @nexosophy/api build
+
+      - name: Start API
+        shell: bash
+        run: |
+          nohup pnpm --filter @nexosophy/api start > /tmp/nexosophy-api.log 2>&1 &
+          echo $! > /tmp/nexosophy-api.pid
+          for i in {1..30}; do
+            if curl --fail --silent --max-time 2 http://127.0.0.1:4000/health >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/nexosophy-api.log
+          exit 1
+
+      - name: Verify liveness and readiness
+        run: |
+          curl --fail --silent --show-error http://127.0.0.1:4000/health
+          curl --fail --silent --show-error http://127.0.0.1:4000/ready
+
+      - name: Prove readiness fails when Redis is unavailable
+        shell: bash
+        run: |
+          docker stop "${{ job.services.redis.id }}"
+          sleep 2
+          curl --fail --silent --show-error http://127.0.0.1:4000/health
+          STATUS=$(curl --silent --output /tmp/ready.json --write-out "%{http_code}" --max-time 10 http://127.0.0.1:4000/ready || true)
+          cat /tmp/ready.json || true
+          test "$STATUS" = "503"
+
+      - name: Dump API log on failure
+        if: failure()
+        run: cat /tmp/nexosophy-api.log || true
