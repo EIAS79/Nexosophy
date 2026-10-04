@@ -1,129 +1,121 @@
 # Nexosophy Planning Migration & Deduplication Audit
 
-## Why this file exists
+> **Status:** COMPLETE  
+> **Result:** legacy ScholarForge planning has been migrated, normalized and reconciled into the canonical Nexosophy plan structure.
 
-The detailed ScholarForge planning set already contains a large amount of useful work. It must not be discarded, but it also must not be copied blindly into Nexosophy.
+## What was migrated
 
-The legacy set contains a master orchestration document, a specification index, a canonical implementation sequence, focused module specifications, and phase execution documents. The correct migration strategy is **merge + rename + ownership cleanup**, not "write everything again."
+The detailed prior planning work was preserved where it added real product depth, including:
 
-## What is preserved
+- universal editor runtime and rich documents;
+- notes, infinite pages, ink and whiteboards;
+- tasks, reminders, calendar and notifications;
+- student/course/study workflows;
+- Master's/PhD and references/citations;
+- research/ELN/protocols/inventory/equipment;
+- reporter/investigation/reports/evidence/fact-checking;
+- datasets, analysis notebooks and visualizations;
+- public homepage and pricing;
+- Clerk authentication;
+- Stripe subscriptions/payments/payout flow;
+- offline/PWA, integrations and AI assistance;
+- security, testing, backup/disaster recovery and production operations.
 
-Preserve and migrate the detailed feature contracts for:
+## Canonical ownership after deduplication
 
-- universal editor;
-- notes/infinite pages;
-- whiteboard;
-- calendar/reminders/tasks/notifications;
-- student/course/study tools;
-- thesis/references;
-- laboratory/ELN;
+| Concern | Canonical owner |
+|---|---|
+| Clerk auth, sessions, MFA/passkeys, provider webhooks | `02-identity-billing/00-auth-clerk.md` |
+| Internal users/profiles | `02-identity-billing/01-users-profiles-onboarding.md` |
+| Workspaces/RBAC/sharing | `02-identity-billing/02-workspaces-rbac-sharing.md` |
+| Stripe Checkout/Billing/Portal/webhooks/payout path | `02-identity-billing/03-stripe-billing.md` |
+| Entitlements/quotas/admin billing | `02-identity-billing/04-entitlements-admin-billing.md` |
+| Pricing page/customer-facing billing UX | `11-public-website/03-pricing.md` |
+| PostgreSQL/content/storage/history/search infrastructure | `03-data-content/` |
+| API contract/scale/rate limits/queues/realtime/SLOs | `04-api-scale/` |
+| User-facing explorer/editor/note/document behavior | `05-core-workspace/` |
+| Tasks/reminders/calendar/notifications | `06-productivity/` |
+| Academic/student/postgraduate/professor workflows | `07-academic/` |
+| Research/laboratory workflows | `08-research-lab/` |
+| Reporting/investigation/analysis | `09-reporting-analysis/` |
+| Integrations/offline/AI/Office provider boundary | `10-integrations-offline-ai/` |
+| Homepage/features/pricing/legal/help/status/SEO | `11-public-website/` |
+| Security/testing/backup/incident operations | `12-quality-security/` |
+| Build sequencing only | `13-phases/` |
+
+Repeated explanatory references may remain where they improve local readability, but there are no unresolved competing sources of truth for the state machines/providers above.
+
+## Phase numbering reconciliation
+
+The final sequence contains exactly **25 phases: Phase 00 through Phase 24**.
+
+The old sequence ended at Phase 23 before billing was split into its own production phase. The canonical sequence is now:
+
+- Phase 22 — Payments, subscriptions & billing
+- Phase 23 — Production hardening & certification
+- Phase 24 — Staged production launch
+
+All canonical execution files use this numbering.
+
+## Naming reconciliation
+
+- Product name: **Nexosophy**
+- Repository: **EIAS79/Nexosophy**
+- Target public domain: **nexosophy.com**
+- Authentication provider: **Clerk**
+- Payment/subscription provider: **Stripe**
+
+The old product name may appear only in this historical migration explanation. It is not used as an active product or repository identifier elsewhere in the canonical plan.
+
+## Link and structure audit
+
+Audit completed across:
+
+- the canonical root planning files;
+- all **85 focused module specifications**;
+- all **25 phase execution files**.
+
+Issues found and repaired during migration included stale provider cross-links inherited from the old folder layout and one pricing-to-Stripe link. Canonical phase/index execution links were validated after repair.
+
+## Capability coverage audit
+
+The product vision requires:
+
+- recursive workspaces/files;
+- rich documents;
+- infinite notes;
+- whiteboards;
+- spreadsheets/datasets;
+- code/notebooks;
+- tasks/reminders/calendar/notifications;
+- templates/search/import/export;
+- academic/student workflows;
+- Master's/PhD/references;
+- research/laboratory workflows;
+- professor/supervision workflows;
 - reporting/investigation;
 - analysis;
-- homepage/marketing;
-- auth flows;
-- pricing/billing UX;
-- Stripe provider flow;
-- Clerk provider flow;
-- offline/PWA;
-- integrations;
-- security/operations.
+- collaboration;
+- subscription/billing;
+- responsive desktop/tablet/phone support.
 
-The legacy plan's central principle is also preserved: Nexosophy is a unified recursive workspace, not disconnected mini-apps.
+Every item above has at least one canonical focused specification and an implementation phase.
 
-## What is replaced by the new GitHub architecture specs
+## Completion criteria
 
-The new Nexosophy specs under these folders are authoritative and absorb overlapping legacy material:
+- [x] One canonical `SPEC_INDEX.md`.
+- [x] One canonical `IMPLEMENTATION_SEQUENCE.md`.
+- [x] Exactly Phase 00–24.
+- [x] Canonical ownership reconciled for auth, billing, realtime, search, Office, security and scale.
+- [x] Every phase has an execution contract.
+- [x] Focused product specifications migrated and organized by domain.
+- [x] Product renamed to Nexosophy in active planning.
+- [x] Canonical root/phase/module link audit completed and discovered stale links repaired.
+- [x] Product-vision capabilities mapped to canonical specs/phases.
+- [x] Phase 00 can begin without inventing the baseline architecture during coding.
 
-- `00-product-governance/`
-- `01-foundation/`
-- `02-identity-billing/`
-- `03-data-content/`
-- `04-api-scale/`
+## Final disposition
 
-Legacy platform docs covering database/storage, API/background jobs, performance/scalability, provider-neutral auth/billing, observability or deployment are mined for missing requirements and then merged into these owners.
+**Planning consolidation is complete.**
 
-## Known duplicate/overlap areas
-
-### Authentication
-
-Legacy:
-- Authentication/Login spec
-- Sessions/security spec
-- Clerk provider spec
-
-Canonical ownership:
-- Clerk/provider/session mechanics → `02-identity-billing/00-auth-clerk.md`
-- internal user/profile lifecycle → `02-identity-billing/01-users-profiles-onboarding.md`
-- workspace authorization → `02-identity-billing/02-workspaces-rbac-sharing.md`
-- cross-cutting security hardening → quality/security spec
-
-### Billing
-
-Legacy:
-- Pricing/Billing/Entitlements
-- Stripe provider
-- Phase 22 billing
-
-Canonical ownership:
-- pricing UI/copy → public pricing spec
-- Stripe Checkout/Billing/Portal/webhooks → `02-identity-billing/03-stripe-billing.md`
-- entitlements/quotas/admin support view → `02-identity-billing/04-entitlements-admin-billing.md`
-- Phase 22 → execution order/checklist only
-
-### Scalability
-
-Legacy:
-- API/background jobs
-- performance/scalability
-- observability/deployment
-
-Canonical ownership:
-- API contract → `04-api-scale/00-api-contract.md`
-- horizontal scaling/concurrency → `04-api-scale/01-scalability-concurrency.md`
-- rate limit/idempotency → `04-api-scale/02-rate-limit-idempotency.md`
-- cache/queues/workers → `04-api-scale/03-cache-queues-workers.md`
-- realtime → `04-api-scale/04-realtime-collaboration.md`
-- SLO/load/capacity → `04-api-scale/05-performance-slo-capacity.md`
-- WAF/abuse → `04-api-scale/06-abuse-ddos-waf.md`
-
-### Content platform
-
-Legacy files/folders, history/trash, search, import/export and media overlap with platform concerns. Canonical split:
-
-- structural/persistence behavior → `03-data-content/`
-- user-facing explorer/editor UX → `05-core-workspace/`
-
-### Responsive/accessibility/security
-
-These are cross-cutting requirements. Focused module specs state module-specific behavior only. They do not re-copy the entire global policy.
-
-## Migration order
-
-1. Freeze new spec creation.
-2. Build this canonical map and Phase 00–24 sequence.
-3. Migrate/rename the legacy specs required by Phases 00–06 first.
-4. For each migrated spec:
-   - change ScholarForge → Nexosophy;
-   - update repository/domain references;
-   - remove duplicated platform/provider ownership;
-   - point to canonical architecture specs;
-   - preserve detailed product behavior, responsive states, edge cases and acceptance tests.
-5. Validate links.
-6. Repeat by phase for 07–24.
-7. Only then begin Phase 00 coding.
-
-## Naming rule
-
-All new canonical documentation uses **Nexosophy**. "ScholarForge" may remain only in historical migration notes until the migration is complete.
-
-## Completion criteria for planning consolidation
-
-- one `SPEC_INDEX.md`;
-- one `IMPLEMENTATION_SEQUENCE.md`;
-- one Phase 00–24 sequence;
-- no two focused specs own the same state machine;
-- every phase links to its owning specs;
-- every owning spec declares data/API/permissions/responsive/scale/error/test behavior;
-- all internal links validate;
-- all product/provider names are Nexosophy/selected provider names;
-- Phase 00 can be implemented without inventing architecture during coding.
+Further changes to the plan are now treated as normal architecture/product revisions and must not block Phase 00 unless they change a dependency or release-critical invariant.
