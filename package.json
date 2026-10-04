@@ -16,11 +16,16 @@
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
     "format:check": "biome format .",
-    "ci": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "ci": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "clean": "turbo run clean && rm -rf .turbo"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
     "turbo": "2.11.2",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "@types/node": "26.6.4",
+    "tsdown": "0.23.0",
+    "tsx": "4.23.15",
+    "vitest": "5.0.3"
   }
 }
