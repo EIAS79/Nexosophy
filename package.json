@@ -1,0 +1,26 @@
+{
+  "name": "nexosophy",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@12.7.0",
+  "engines": {
+    "node": ">=24.0.0 <25",
+    "pnpm": ">=12.7.0 <13"
+  },
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "ci": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15",
+    "turbo": "2.11.2",
+    "typescript": "7.0.2"
+  }
+}
