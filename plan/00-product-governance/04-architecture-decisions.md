@@ -223,7 +223,7 @@ Architecture assumptions must be validated by:
 
 ### Implementation governance
 
-- [ ] Initial ADR set exists and is accepted.
+- [x] Initial ADR set exists and is accepted.
 - [ ] Phase 00 tooling links ADRs where applicable.
 - [ ] New architecture-impacting changes follow the ADR process.
 
