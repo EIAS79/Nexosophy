@@ -1,26 +1,42 @@
-import pino, { type Logger, type LoggerOptions } from "pino";
+import pino, {
+  type DestinationStream,
+  type Logger,
+  type LoggerOptions,
+} from "pino";
+
+const REDACT_PATHS = [
+  "req.headers.authorization",
+  "req.headers.cookie",
+  "headers.authorization",
+  "headers.cookie",
+  "password",
+  "token",
+  "secret",
+  "*.password",
+  "*.token",
+  "*.secret",
+] as const;
 
 export function createLogger(
   service: string,
   level = process.env.LOG_LEVEL ?? "info",
   options: LoggerOptions = {},
+  destination?: DestinationStream,
 ): Logger {
-  return pino({
-    name: service,
-    level,
-    base: {
-      service,
-      appEnv: process.env.APP_ENV ?? "local",
+  return pino(
+    {
+      name: service,
+      level,
+      base: {
+        service,
+        appEnv: process.env.APP_ENV ?? "local",
+      },
+      redact: {
+        paths: [...REDACT_PATHS],
+        censor: "[REDACTED]",
+      },
+      ...options,
     },
-    redact: {
-      paths: [
-        "req.headers.authorization",
-        "req.headers.cookie",
-        "headers.authorization",
-        "headers.cookie",
-      ],
-      censor: "[REDACTED]",
-    },
-    ...options,
-  });
+    destination,
+  );
 }
