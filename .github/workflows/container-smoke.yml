@@ -1,0 +1,37 @@
+name: Container Smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/container-smoke.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: container-smoke
+  cancel-in-progress: true
+
+jobs:
+  containers:
+    name: Build deployment containers
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Build web image
+        run: docker build --file infra/docker/Dockerfile.web --tag nexosophy-web:${{ github.sha }} .
+
+      - name: Build API image
+        run: docker build --file infra/docker/Dockerfile.api --tag nexosophy-api:${{ github.sha }} .
+
+      - name: Build worker image
+        run: docker build --file infra/docker/Dockerfile.worker --tag nexosophy-worker:${{ github.sha }} .
+
+      - name: Build realtime image
+        run: docker build --file infra/docker/Dockerfile.realtime --tag nexosophy-realtime:${{ github.sha }} .
