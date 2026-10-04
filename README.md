@@ -19,10 +19,18 @@ Implementation follows the canonical plan in [`plan/`](plan/README.md). Work pro
 
 ## Local bootstrap
 
+For a clean clone, run:
+
+```bash
+bash scripts/bootstrap.sh
+```
+
+That command verifies the pinned Node version, enables the pinned pnpm version, installs the frozen dependency graph, runs fast validation and independently builds the deployables.
+
+For local services:
+
 1. Copy `.env.example` to `.env` and configure required values.
-2. Start local infrastructure: `docker compose up -d`.
-3. Install dependencies: `corepack enable && pnpm install`.
-4. Run validation: `pnpm ci`.
-5. Start development services: `pnpm dev`.
+2. Start PostgreSQL/Redis: `docker compose up -d`.
+3. Start development processes: `pnpm dev`.
 
 The repository intentionally separates web, API, worker and realtime deployables so each can scale independently.
