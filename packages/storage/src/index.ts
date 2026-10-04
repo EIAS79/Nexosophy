@@ -12,10 +12,7 @@ export interface StorageAdapter {
     expiresInSeconds: number;
   }): Promise<{ url: string; headers?: Record<string, string> }>;
 
-  createDownloadUrl(input: {
-    key: string;
-    expiresInSeconds: number;
-  }): Promise<{ url: string }>;
+  createDownloadUrl(input: { key: string; expiresInSeconds: number }): Promise<{ url: string }>;
 
   deleteObject(key: string): Promise<void>;
 }

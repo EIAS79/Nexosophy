@@ -1,8 +1,4 @@
-import pino, {
-  type DestinationStream,
-  type Logger,
-  type LoggerOptions,
-} from "pino";
+import pino, { type DestinationStream, type Logger, type LoggerOptions } from "pino";
 
 const REDACT_PATHS = [
   "req.headers.authorization",
