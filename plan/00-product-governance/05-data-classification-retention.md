@@ -1,79 +1,309 @@
-# Data Classification, Retention and Deletion
+# Nexosophy Data Classification, Retention & Deletion
 
-> **Plan path:** `plan/00-product-governance/05-data-classification-retention.md`
+> **Status:** canonical data-governance specification
 
-## Purpose
+## 1. Purpose
 
-Define how user, academic, research, laboratory, billing and operational data are classified and retained.
+Define how Nexosophy classifies, stores, retains, exports and deletes user, academic, research, laboratory, billing and operational data.
 
-## User / product outcomes
+This is a product/engineering policy, not legal advice. Production retention periods may be adjusted by legal/commercial policy but implementation must support the categories and deletion semantics defined here.
 
-- Users can delete/export data predictably.
-- Sensitive research and account data receives stronger controls than public content.
+## 2. Classification levels
 
-## Required capabilities
+### Public
 
-- Classification levels: public, internal, confidential, highly sensitive.
-- Workspace retention policies.
-- Trash retention window then hard-delete pipeline.
-- Account deletion with legal/billing exceptions.
-- Export package generation.
-- Audit retention separated from document content where legally permitted.
+Data intentionally publishable to anyone.
 
-## Routes / surfaces
+Examples:
+
+- public marketing content;
+- explicitly public published reports;
+- public share content where configured.
+
+### Internal
+
+Ordinary authenticated account/workspace data without heightened confidentiality.
+
+Examples:
+
+- preferences;
+- non-sensitive tasks;
+- basic workspace metadata.
+
+### Confidential
+
+Data whose disclosure would materially affect a user/team.
+
+Examples:
+
+- private documents;
+- course materials;
+- unpublished research;
+- non-public reports;
+- workspace member data.
+
+### Highly sensitive
+
+Data requiring strongest controls.
+
+Examples:
+
+- confidential reporter source details;
+- security credentials/tokens;
+- selected laboratory/research data;
+- payment/security event data;
+- recovery codes;
+- legal-hold material.
+
+Secrets such as API keys/passwords are not ordinary application content and use dedicated secret/credential handling.
+
+## 3. Classification inheritance
+
+Workspace or resource policy may set a minimum classification.
+
+A child resource may be more restrictive than its parent.
+
+It must not become less restrictive automatically when moved without explicit policy evaluation.
+
+## 4. Default retention principles
+
+- active content retained while account/workspace remains active unless user/policy deletes it;
+- trash has explicit retention before purge;
+- audit/security records may have separate retention from content;
+- billing/accounting records may require longer retention than deleted content;
+- backups expire according to backup lifecycle and are not treated as immediately mutable primary data;
+- support attachments have bounded retention.
+
+Exact production durations are configuration/policy values, not hardcoded throughout application logic.
+
+## 5. Trash vs deletion
+
+### Trash
+
+Recoverable user-facing soft deletion.
+
+Properties:
+
+- original parent/location recorded where possible;
+- deletion actor/time recorded;
+- descendants follow defined subtree semantics;
+- restore handles conflicts explicitly.
+
+### Permanent deletion
+
+A durable deletion intent that triggers asynchronous removal/reconciliation across:
+
+- primary database;
+- object storage;
+- search indexes;
+- caches;
+- derived artifacts;
+- realtime snapshots;
+- analytics identifiers where applicable and legally permitted.
+
+## 6. Account deletion
+
+Account deletion must define:
+
+- ownership transfer/handling for shared workspaces;
+- personal workspace deletion;
+- legal/billing retention exceptions;
+- external identity unlinking;
+- Stripe/customer record handling according to legal/accounting requirements;
+- notification/email suppression;
+- scheduled purge/reconciliation;
+- completion status.
+
+Account deletion is not "delete one User row."
+
+## 7. Workspace deletion
+
+Workspace deletion requires:
+
+- owner authorization;
+- member impact warning;
+- export option where appropriate;
+- grace/trash period if policy allows;
+- queued recursive purge;
+- billing-seat/subscription implications;
+- audit event.
+
+## 8. Export
+
+Users need export for portability and privacy requests.
+
+Export jobs:
+
+- are asynchronous;
+- are scoped/authorized at request time and delivery time;
+- use object storage for generated archives;
+- use short-lived signed downloads;
+- expire generated artifacts;
+- include manifests where helpful;
+- avoid exposing data the requester is not entitled to export.
+
+## 9. Legal hold
+
+If legal/compliance policy requires a legal hold:
+
+- hold reason/reference is access-controlled;
+- deletion job must recognize hold;
+- user-facing behavior follows legal policy;
+- hold does not silently make content broadly visible;
+- release of hold resumes ordinary retention/deletion processing.
+
+## 10. Audit retention
+
+Audit records should store:
+
+- actor;
+- action;
+- target identifiers;
+- workspace;
+- timestamp;
+- request/correlation ID;
+- minimal metadata.
+
+They should not store full document bodies by default.
+
+## 11. Backup semantics
+
+Deletion from primary systems may remain in encrypted backups until backup expiry.
+
+Requirements:
+
+- documented backup retention;
+- restore procedures reapply deletion/reconciliation state where necessary;
+- backups are tightly access-controlled;
+- expired backups are destroyed according to provider capability/policy.
+
+## 12. Search/cache semantics
+
+Deletion/revocation must not rely on TTL alone when data could leak.
+
+Use:
+
+- index deletion/update events;
+- permission filters;
+- versioned cache invalidation;
+- reconciliation jobs.
+
+## 13. Media / derivative retention
+
+Deleting an asset may require deleting:
+
+- original;
+- thumbnails;
+- previews;
+- waveform;
+- OCR/transcript;
+- converted variants;
+- temporary multipart remnants.
+
+Manifest/relationship tracking is required so derivatives are discoverable.
+
+## 14. Provider data
+
+Connected providers may retain data independently according to their terms.
+
+Nexosophy must:
+
+- document provider relationship;
+- revoke tokens;
+- delete internal synced data according to policy;
+- call provider deletion APIs where contractually/product-required and supported;
+- avoid promising deletion beyond Nexosophy's control.
+
+## 15. Deletion pipeline
+
+Recommended state machine:
+
+```text
+REQUESTED
+  ↓
+VALIDATING
+  ↓
+QUEUED
+  ↓
+DELETING_PRIMARY
+  ↓
+DELETING_DERIVED
+  ↓
+RECONCILING
+  ↓
+COMPLETED
+```
+
+Failure states retain retry/checkpoint data.
+
+Deletion jobs must be idempotent.
+
+## 16. Scale behavior
+
+Bulk export/deletion:
+
+- runs in bounded batches;
+- checkpoints progress;
+- respects queue/dependency concurrency;
+- avoids giant transactions;
+- can resume after worker restart;
+- exposes progress where user-visible.
+
+## 17. Security
+
+- highly sensitive fields may require field-level encryption/tokenization where justified;
+- signed download links are short-lived;
+- deletion/export actions are audited;
+- support/admin access is least privilege;
+- export bundles are never public by default;
+- logs never include secrets/raw highly sensitive content.
+
+## 18. User-facing surfaces
 
 - `/settings/privacy`
 - `/settings/data`
+- `/settings/export`
 - `/workspace/:id/settings/retention`
+- `/trash`
 
-## Core data model
+Exact routes may be refined by the information architecture spec.
 
-- `DataClassification`
-- `RetentionPolicy`
-- `DeletionJob`
-- `ExportJob`
-- `LegalHold`
+## 19. Tests
 
-## Service and API contract
+Required over implementation lifetime:
 
-- Deletion is asynchronous, resumable and auditable.
-- Object-store deletion and search-index removal are reconciled after DB deletion markers.
+- delete/restore;
+- delete during move/edit;
+- large subtree purge;
+- object/derivative reconciliation;
+- search result removal;
+- cache invalidation;
+- export authorization;
+- export expiry;
+- worker restart/resume;
+- account deletion with shared workspace ownership;
+- legal-hold block;
+- backup restore + deletion reconciliation drill.
 
-## Scale, concurrency and resilience
+## 20. Definition of Done
 
-- Bulk deletion/export runs through queues with chunking and rate control.
-- Large exports stream to object storage and return signed download URLs.
+### Planning
 
-## Security / correctness risks
+- [x] Classification levels defined.
+- [x] Trash/permanent deletion semantics defined.
+- [x] Account/workspace deletion boundaries defined.
+- [x] Export/legal-hold/backup semantics defined.
+- [x] Async deletion/reconciliation model defined.
 
-- Hard deletion across derived indexes/caches is easy to miss; reconciliation jobs are mandatory.
-- Backups have documented expiration semantics.
+### Implementation
 
-## Responsive and accessibility requirements
+- [ ] Entity families have retention/classification mappings.
+- [ ] Deletion/export jobs are idempotent and resumable.
+- [ ] DB/object/search/cache deletion integration tests pass.
+- [ ] Privacy documentation matches deployed behavior.
+- [ ] Backup lifecycle and restore-deletion reconciliation are verified.
+- [ ] Production support/runbook exists.
 
-- All user-facing surfaces must define desktop, tablet and phone behavior rather than rely on accidental CSS wrapping.
-- Critical actions must be keyboard reachable, have visible focus, semantic labels and non-color-only states.
-- Loading, empty, error, permission-denied and offline/degraded states are part of the feature contract.
+## 21. Governance section complete
 
-## Observability requirements
-
-- Structured events for critical state transitions and failures.
-- Latency/error metrics for service endpoints and external dependencies.
-- Correlation/request IDs on support-visible failures; never log secrets or raw sensitive content.
-
-## Test strategy
-
-- Unit tests for domain rules and state transitions.
-- Integration tests for persistence/provider boundaries.
-- Authorization and tenant-isolation tests for every resource API.
-- End-to-end tests for critical user journeys on desktop and mobile.
-- Load/concurrency tests for high-frequency or contention-sensitive operations.
-
-## Definition of Done
-
-- [ ] Data lifecycle exists for each entity class.
-- [ ] Deletion/export integration tests cover DB, object storage, search and cache.
-- [ ] Privacy documentation matches actual behavior.
-- [ ] Error/retry/empty/loading/degraded states implemented.
-- [ ] Telemetry dashboards/alerts or documented observability coverage exist.
-- [ ] Documentation and API contracts are updated.
+After this file, continue directly into the initial ADR set and Phase 00 implementation.
