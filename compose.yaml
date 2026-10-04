@@ -1,0 +1,33 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: nexosophy
+      POSTGRES_USER: nexosophy
+      POSTGRES_PASSWORD: nexosophy
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U nexosophy -d nexosophy']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - nexosophy_pg:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7.4-alpine
+    command: ['redis-server', '--appendonly', 'yes']
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - nexosophy_redis:/data
+
+volumes:
+  nexosophy_pg:
+  nexosophy_redis:
