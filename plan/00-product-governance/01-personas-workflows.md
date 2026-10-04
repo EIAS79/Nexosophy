@@ -1,83 +1,380 @@
-# Personas and End-to-End Workflows
+# Nexosophy Personas & End-to-End Workflows
 
-> **Plan path:** `plan/00-product-governance/01-personas-workflows.md`
+> **Status:** canonical product-governance specification  
+> **Owner:** Product governance  
+> **Purpose:** convert the product vision into concrete jobs-to-be-done, end-to-end journeys, activation criteria and cross-persona workflow requirements.
 
-## Purpose
+## 1. Persona model
 
-Map target users to complete workflows so the product is optimized around jobs-to-be-done rather than isolated features.
+Nexosophy does not force a user into one permanent persona. A user may be a student and researcher, professor and lab PI, reporter and analyst, or move between roles over time.
 
-## User / product outcomes
+Persona selection is therefore:
 
-- Student manages courses, lecture notes, assignments, exams and study plans.
-- Researcher/PhD candidate manages literature, experiments, data, references and thesis progress.
-- Professor supervises students, reviews work and manages teaching/research materials.
-- Lab member records experiments, protocols, samples and equipment-linked work.
-- Reporter builds an evidence trail from source capture to fact-checked publication.
-- Analyst imports data, transforms it, charts it and embeds results into reports.
+- a product-personalization input;
+- a template/dashboard recommendation input;
+- an onboarding shortcut;
+- never an authorization boundary by itself.
 
-## Required capabilities
+Authorization is controlled by workspace membership, role and permissions.
 
-- Role-aware onboarding without hard-locking users into one persona.
-- Workspace templates per persona.
-- Cross-role collaboration and mixed workspaces.
-- Shared source/citation model usable across academic and reporting workflows.
-- Role-specific dashboards assembled from common widgets.
+## 2. Shared workflow primitives
 
-## Routes / surfaces
+Every persona reuses the same foundations:
 
-- `/onboarding`
-- `/app/home`
-- `/templates`
-- `/workspace/:id`
+- internal user identity;
+- workspaces;
+- recursive files/folders;
+- typed documents;
+- search;
+- history/trash;
+- tasks;
+- reminders;
+- calendar;
+- comments/mentions;
+- sharing/RBAC;
+- templates;
+- import/export;
+- notifications;
+- realtime collaboration where supported.
 
-## Core data model
+Persona-specific features compose these primitives instead of duplicating them.
 
-- `PersonaPreference`
-- `WorkspaceTemplate`
-- `DashboardLayout`
-- `RecentItem`
-- `PinnedItem`
+## 3. Student journey
 
-## Service and API contract
+### 3.1 Activation
 
-- Onboarding state and preferences are internal Nexosophy data, not auth-provider metadata.
-- Dashboard queries are aggregated and cacheable rather than dozens of independent client requests.
+A new student should be able to:
 
-## Scale, concurrency and resilience
+1. sign up;
+2. select student interests or skip;
+3. create or accept a personal academic workspace;
+4. create/import a course;
+5. capture the first note or upload material;
+6. add an assignment/exam;
+7. see it appear in tasks/calendar;
+8. return later and find the same material from dashboard/search.
 
-- Dashboard endpoints use batched/aggregated reads to prevent N+1 API fan-out.
-- Recent/pinned material is indexed for fast retrieval.
+### 3.2 Core semester workflow
 
-## Security / correctness risks
+```text
+Create term
+  ↓
+Add courses
+  ↓
+Capture lecture notes/files
+  ↓
+Create assignments/exams
+  ↓
+Schedule study/reminders
+  ↓
+Create flashcards/revision material
+  ↓
+Search/review
+  ↓
+Archive term / export
+```
 
-- Persona presets must be editable; users often occupy multiple roles.
-- Do not duplicate core features for each persona—compose them.
+### 3.3 Acceptance outcomes
 
-## Responsive and accessibility requirements
+A student can:
 
-- All user-facing surfaces must define desktop, tablet and phone behavior rather than rely on accidental CSS wrapping.
-- Critical actions must be keyboard reachable, have visible focus, semantic labels and non-color-only states.
-- Loading, empty, error, permission-denied and offline/degraded states are part of the feature contract.
+- keep course materials together without duplicating files;
+- connect notes to course/task/event context;
+- distinguish upcoming, overdue and completed work;
+- prepare for exams using notes, flashcards and study planning;
+- access essential workflows on phone during class;
+- use desktop/tablet for deeper writing/organization.
 
-## Observability requirements
+## 4. Master's / PhD journey
 
-- Structured events for critical state transitions and failures.
-- Latency/error metrics for service endpoints and external dependencies.
-- Correlation/request IDs on support-visible failures; never log secrets or raw sensitive content.
+### 4.1 Activation
 
-## Test strategy
+A postgraduate user can create a thesis/research workspace from a template and immediately define:
 
-- Unit tests for domain rules and state transitions.
-- Integration tests for persistence/provider boundaries.
-- Authorization and tenant-isolation tests for every resource API.
-- End-to-end tests for critical user journeys on desktop and mobile.
-- Load/concurrency tests for high-frequency or contention-sensitive operations.
+- title / working title;
+- research question(s);
+- milestones;
+- supervisor(s);
+- reference library;
+- first literature note.
 
-## Definition of Done
+### 4.2 Research journey
 
-- [ ] Primary journey maps exist for every target persona.
-- [ ] Onboarding can create an immediately useful workspace in under five minutes.
-- [ ] Every persona can switch/add workflows later without migration.
-- [ ] Error/retry/empty/loading/degraded states implemented.
-- [ ] Telemetry dashboards/alerts or documented observability coverage exist.
-- [ ] Documentation and API contracts are updated.
+```text
+Question / hypothesis
+  ↓
+Literature search & references
+  ↓
+Reading notes / evidence
+  ↓
+Methods / experiment / dataset
+  ↓
+Analysis
+  ↓
+Thesis chapter drafting
+  ↓
+Supervisor review
+  ↓
+Revision
+  ↓
+Submission/export/archive
+```
+
+### 4.3 Acceptance outcomes
+
+The user can trace thesis content back to references, notes and evidence; supervisor comments do not require duplicate document copies; citations remain linked to canonical reference records.
+
+## 5. Researcher journey
+
+Researchers need to move between literature, projects, data, experiments and collaborative writing.
+
+Core workflow:
+
+1. create/join research workspace;
+2. create project;
+3. import references/files;
+4. create structured research notes;
+5. attach datasets/experiments;
+6. assign tasks and milestones;
+7. collaborate/review;
+8. analyze;
+9. produce report/paper-ready outputs;
+10. export/archive with provenance.
+
+Success means the project remains coherent even when multiple people edit different artifacts concurrently.
+
+## 6. Professor / supervisor journey
+
+### Core workflows
+
+- create or join teaching/research workspace;
+- distribute resources;
+- organize course/supervision material;
+- invite students/researchers;
+- review/comment on submitted or shared work;
+- schedule meetings/office hours;
+- track supervision milestones;
+- control visibility of sensitive/unreleased feedback.
+
+### Acceptance outcomes
+
+Professors do not need a separate app for teaching versus supervision. The same document/comment/calendar primitives are reused with role-specific views.
+
+## 7. Laboratory journey
+
+### Core workflow
+
+```text
+Research project
+  ↓
+Protocol/SOP version
+  ↓
+Experiment run
+  ↓
+Samples / reagents / equipment
+  ↓
+Observations + files/data
+  ↓
+Results / analysis
+  ↓
+Sign / amend / review
+  ↓
+Archive / report
+```
+
+### Acceptance outcomes
+
+- an experiment can identify the protocol version used;
+- sample lineage is preserved;
+- equipment usage can be associated with work;
+- signed/locked records use amendments rather than silent mutation where policy requires;
+- inventory updates are auditable.
+
+## 8. Reporter / investigator journey
+
+### Core workflow
+
+```text
+Story idea
+  ↓
+Investigation dossier
+  ↓
+Sources / interviews
+  ↓
+Evidence
+  ↓
+Claims
+  ↓
+Fact checking
+  ↓
+Timeline
+  ↓
+Draft report
+  ↓
+Review / approval
+  ↓
+Publication/export
+```
+
+### Acceptance outcomes
+
+- confidential-source data is permission-controlled;
+- claims can be traced to evidence;
+- a published version is reproducible;
+- redaction is real, not cosmetic;
+- evidence/provenance survives export where applicable.
+
+## 9. Analyst journey
+
+### Core workflow
+
+1. upload/connect dataset;
+2. inspect schema/profile;
+3. clean/transform;
+4. save transformation recipe/provenance;
+5. analyze in structured views/notebooks;
+6. build charts;
+7. assemble dashboard/report;
+8. share/export.
+
+### Acceptance outcomes
+
+Analysis is reproducible enough to identify source data, transformations and output version; arbitrary code does not execute on ordinary API servers.
+
+## 10. Team / institution journey
+
+Team activation includes:
+
+- create workspace;
+- choose type/template;
+- invite members;
+- assign roles;
+- set sharing defaults;
+- create initial structure;
+- optionally select billing owner/plan.
+
+Institution workflows may later add centralized management, but must not bypass tenant isolation or individual security controls.
+
+## 11. Cross-persona mixed workflows
+
+Nexosophy must explicitly support mixed collaboration:
+
+- professor + PhD candidate;
+- PI + lab technician + researcher;
+- reporter + editor + analyst;
+- instructor + TA + student;
+- research group + external guest reviewer.
+
+No persona-specific module may assume every collaborator has the same persona.
+
+## 12. Onboarding rules
+
+Onboarding must:
+
+- be resumable;
+- be skippable where possible;
+- avoid asking for information not required to create value;
+- create a usable starting workspace in under five minutes for normal flows;
+- allow persona/template choices to be changed later;
+- never store authorization-critical state only in Clerk metadata.
+
+## 13. Dashboard personalization
+
+The authenticated home/dashboard may adapt by persona preference and recent behavior.
+
+Examples:
+
+- student: upcoming assignments, recent courses, next exam, recent notes;
+- researcher: active projects, recent references, tasks, datasets;
+- lab: experiments, bookings, expiring inventory alerts;
+- reporter: investigations, review deadlines, sources/evidence activity;
+- professor: supervision, review queue, upcoming teaching events.
+
+Dashboard aggregation must avoid client-side N+1 fan-out.
+
+## 14. Device behavior
+
+### Phone
+
+Prioritize:
+
+- quick capture;
+- task/reminder updates;
+- calendar;
+- notifications;
+- recent content;
+- lightweight editing;
+- scan/photo/file upload.
+
+### Tablet
+
+Prioritize:
+
+- stylus notes;
+- whiteboard;
+- reading/annotation;
+- split-view research;
+- hardware keyboard support.
+
+### Desktop
+
+Prioritize:
+
+- persistent navigation;
+- deep file trees;
+- multi-pane work;
+- keyboard shortcuts;
+- long-form editing;
+- datasets/analysis;
+- high-information-density views.
+
+## 15. Persona success metrics
+
+Track per persona:
+
+- activation completion;
+- time to first meaningful artifact;
+- return after first session;
+- use of linked workflows rather than isolated feature clicks;
+- successful search/retrieval;
+- successful export/recovery;
+- collaboration/review completion;
+- support contacts caused by lost context or lost work.
+
+Metrics must not become authorization rules.
+
+## 16. Failure states
+
+Each persona workflow must define behavior for:
+
+- empty workspace;
+- no permissions;
+- disconnected provider;
+- upload failure;
+- save conflict;
+- offline/reconnect;
+- deleted/moved linked item;
+- expired share/invite;
+- quota/entitlement limit.
+
+## 17. Definition of Done
+
+### Planning
+
+- [x] Primary journey exists for every target persona.
+- [x] Mixed-persona collaboration is explicitly supported.
+- [x] Onboarding does not permanently lock users into one persona.
+- [x] Device priorities are defined.
+- [x] Persona success signals are defined.
+
+### Implementation
+
+- [ ] Each primary persona can reach a useful workspace in under five minutes in usability testing.
+- [ ] Every persona can switch/add workflows without account migration.
+- [ ] Dashboard data is aggregated without unbounded API fan-out.
+- [ ] Critical persona journeys pass desktop/tablet/phone E2E tests.
+- [ ] Permission and degraded-state tests pass for mixed-persona collaboration.
+
+## 18. Next document
+
+Continue to `02-scope-non-goals.md`.
