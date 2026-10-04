@@ -9,8 +9,8 @@
 > This document makes the authentication provider concrete while preserving Nexosophy's own internal user, workspace, permission and audit model.
 
 **Master plan:** [`../README.md`](../README.md)  
-**Parent auth spec:** [`01-authentication-login.md`](01-authentication-login.md)  
-**Session/security spec:** [`05-sessions-security-devices.md`](05-sessions-security-devices.md)  
+**Parent auth spec:** [`01-authentication-login.md`](00-auth-clerk.md)  
+**Session/security spec:** [`05-sessions-security-devices.md`](00-auth-clerk.md)  
 **Delivery phase:** Phase 2 — Authentication and accounts  
 **Related systems:** onboarding, accounts/profiles, RBAC, billing, audit, notifications, admin/support
 
