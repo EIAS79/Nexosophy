@@ -12,19 +12,19 @@ import { createClient } from "redis";
 const serviceVersion = process.env.npm_package_version ?? "0.0.0";
 
 export async function buildApp(env: ApiEnv): Promise<FastifyInstance> {
-  const pool = createDatabasePool(env.DATABASE_URL, { max: 10 });
-  const redis = createClient({ url: env.REDIS_URL });
-
-  redis.on("error", (error) => {
-    logger.warn({ err: error }, "Redis connection error");
-  });
-
   const app = Fastify({
     logger: createLoggerOptions("nexosophy-api", env.LOG_LEVEL),
     genReqId: (request) => {
       const incoming = request.headers["x-request-id"];
       return typeof incoming === "string" && incoming.length <= 128 ? incoming : randomUUID();
     },
+  });
+
+  const pool = createDatabasePool(env.DATABASE_URL, { max: 10 });
+  const redis = createClient({ url: env.REDIS_URL });
+
+  redis.on("error", (error) => {
+    app.log.warn({ err: error }, "Redis connection error");
   });
 
   await app.register(swagger, {
