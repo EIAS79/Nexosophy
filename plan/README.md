@@ -1,6 +1,6 @@
 # Nexosophy — Production Implementation Plan
 
-> **Status:** source-of-truth planning index  
+> **Status:** PLANNING COMPLETE — canonical source of truth; Phase 00 build may begin  
 > **Product:** Nexosophy  
 > **Target domain:** `nexosophy.com`  
 > **Repository:** `EIAS79/Nexosophy`  
@@ -111,8 +111,8 @@ Research projects, literature/evidence workflows, ELN, protocols, experiments, s
 ### 09 — Reporting and analysis
 Reporter/investigation workspaces, reports, publishing, spreadsheets/datasets, charts, notebooks and analytical workflows.
 
-### 10 — Professor and collaboration
-Teaching/supervision, comments, mentions, presence, sharing, team roles and review workflows.
+### 10 — Integrations, offline & AI
+External integrations, Office editing boundary, offline synchronization/PWA and optional AI assistance.
 
 ### 11 — Public website and growth
 Homepage, feature/product pages, pricing, legal/help/status pages, SEO, analytics and conversion flows.
@@ -170,4 +170,4 @@ Nexosophy is not production-ready until:
 - legal/privacy/terms/cookie flows are published;
 - no release-blocking P0/P1 defects remain.
 
-Start with `plan/13-phases/00-phase-foundation.md` after reading the architecture and product contracts.
+Start with [`plan/13-phases/phase-00-repository-engineering-baseline.md`](13-phases/phase-00-repository-engineering-baseline.md) after reading [`SPEC_INDEX.md`](SPEC_INDEX.md) and [`IMPLEMENTATION_SEQUENCE.md`](IMPLEMENTATION_SEQUENCE.md).
