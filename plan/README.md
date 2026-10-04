@@ -123,32 +123,35 @@ Threat model, privacy, testing, performance/load testing, SLOs, backup/disaster 
 ### 13 — Delivery phases
 Ordered execution from Phase 00 through production launch and post-launch scale hardening.
 
-## Top-level implementation order
+## Canonical implementation order
 
-1. Product contract and architecture decisions.
-2. Monorepo/tooling/environments/CI.
-3. Design system, responsive shell and accessibility baseline.
-4. Authentication and internal identity model.
-5. Workspaces, roles, permissions and sharing foundations.
-6. PostgreSQL schema, storage and recursive content tree.
-7. API platform, validation, errors, idempotency and observability.
-8. Scale controls: pooling, Redis, caching, rate limits, queues/workers and load harness.
-9. File explorer, upload/download, history, trash and recovery.
-10. Universal editor platform.
-11. Notes/infinite canvas and whiteboards.
-12. Search, command palette, templates and import/export.
-13. Tasks, reminders, notifications and calendar.
-14. Academic/student features.
-15. Research/thesis/reference features.
-16. Laboratory/ELN features.
-17. Reporting, investigations and analytics.
-18. Professor/supervision/collaboration workflows.
-19. Public marketing website and SEO.
-20. Stripe subscriptions, entitlements, invoices, portal and admin billing operations.
-21. Offline/PWA/mobile hardening and realtime resilience.
-22. Security/privacy hardening.
-23. Performance/capacity/recovery certification.
-24. Staged production launch with rollback, monitoring and incident readiness.
+The exact build order is Phase 00 → Phase 24. The detailed dependency map lives in [IMPLEMENTATION_SEQUENCE.md](IMPLEMENTATION_SEQUENCE.md).
+
+0. **Phase 00 — Repository & engineering baseline**
+1. **Phase 01 — Design system, navigation & application shell**
+2. **Phase 02 — Authentication, accounts & security baseline**
+3. **Phase 03 — Workspaces, membership, RBAC & sharing**
+4. **Phase 04 — PostgreSQL content model & recursive file/folder system**
+5. **Phase 05 — Object storage, uploads, media & previews**
+6. **Phase 06 — API scale foundation & rich document runtime**
+7. **Phase 07 — History, trash, restore & audit**
+8. **Phase 08 — Realtime collaboration & sharing experience**
+9. **Phase 09 — Notes, infinite pages & whiteboard**
+10. **Phase 10 — Search, tags, relations & backlinks**
+11. **Phase 11 — Tasks, reminders, calendar & notifications**
+12. **Phase 12 — Templates, import & export**
+13. **Phase 13 — Structured data, spreadsheets & code/notebooks**
+14. **Phase 14 — Student & course system**
+15. **Phase 15 — References, thesis & postgraduate research**
+16. **Phase 16 — Research & laboratory**
+17. **Phase 17 — Professor, teaching & supervision**
+18. **Phase 18 — Reporter / investigations / report publishing**
+19. **Phase 19 — Data analysis & visualization**
+20. **Phase 20 — External integrations & Office editing**
+21. **Phase 21 — Offline/PWA & mobile hardening**
+22. **Phase 22 — Payments, subscriptions & billing**
+23. **Phase 23 — Production hardening & certification**
+24. **Phase 24 — Staged production launch**
 
 ## Definition of production-ready
 
