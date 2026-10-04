@@ -42,6 +42,49 @@ export async function buildApp(env: ApiEnv) {
     routePrefix: "/docs",
   });
 
+  app.setNotFoundHandler((request, reply) => {
+    reply.code(404).send({
+      error: {
+        code: "NOT_FOUND",
+        message: "Resource not found.",
+        requestId: request.id,
+      },
+    });
+  });
+
+  app.setErrorHandler((error, request, reply) => {
+    const statusCode =
+      typeof error.statusCode === "number" && error.statusCode >= 400 && error.statusCode < 600
+        ? error.statusCode
+        : 500;
+
+    const validationError = Array.isArray(error.validation);
+    const code = validationError
+      ? "VALIDATION_ERROR"
+      : statusCode >= 500
+        ? "INTERNAL_ERROR"
+        : "REQUEST_ERROR";
+
+    if (statusCode >= 500) {
+      request.log.error({ err: error }, "Unhandled API error");
+    } else {
+      request.log.warn({ err: error }, "API request failed");
+    }
+
+    reply.code(statusCode).send({
+      error: {
+        code,
+        message:
+          statusCode >= 500
+            ? "An unexpected server error occurred."
+            : validationError
+              ? "The request failed validation."
+              : error.message,
+        requestId: request.id,
+      },
+    });
+  });
+
   app.get("/health", async (request) => {
     return healthResponseSchema.parse({
       service: "api",
