@@ -1,3 +1,5 @@
+"use client";
+
 import { cloneElement, useId, type ReactElement, type ReactNode } from "react";
 
 export type TooltipProps = {

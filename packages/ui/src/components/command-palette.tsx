@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 
 import { ModalDialog } from "./dialog.js";
 
@@ -24,6 +24,7 @@ export function CommandPalette({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
+  const listId = useId();
 
   useEffect(() => {
     function onKeyDown(event: globalThis.KeyboardEvent) {
@@ -48,6 +49,10 @@ export function CommandPalette({
   }, [commands, query]);
 
   useEffect(() => setActiveIndex(0), [query]);
+
+  function optionId(index: number) {
+    return `${listId}-option-${index}`;
+  }
 
   function select(command: CommandItem | undefined) {
     if (!command) return;
@@ -74,14 +79,19 @@ export function CommandPalette({
           <input
             autoFocus
             className="nx-command__input"
+            role="combobox"
             aria-label="Search commands"
+            aria-autocomplete="list"
+            aria-controls={listId}
+            aria-expanded="true"
+            aria-activedescendant={filtered[activeIndex] ? optionId(activeIndex) : undefined}
             value={query}
             placeholder="Type a command…"
             onChange={(event) => setQuery(event.currentTarget.value)}
             onKeyDown={(event) => {
               if (event.key === "ArrowDown") {
                 event.preventDefault();
-                setActiveIndex((index) => Math.min(index + 1, filtered.length - 1));
+                setActiveIndex((index) => Math.min(index + 1, Math.max(0, filtered.length - 1)));
               }
               if (event.key === "ArrowUp") {
                 event.preventDefault();
@@ -94,15 +104,17 @@ export function CommandPalette({
             }}
           />
 
-          <div className="nx-command__list" role="listbox" aria-label="Available commands">
+          <div className="nx-command__list" id={listId} role="listbox" aria-label="Available commands">
             {filtered.length ? (
               filtered.map((command, index) => (
                 <button
                   key={command.id}
+                  id={optionId(index)}
                   type="button"
                   className="nx-command__item"
                   role="option"
                   aria-selected={index === activeIndex}
+                  tabIndex={-1}
                   onMouseEnter={() => setActiveIndex(index)}
                   onClick={() => select(command)}
                 >
