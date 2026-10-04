@@ -12,7 +12,7 @@
 
 Defines pricing pages, plan entitlements, trials, checkout, invoices, subscriptions, seats, quotas, grace periods, and the product behavior when limits are reached.
 
-**Concrete production provider:** Stripe. The complete hosted Checkout, Billing, Customer Portal, webhook, payout and admin/support implementation contract is defined in [`09-stripe-billing-provider.md`](09-stripe-billing-provider.md). This parent document owns the provider-neutral product/domain model; the Stripe spec owns the production adapter and money flow.
+**Concrete production provider:** Stripe. The complete hosted Checkout, Billing, Customer Portal, webhook, payout and admin/support implementation contract is defined in [`09-stripe-billing-provider.md`](../02-identity-billing/03-stripe-billing.md). This parent document owns the provider-neutral product/domain model; the Stripe spec owns the production adapter and money flow.
 
 ### Success condition
 The module is complete only when its primary workflows work end-to-end on phone, tablet, desktop, keyboard-only, and supported assistive technology paths; all writes are authorized server-side; data survives refresh/reconnect; error states are recoverable; and the behavior is covered by automated tests.
