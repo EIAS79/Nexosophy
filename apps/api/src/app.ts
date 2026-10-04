@@ -6,7 +6,7 @@ import type { ApiEnv } from "@nexosophy/config";
 import { healthResponseSchema } from "@nexosophy/contracts";
 import { createDatabasePool } from "@nexosophy/db";
 import { createLogger } from "@nexosophy/observability";
-import Fastify from "fastify";
+import Fastify, { type FastifyError } from "fastify";
 import { createClient } from "redis";
 
 const serviceVersion = process.env.npm_package_version ?? "0.0.0";
@@ -52,7 +52,7 @@ export async function buildApp(env: ApiEnv) {
     });
   });
 
-  app.setErrorHandler((error, request, reply) => {
+  app.setErrorHandler((error: FastifyError, request, reply) => {
     const statusCode =
       typeof error.statusCode === "number" && error.statusCode >= 400 && error.statusCode < 600
         ? error.statusCode
