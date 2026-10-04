@@ -5,14 +5,13 @@ import swaggerUi from "@fastify/swagger-ui";
 import type { ApiEnv } from "@nexosophy/config";
 import { healthResponseSchema } from "@nexosophy/contracts";
 import { createDatabasePool } from "@nexosophy/db";
-import { createLogger } from "@nexosophy/observability";
+import { createLoggerOptions } from "@nexosophy/observability";
 import Fastify, { type FastifyError, type FastifyInstance } from "fastify";
 import { createClient } from "redis";
 
 const serviceVersion = process.env.npm_package_version ?? "0.0.0";
 
 export async function buildApp(env: ApiEnv): Promise<FastifyInstance> {
-  const logger = createLogger("nexosophy-api", env.LOG_LEVEL);
   const pool = createDatabasePool(env.DATABASE_URL, { max: 10 });
   const redis = createClient({ url: env.REDIS_URL });
 
@@ -21,7 +20,7 @@ export async function buildApp(env: ApiEnv): Promise<FastifyInstance> {
   });
 
   const app = Fastify({
-    loggerInstance: logger,
+    logger: createLoggerOptions("nexosophy-api", env.LOG_LEVEL),
     genReqId: (request) => {
       const incoming = request.headers["x-request-id"];
       return typeof incoming === "string" && incoming.length <= 128 ? incoming : randomUUID();
