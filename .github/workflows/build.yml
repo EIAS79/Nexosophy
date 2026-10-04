@@ -37,37 +37,48 @@ concurrency:
 
 jobs:
   build:
-    name: Build deployables
+    name: Build deployables independently
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 12.7.0
           run_install: false
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
-      - name: Restore Turborepo cache
-        uses: actions/cache@v4
+      - name: Restore build caches
+        uses: actions/cache@v6
         with:
-          path: .turbo
-          key: turbo-build-${{ runner.os }}-${{ github.sha }}
+          path: |
+            .turbo
+            apps/web/.next/cache
+          key: build-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
-            turbo-build-${{ runner.os }}-
+            build-${{ runner.os }}-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build
-        run: pnpm ci:build
+      - name: Build web independently
+        run: pnpm --filter @nexosophy/web build
+
+      - name: Build API independently
+        run: pnpm --filter @nexosophy/api build
+
+      - name: Build worker independently
+        run: pnpm --filter @nexosophy/worker build
+
+      - name: Build realtime independently
+        run: pnpm --filter @nexosophy/realtime build
