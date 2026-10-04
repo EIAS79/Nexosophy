@@ -122,12 +122,15 @@
 
 **Outcome:** feature flags, rollout cohorts, monitoring, support/on-call, rollback, migration and feedback triage all operational.
 
-## Start rule
+## Build readiness
 
-Do not start Phase 00 coding until:
+The planning gate has passed.
 
-- `SPEC_INDEX.md` is reconciled;
-- legacy ScholarForge specs required by Phases 00–06 are migrated/renamed to Nexosophy;
-- duplicate ownership is removed;
-- current architecture decisions for API/DB/auth/billing/storage/queue/search/realtime are accepted;
-- Phase 00 execution file exists with exact commands/files/tests/exit gate.
+- `SPEC_INDEX.md` is reconciled.
+- Legacy detailed specs have been migrated/renamed to Nexosophy.
+- Duplicate source-of-truth ownership has been resolved.
+- API/DB/auth/billing/storage/queue/search/realtime architecture has canonical owners.
+- All 25 execution files exist.
+- Phase 00 has explicit prerequisites, deliverables, tests and exit gates.
+
+**Next action:** begin [Phase 00 — Repository & Engineering Baseline](13-phases/phase-00-repository-engineering-baseline.md).
