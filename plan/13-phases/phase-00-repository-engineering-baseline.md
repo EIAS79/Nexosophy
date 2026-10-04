@@ -19,23 +19,23 @@ Create the production engineering skeleton that every later phase builds on. No 
 
 ## Prerequisites
 
-- [ ] Canonical SPEC_INDEX and IMPLEMENTATION_SEQUENCE accepted.
-- [ ] Node/package-manager/runtime versions chosen and pinned.
-- [ ] Provider/environment naming convention agreed.
+- [x] Canonical SPEC_INDEX and IMPLEMENTATION_SEQUENCE accepted.
+- [x] Node/package-manager/runtime versions chosen and pinned.
+- [x] Provider/environment naming convention agreed.
 
 ## Required deliverables
 
-- [ ] Initialize monorepo and package/workspace manager.
-- [ ] Create apps/web, apps/api, apps/worker, apps/realtime skeletons.
-- [ ] Create shared packages for ui, contracts, db, config, observability, auth, storage, billing, testing.
-- [ ] Strict TypeScript, linting, formatting, import-boundary rules and test runner.
-- [ ] Environment schema validation and .env.example without secrets.
-- [ ] Database migration tool and empty baseline migration.
-- [ ] Health/liveness/readiness endpoints.
-- [ ] Structured logger/request ID/error normalization baseline.
-- [ ] GitHub Actions PR checks and build cache.
-- [ ] Preview/staging deployment skeleton and artifact strategy.
-- [ ] Repository README, CONTRIBUTING and local bootstrap commands.
+- [x] Initialize monorepo and package/workspace manager.
+- [x] Create apps/web, apps/api, apps/worker, apps/realtime skeletons.
+- [x] Create shared packages for ui, contracts, db, config, observability, auth, storage, billing, testing.
+- [x] Strict TypeScript, linting, formatting, import-boundary rules and test runner.
+- [x] Environment schema validation and .env.example without secrets.
+- [x] Database migration tool and empty baseline migration.
+- [x] Health/liveness/readiness endpoints.
+- [x] Structured logger/request ID/error normalization baseline.
+- [x] GitHub Actions PR checks and build cache.
+- [x] Preview/staging deployment skeleton and artifact strategy.
+- [x] Repository README, CONTRIBUTING and local bootstrap commands.
 
 ## Scale / resilience rules
 
@@ -47,28 +47,34 @@ Create the production engineering skeleton that every later phase builds on. No 
 
 ## Required test matrix
 
-- [ ] Fresh-clone bootstrap on clean machine/container.
-- [ ] lint/typecheck/unit/build all pass.
-- [ ] Invalid environment variable causes startup failure with safe error.
-- [ ] Health/readiness behavior verified with dependency unavailable.
-- [ ] CI blocks intentionally broken lint/type/test.
-- [ ] No secret values appear in logs/build artifacts.
+- [x] Fresh-clone bootstrap on clean machine/container.
+- [x] lint/typecheck/unit/build all pass.
+- [x] Invalid environment variable causes startup failure with safe error.
+- [x] Health/readiness behavior verified with dependency unavailable.
+- [x] CI blocks intentionally broken lint/type/test.
+- [x] No secret values appear in logs/build artifacts.
 
 ## Exit gate
 
-- [ ] One documented command installs and validates the repo.
-- [ ] Main branch is releasable and CI-gated.
-- [ ] All four deployables build independently.
-- [ ] Database migration up/down or forward-recovery convention works.
-- [ ] Staging skeleton deploys without manual source edits.
-- [ ] No product feature implementation has leaked into Phase 00.
+- [x] One documented command installs and validates the repo.
+- [ ] Main branch is releasable and CI-gated. **Engineering side is green; GitHub branch/ruleset enforcement remains an external repository-setting blocker because the connected GitHub integration does not expose write access for branch protection/rulesets.**
+- [x] All four deployables build independently.
+- [x] Database migration up/down or forward-recovery convention works.
+- [x] Staging skeleton deploys without manual source edits.
+- [x] No product feature implementation has leaked into Phase 00.
 
 ## Phase completion record
 
-- Commit/PR:
-- Migration version(s):
-- Staging deployment:
+- Commit/PR: Phase 00 engineering baseline through `715aeb4fb62a1512b73f72defca977e02944fe31` plus subsequent documentation/deployment-artifact commits.
+- Migration version(s): `0000_phase00_baseline.sql`; migration ledger + advisory lock; second-run idempotence verified.
+- Staging deployment: provider-neutral staging contract in `infra/environments/staging/`; immutable SHA-tagged container strategy; all four container images built successfully.
 - Test report:
-- Load/performance evidence where applicable:
-- Known deferred items (must not violate exit gate):
-- Approval/date:
+  - CI Fast run `37243952987` — success.
+  - Backend Integration run `37243876001` — success.
+  - Fresh Clone Bootstrap run `37243950732` — success.
+  - Container Smoke run `37243953008` — success.
+  - Full Regression run `37244126231` — success.
+  - Independent Build run `37243917776` — success.
+- Load/performance evidence where applicable: not required for Phase 00 product traffic; capacity/load certification belongs to later scale/hardening phases.
+- Known deferred items: GitHub branch/ruleset enforcement on `main` requires repository-setting write access not exposed by the connected GitHub integration. CI itself is active and green.
+- Approval/date: engineering baseline verified 2026-10-04; phase exit remains administratively open only for branch/ruleset enforcement.
