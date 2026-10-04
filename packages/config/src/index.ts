@@ -9,15 +9,29 @@ export const baseEnvSchema = z.object({
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
 });
 
-export const apiEnvSchema = baseEnvSchema.extend({
+const dataEnvSchema = baseEnvSchema.extend({
+  DATABASE_URL: z.string().min(1),
+  REDIS_URL: z.string().min(1),
+});
+
+export const apiEnvSchema = dataEnvSchema.extend({
   API_HOST: z.string().min(1).default("0.0.0.0"),
   API_PORT: z.coerce.number().int().min(1).max(65535).default(4000),
-  DATABASE_URL: z.string().url(),
-  REDIS_URL: z.string().url(),
+});
+
+export const workerEnvSchema = dataEnvSchema.extend({
+  WORKER_CONCURRENCY: z.coerce.number().int().min(1).max(100).default(5),
+});
+
+export const realtimeEnvSchema = dataEnvSchema.extend({
+  REALTIME_HOST: z.string().min(1).default("0.0.0.0"),
+  REALTIME_PORT: z.coerce.number().int().min(1).max(65535).default(4100),
 });
 
 export type BaseEnv = z.infer<typeof baseEnvSchema>;
 export type ApiEnv = z.infer<typeof apiEnvSchema>;
+export type WorkerEnv = z.infer<typeof workerEnvSchema>;
+export type RealtimeEnv = z.infer<typeof realtimeEnvSchema>;
 
 export function parseBaseEnv(env: NodeJS.ProcessEnv = process.env): BaseEnv {
   return baseEnvSchema.parse(env);
@@ -25,4 +39,12 @@ export function parseBaseEnv(env: NodeJS.ProcessEnv = process.env): BaseEnv {
 
 export function parseApiEnv(env: NodeJS.ProcessEnv = process.env): ApiEnv {
   return apiEnvSchema.parse(env);
+}
+
+export function parseWorkerEnv(env: NodeJS.ProcessEnv = process.env): WorkerEnv {
+  return workerEnvSchema.parse(env);
+}
+
+export function parseRealtimeEnv(env: NodeJS.ProcessEnv = process.env): RealtimeEnv {
+  return realtimeEnvSchema.parse(env);
 }
