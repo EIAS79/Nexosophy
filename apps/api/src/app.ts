@@ -6,12 +6,12 @@ import type { ApiEnv } from "@nexosophy/config";
 import { healthResponseSchema } from "@nexosophy/contracts";
 import { createDatabasePool } from "@nexosophy/db";
 import { createLogger } from "@nexosophy/observability";
-import Fastify, { type FastifyError } from "fastify";
+import Fastify, { type FastifyError, type FastifyInstance } from "fastify";
 import { createClient } from "redis";
 
 const serviceVersion = process.env.npm_package_version ?? "0.0.0";
 
-export async function buildApp(env: ApiEnv) {
+export async function buildApp(env: ApiEnv): Promise<FastifyInstance> {
   const logger = createLogger("nexosophy-api", env.LOG_LEVEL);
   const pool = createDatabasePool(env.DATABASE_URL, { max: 10 });
   const redis = createClient({ url: env.REDIS_URL });
