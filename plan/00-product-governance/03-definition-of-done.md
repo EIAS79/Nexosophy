@@ -1,77 +1,308 @@
-# Global Definition of Done
+# Nexosophy Global Definition of Done
 
-> **Plan path:** `plan/00-product-governance/03-definition-of-done.md`
+> **Status:** canonical release-quality gate  
+> **Applies to:** every feature, endpoint, migration, background job, integration and phase
 
-## Purpose
+## 1. Principle
 
-Define the release gate applied to every feature and every phase.
+A feature is not done because the happy-path UI renders.
 
-## User / product outcomes
+A feature is done only when its functional, authorization, data, failure, responsive, accessibility, observability, performance and operational requirements are satisfied for its release scope.
 
-- A feature is not called complete merely because the happy-path UI renders.
-- Quality expectations are measurable and repeatable.
+## 2. Required feature contract
 
-## Required capabilities
+Every implementation must identify:
 
-- Functional acceptance criteria.
-- Authorization and tenant-isolation tests.
-- Responsive desktop/tablet/mobile behavior.
-- Keyboard and screen-reader paths for critical actions.
-- Structured logging, metrics and trace coverage.
-- Unit/integration/e2e tests.
-- Error, retry, loading, empty and offline/degraded states.
-- Data migration/backfill plan when schema changes.
-- Operational runbook for critical services.
+- owner/spec;
+- user outcome;
+- routes/surfaces;
+- domain entities;
+- authorization rule;
+- API/service boundary;
+- persistence behavior;
+- failure states;
+- retry/idempotency behavior;
+- scale characteristics;
+- observability;
+- tests;
+- rollout/migration considerations.
 
-## Routes / surfaces
+## 3. Functional gate
 
-- `N/A`
+- acceptance criteria implemented;
+- empty/loading/error/denied states implemented;
+- destructive actions have confirmation/recovery where required;
+- linked systems update consistently;
+- no fake or hardcoded production data path remains.
 
-## Core data model
+## 4. Authorization / tenancy gate
 
-- `ReleaseGate`
-- `TestCase`
-- `Runbook`
+For workspace-owned resources:
 
-## Service and API contract
+- authentication checked;
+- workspace/tenant scope enforced server-side;
+- action permission checked;
+- IDOR tests exist;
+- search/export/background jobs honor authorization;
+- realtime room access honors authorization;
+- revocation behavior is tested.
 
-- Every mutation defines validation, authorization, idempotency/retry semantics and stable error codes.
-- Every endpoint has ownership, observability and a performance expectation.
+A frontend-hidden button is never an authorization control.
 
-## Scale, concurrency and resilience
+## 5. Data gate
 
-- New endpoints receive load characteristics: expected frequency, cacheability, fan-out, DB query count and concurrency behavior.
-- No unbounded list endpoint; cursor pagination is default.
+When persistence changes:
 
-## Security / correctness risks
+- schema/migration exists;
+- indexes support expected access paths;
+- uniqueness/integrity constraints exist where possible;
+- backfill plan exists if required;
+- rollback/forward-recovery strategy exists;
+- retention/deletion implications reviewed;
+- derived systems/cache/search reconciliation defined.
 
-- Passing UI QA while leaving hidden scale/security defects is explicitly insufficient.
+## 6. API gate
 
-## Responsive and accessibility requirements
+Every endpoint must define:
 
-- All user-facing surfaces must define desktop, tablet and phone behavior rather than rely on accidental CSS wrapping.
-- Critical actions must be keyboard reachable, have visible focus, semantic labels and non-color-only states.
-- Loading, empty, error, permission-denied and offline/degraded states are part of the feature contract.
+- typed request/response;
+- validation;
+- auth/authz;
+- stable error codes;
+- pagination for unbounded collections;
+- idempotency for retry-sensitive writes;
+- concurrency/conflict behavior;
+- request size limits;
+- rate-limit class;
+- expected query/fan-out profile;
+- latency objective;
+- telemetry.
 
-## Observability requirements
+## 7. Background-job gate
 
-- Structured events for critical state transitions and failures.
-- Latency/error metrics for service endpoints and external dependencies.
-- Correlation/request IDs on support-visible failures; never log secrets or raw sensitive content.
+Every durable job defines:
 
-## Test strategy
+- payload schema/version;
+- idempotency/deduplication;
+- retry policy;
+- timeout;
+- dead-letter behavior;
+- cancellation if user-facing;
+- progress/checkpointing if long-running;
+- dependency concurrency limits;
+- observability;
+- reconciliation/replay.
 
-- Unit tests for domain rules and state transitions.
-- Integration tests for persistence/provider boundaries.
-- Authorization and tenant-isolation tests for every resource API.
-- End-to-end tests for critical user journeys on desktop and mobile.
-- Load/concurrency tests for high-frequency or contention-sensitive operations.
+## 8. Provider-integration gate
 
-## Definition of Done
+Every external provider integration defines:
 
-- [ ] All required gates are checked in the PR/release checklist.
-- [ ] P0/P1 defects block production promotion.
-- [ ] Exceptions require a documented ADR with owner and expiry.
-- [ ] Error/retry/empty/loading/degraded states implemented.
-- [ ] Telemetry dashboards/alerts or documented observability coverage exist.
-- [ ] Documentation and API contracts are updated.
+- adapter;
+- credentials/secrets handling;
+- timeouts;
+- retries;
+- webhook/callback authentication;
+- idempotency;
+- outage behavior;
+- reconciliation;
+- data-retention implications;
+- disconnect/revoke path;
+- support/runbook.
+
+## 9. Responsive gate
+
+User-facing features must define and test:
+
+- 320–599px phone behavior;
+- 600–1023px tablet behavior;
+- 1024–1439px desktop behavior;
+- 1440px+ wide-screen behavior;
+- zoom/text-scale behavior.
+
+No critical workflow may require hover.
+
+Touch targets for primary touch actions target at least 44px.
+
+## 10. Accessibility gate
+
+Critical workflows require:
+
+- semantic structure;
+- accessible names;
+- visible focus;
+- logical keyboard order;
+- keyboard operability;
+- screen-reader announcements for material async changes;
+- non-color-only states;
+- contrast;
+- reduced-motion behavior;
+- accessible alternative for canvas-heavy information.
+
+Target: WCAG 2.2 AA for core flows.
+
+## 11. Security gate
+
+- inputs validated;
+- output escaped/sanitized where necessary;
+- secrets not logged;
+- CSP/XSS/CSRF/SSRF concerns reviewed where applicable;
+- file uploads treated as untrusted;
+- provider signatures validated;
+- abuse/rate controls assigned;
+- dependency/security scans pass;
+- privileged actions audited.
+
+## 12. Observability gate
+
+Production-critical behavior requires:
+
+- structured logs;
+- request/correlation ID;
+- error aggregation;
+- latency/error metrics;
+- saturation metric where relevant;
+- trace propagation for distributed flows;
+- dashboard/query;
+- alert if failure is operationally urgent.
+
+Metric cardinality must be bounded.
+
+## 13. Performance / scalability gate
+
+Every high-frequency or contention-sensitive path documents:
+
+- expected request frequency;
+- cacheability;
+- DB query count;
+- connection use;
+- payload size;
+- lock/contention risk;
+- external calls;
+- queue behavior;
+- autoscaling dependency.
+
+No unbounded list endpoint is allowed.
+
+Cursor pagination is default for large/mutable collections.
+
+## 14. Test gate
+
+As applicable:
+
+- unit tests;
+- integration tests;
+- authorization tests;
+- tenant-isolation tests;
+- provider contract tests;
+- E2E critical-path tests;
+- accessibility tests;
+- concurrency/race tests;
+- load/performance tests;
+- failure/recovery tests.
+
+## 15. Documentation gate
+
+Update when affected:
+
+- focused spec;
+- OpenAPI/contracts;
+- migrations;
+- ADR;
+- runbook;
+- environment/config docs;
+- public help/docs;
+- changelog/release notes.
+
+## 16. Rollout gate
+
+For material changes:
+
+- feature flag if needed;
+- staged rollout;
+- compatibility window;
+- migration order;
+- rollback/forward-fix path;
+- telemetry to compare before/after.
+
+## 17. Severity gate
+
+### P0
+
+Examples:
+
+- cross-tenant data leak;
+- widespread data corruption;
+- critical security compromise;
+- total service outage without mitigation.
+
+Blocks production and may require emergency rollback.
+
+### P1
+
+Examples:
+
+- major core workflow unavailable;
+- broad severe performance regression;
+- payment/auth failures with major user impact.
+
+Blocks promotion until resolved or formally mitigated.
+
+P0/P1 defects cannot be waived by ordinary product preference.
+
+## 18. Exception process
+
+A temporary exception requires:
+
+- written ADR/exception record;
+- reason;
+- risk;
+- owner;
+- mitigation;
+- expiry date;
+- follow-up issue.
+
+No indefinite undocumented exception.
+
+## 19. Phase completion gate
+
+A phase closes only when:
+
+- all mandatory deliverables complete;
+- required migrations deployed;
+- staging validated;
+- required tests green;
+- security/a11y/scale requirements pass for phase scope;
+- telemetry exists;
+- known defects classified;
+- exit gate signed/recorded.
+
+Later phases do not erase an unmet earlier exit gate.
+
+## 20. Production-ready gate
+
+General availability requires:
+
+- Phase 00–23 gates passed;
+- staged launch controls ready;
+- backup restore drill passed;
+- incident response rehearsed;
+- capacity envelope passed;
+- tenant-isolation suite passed;
+- auth/billing webhooks idempotent;
+- legal/privacy surfaces published;
+- support/status processes ready;
+- no open P0/P1 launch blockers.
+
+## 21. Definition of Done for this governance document
+
+- [x] Functional gate defined.
+- [x] Auth/tenancy gate defined.
+- [x] Data/API/job/provider gates defined.
+- [x] Responsive/accessibility/security/observability/performance gates defined.
+- [x] Test/documentation/rollout gates defined.
+- [x] Exception and severity policy defined.
+- [x] Phase and GA gates defined.
+
+## 22. Next document
+
+Continue to `04-architecture-decisions.md`.
