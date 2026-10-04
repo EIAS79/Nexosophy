@@ -6,6 +6,7 @@ export default defineConfig({
   platform: "node",
   target: "node24",
   sourcemap: true,
+  dts: false,
   clean: true,
   deps: { alwaysBundle: [/^@nexosophy\//] },
 });
