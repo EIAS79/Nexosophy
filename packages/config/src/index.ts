@@ -21,6 +21,8 @@ export const apiEnvSchema = dataEnvSchema.extend({
 
 export const workerEnvSchema = dataEnvSchema.extend({
   WORKER_CONCURRENCY: z.coerce.number().int().min(1).max(100).default(5),
+  WORKER_HEALTH_HOST: z.string().min(1).default("0.0.0.0"),
+  WORKER_HEALTH_PORT: z.coerce.number().int().min(1).max(65535).default(4200),
 });
 
 export const realtimeEnvSchema = dataEnvSchema.extend({
