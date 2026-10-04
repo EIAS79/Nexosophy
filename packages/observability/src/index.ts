@@ -17,26 +17,31 @@ const REDACT_PATHS = [
   "*.secret",
 ] as const;
 
+export function createLoggerOptions(
+  service: string,
+  level = process.env.LOG_LEVEL ?? "info",
+  options: LoggerOptions = {},
+): LoggerOptions {
+  return {
+    name: service,
+    level,
+    base: {
+      service,
+      appEnv: process.env.APP_ENV ?? "local",
+    },
+    redact: {
+      paths: [...REDACT_PATHS],
+      censor: "[REDACTED]",
+    },
+    ...options,
+  };
+}
+
 export function createLogger(
   service: string,
   level = process.env.LOG_LEVEL ?? "info",
   options: LoggerOptions = {},
   destination?: DestinationStream,
 ): Logger {
-  return pino(
-    {
-      name: service,
-      level,
-      base: {
-        service,
-        appEnv: process.env.APP_ENV ?? "local",
-      },
-      redact: {
-        paths: [...REDACT_PATHS],
-        censor: "[REDACTED]",
-      },
-      ...options,
-    },
-    destination,
-  );
+  return pino(createLoggerOptions(service, level, options), destination);
 }
