@@ -9,7 +9,7 @@
 > This document converts the provider-agnostic billing architecture into a concrete Stripe implementation for production. If Stripe is ever replaced, the domain contracts in `06-pricing-billing.md` remain stable while this provider adapter is swapped.
 
 **Master plan:** [`../README.md`](../README.md)  
-**Parent billing spec:** [`06-pricing-billing.md`](06-pricing-billing.md)  
+**Parent billing spec:** [`06-pricing-billing.md`](04-entitlements-admin-billing.md)  
 **Delivery phase:** Phase 22 — Payments, subscriptions & billing  
 **Related systems:** authentication, workspaces, entitlements, email, notifications, audit, analytics, support/admin, accounting
 
