@@ -16,8 +16,9 @@
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
     "format:check": "biome format .",
-    "ci": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
-    "clean": "turbo run clean && rm -rf .turbo"
+    "ci": "pnpm lint && pnpm boundaries && pnpm typecheck && pnpm test && pnpm build",
+    "clean": "turbo run clean && rm -rf .turbo",
+    "boundaries": "node scripts/check-boundaries.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
