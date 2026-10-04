@@ -1,22 +1,29 @@
-name: CI
+name: CI Fast
 
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'plan/**'
+      - '**/*.md'
   pull_request:
+    paths-ignore:
+      - 'plan/**'
+      - '**/*.md'
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-fast-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   validate:
-    name: Validate
+    name: Fast validation
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
@@ -32,9 +39,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Restore Turborepo cache
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-fast-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            turbo-fast-${{ runner.os }}-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Validate repository
-        run: pnpm ci
+      - name: Fast validation
+        run: pnpm ci:fast
