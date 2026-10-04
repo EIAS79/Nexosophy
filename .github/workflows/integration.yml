@@ -87,16 +87,16 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 12.7.0
           run_install: false
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -108,8 +108,26 @@ jobs:
       - name: Apply database migrations
         run: pnpm --filter @nexosophy/db db:migrate
 
+      - name: Prove migrations are idempotent
+        shell: bash
+        run: |
+          SECOND_RUN="$(pnpm --filter @nexosophy/db db:migrate)"
+          echo "$SECOND_RUN"
+          grep -q "Database schema is already current." <<< "$SECOND_RUN"
+
       - name: Build API
         run: pnpm --filter @nexosophy/api build
+
+      - name: Prove invalid environment fails safely
+        shell: bash
+        run: |
+          set +e
+          env -u DATABASE_URL pnpm --filter @nexosophy/api start > /tmp/invalid-env.log 2>&1
+          EXIT_CODE=$?
+          set -e
+          cat /tmp/invalid-env.log
+          test "$EXIT_CODE" -ne 0
+          ! grep -q "postgresql://nexosophy:nexosophy" /tmp/invalid-env.log
 
       - name: Start API
         shell: bash
