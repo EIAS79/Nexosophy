@@ -42,8 +42,7 @@ health.get("/health", async () => ({
 
 health.get("/ready", async (_request, reply) => {
   try {
-    const client = await worker.client;
-    await client.ping();
+    await worker.waitUntilReady();
     return {
       service: "worker",
       status: "ok",
