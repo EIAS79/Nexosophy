@@ -1,0 +1,20 @@
+{
+  "name": "@nexosophy/worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsdown src/index.ts --format esm --platform node --sourcemap --clean",
+    "start": "node dist/index.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@nexosophy/config": "workspace:*",
+    "@nexosophy/observability": "workspace:*",
+    "bullmq": "6.3.10",
+    "fastify": "5.12.5"
+  }
+}
