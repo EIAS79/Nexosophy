@@ -2,6 +2,10 @@ name: Full Regression
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/full-regression.yml'
   schedule:
     - cron: '30 2 * * *'
 
@@ -20,23 +24,23 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6.1.0
         with:
           version: 12.7.0
           run_install: false
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7.0.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Restore Turborepo cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6.1.0
         with:
           path: .turbo
           key: turbo-full-${{ runner.os }}-${{ github.sha }}
