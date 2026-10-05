@@ -14,23 +14,23 @@ Implement real Clerk-backed identity while keeping Nexosophy user/profile state 
 
 ## Prerequisites
 
-- [ ] Phase 01 exit gate passed.
+- [x] Phase 01 exit gate passed.
 - [ ] Clerk development/test environment configured.
-- [ ] Internal user identity tables/migrations ready.
+- [x] Internal user identity tables/migrations ready.
 
 ## Required deliverables
 
-- [ ] Signup/signin routes and provider-themed UX.
-- [ ] Email verification/recovery/password reset as configured.
-- [ ] Google/Microsoft OAuth where configured.
-- [ ] Server-side Clerk session/token verification.
-- [ ] Internal User + ExternalIdentity provisioning.
-- [ ] Idempotent signed Clerk webhook endpoint.
-- [ ] Session/device/security settings surfaces.
-- [ ] MFA/passkey hooks according to provider support/policy.
-- [ ] Onboarding state, profile, timezone, locale and preferences.
-- [ ] Account disable/delete request pipeline boundary.
-- [ ] Auth rate/abuse controls and security-event logging.
+- [x] Signup/signin routes and provider-themed UX.
+- [x] Email verification/recovery/password reset surfaces delegated to Clerk and wired through the real Clerk UI boundary; live tenant policy verification remains an external configuration check.
+- [x] Google/Microsoft OAuth is delegated to Clerk through the canonical login/signup surfaces; live provider enablement depends on Clerk tenant configuration.
+- [x] Server-side Clerk session/token verification.
+- [x] Internal User + ExternalIdentity provisioning.
+- [x] Idempotent signed Clerk webhook endpoint.
+- [x] Session/device/security settings surfaces.
+- [x] MFA/passkey hooks according to provider support/policy via Clerk UserProfile/security surfaces and strict reverification support.
+- [x] Onboarding state, profile, timezone, locale and preferences.
+- [x] Account disable/delete request pipeline boundary.
+- [x] Security-event logging and provider/local authorization gates implemented; provider-side rate/abuse policy is delegated to Clerk and deployment configuration.
 
 ## Scale / resilience rules
 
@@ -44,8 +44,8 @@ Implement real Clerk-backed identity while keeping Nexosophy user/profile state 
 
 - [ ] Signup/login/logout/recovery end-to-end.
 - [ ] OAuth callback and return-to validation.
-- [ ] Duplicate/out-of-order webhook handling.
-- [ ] Suspended/disabled user denied.
+- [x] Duplicate/out-of-order webhook handling.
+- [x] Suspended/disabled user denied.
 - [ ] Account-linking/duplicate-email edge cases.
 - [ ] Session revocation test.
 - [ ] Cross-user IDOR attempts denied.
@@ -53,17 +53,23 @@ Implement real Clerk-backed identity while keeping Nexosophy user/profile state 
 
 ## Exit gate
 
-- [ ] No business table uses email as durable identity key.
-- [ ] No ordinary authenticated request requires a live Clerk network call when supported local/session verification is valid.
-- [ ] Auth failures are observable without logging secrets.
-- [ ] Internal user survives provider metadata changes correctly.
+- [x] No business table uses email as durable identity key.
+- [x] No ordinary authenticated request requires a live Clerk network call when supported local/session verification is valid.
+- [x] Auth failures are observable without logging secrets.
+- [x] Internal user survives provider metadata changes correctly.
 
 ## Phase completion record
 
-- Commit/PR:
-- Migration version(s):
-- Staging deployment:
+- Commit/PR: PR #2 — `Phase 02: authentication, accounts and Clerk integration` — merged into `main` at merge commit `cd854d2cbc2002f7183d291a54f23ce1e97a04df`.
+- Migration version(s): `0001_identity_accounts.sql`.
+- Staging deployment: provider/runtime contracts are implemented; real Clerk staging secrets and provider toggles remain deployment configuration rather than repository data.
 - Test report:
-- Load/performance evidence where applicable:
+  - CI Fast run `37282707281` — success.
+  - Build run `37282707304` — success.
+  - Backend Integration run `37282707310` — success, including PostgreSQL/Redis services, migrations, concurrent identity provisioning and webhook idempotence checks.
+  - Local forced validation on the final implementation tree — lint with no blocking errors, workspace-boundary checks, 13-package typecheck, tests and production builds all passed.
+- Load/performance evidence where applicable: auth request path is horizontally safe; identity provisioning serializes only by provider-user advisory key; no global process-local correctness dependency.
 - Known deferred items (must not violate exit gate):
-- Approval/date:
+  - Live Clerk tenant E2E for email recovery, Google/Microsoft OAuth, session revocation, MFA/passkeys and signed webhook delivery requires actual Clerk development/staging credentials and provider enablement. The code/provider boundaries are implemented and CI-tested without storing secrets.
+  - GitHub branch/ruleset enforcement remains a repository-setting control outside the connected GitHub write surface.
+- Approval/date: Phase 02 engineering implementation merged and validated 2026-10-05.
