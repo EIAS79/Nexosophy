@@ -43,8 +43,11 @@ describe("recent factor verification", () => {
     ).toBe(true);
   });
 
+  it("rejects a missing verification claim", () => {
+    expect(hasRecentFactorVerification({})).toBe(false);
+  });
+
   it.each([
-    undefined,
     null,
     [11, -1] as const,
     [2, 11] as const,
