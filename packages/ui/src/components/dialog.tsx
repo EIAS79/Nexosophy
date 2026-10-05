@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 
-import { Button } from "./button.js";
+import { Button } from "./button";
 import { cx } from "../lib/cx";
 
 export type ModalDialogProps = Omit<DialogHTMLAttributes<HTMLDialogElement>, "open"> & {

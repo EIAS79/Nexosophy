@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { Button, DataTable, Field, Tabs, Tree } from "./index.js";
+import { Button, DataTable, Field, Tabs, Tree } from "./index";
 
 describe("UI semantic foundation", () => {
   it("renders an actual button with a predictable type", () => {

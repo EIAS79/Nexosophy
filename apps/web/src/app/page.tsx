@@ -1,6 +1,6 @@
 import { ButtonLink } from "@nexosophy/ui";
 
-import { MarketingHeader } from "../components/marketing-header.js";
+import { MarketingHeader } from "../components/marketing-header";
 
 const capabilities = [
   ["One recursive workspace", "Files, notes, datasets, projects and evidence live in one navigable knowledge structure."],

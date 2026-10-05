@@ -1,9 +1,9 @@
 import { CommandPalette, Tree } from "@nexosophy/ui";
 import type { ReactNode } from "react";
 
-import { appNavigation, mobileNavigation } from "../lib/navigation.js";
+import { appNavigation, mobileNavigation } from "../lib/navigation";
 import type { ShellWorkspace } from "../lib/shell-data";
-import { AppearanceControl } from "./appearance-control.js";
+import { AppearanceControl } from "./appearance-control";
 
 function WorkspacePane({ workspace }: { workspace: ShellWorkspace }) {
   return (

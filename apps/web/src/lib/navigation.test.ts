@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { appNavigation, mobileNavigation, publicNavigation } from "./navigation.js";
+import { appNavigation, mobileNavigation, publicNavigation } from "./navigation";
 
 describe("navigation contracts", () => {
   it("keeps public navigation links unique", () => {

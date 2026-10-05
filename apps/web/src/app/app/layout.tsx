@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { AppShell } from "../../components/app-shell.js";
+import { AppShell } from "../../components/app-shell";
 import { shellData } from "../../lib/shell-data";
 
 export default async function ApplicationLayout({ children }: { children: ReactNode }) {

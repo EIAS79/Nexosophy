@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 
-import { Button } from "./button.js";
+import { Button } from "./button";
 
 export type MenuItem = {
   id: string;

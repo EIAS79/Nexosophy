@@ -1,6 +1,6 @@
 import { ButtonLink } from "@nexosophy/ui";
 
-import { publicNavigation } from "../lib/navigation.js";
+import { publicNavigation } from "../lib/navigation";
 
 export function MarketingHeader() {
   return (
