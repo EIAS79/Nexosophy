@@ -1,6 +1,10 @@
 import { createHash } from "node:crypto";
 
-import type {\n  IdentityProvider,\n  IdentityStorePort,\n  IdentityWebhookEvent,\n} from "@nexosophy/auth";
+import type {
+  IdentityProvider,
+  IdentityStorePort,
+  IdentityWebhookEvent,
+} from "@nexosophy/auth";
 import {
   markAuthWebhookEvent,
   recordAuthWebhookReceipt,
