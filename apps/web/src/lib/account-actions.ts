@@ -133,9 +133,7 @@ export async function skipOnboardingAction(): Promise<void> {
   redirect("/app");
 }
 
-export async function requestDeletionAction(
-  formData: FormData,
-): Promise<AccountActionState> {
+export async function requestDeletionAction(formData: FormData) {
   const { has } = await auth.protect();
 
   if (!has({ reverification: "strict" })) {
