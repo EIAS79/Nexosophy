@@ -3,6 +3,7 @@ import { Pool, type PoolConfig } from "pg";
 
 export * from "./schema/system.js";
 export * from "./schema/identity.js";
+export * from "./identity-store.js";
 
 export type DatabasePoolOptions = Pick<
   PoolConfig,
