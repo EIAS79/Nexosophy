@@ -58,9 +58,6 @@ export function ModalDialog({
       onClose={() => {
         if (open) onOpenChange(false);
       }}
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onOpenChange(false);
-      }}
     >
       <section className="nx-dialog__surface">
         <header className="nx-dialog__header">

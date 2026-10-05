@@ -95,7 +95,6 @@ export function Tabs({ items, defaultTabId, ariaLabel }: TabsProps) {
           id={`${prefix}-panel-${item.id}`}
           aria-labelledby={`${prefix}-tab-${item.id}`}
           hidden={item.id !== activeId}
-          tabIndex={0}
         >
           {item.content}
         </section>

@@ -38,7 +38,7 @@ export default function HomePage() {
             <p className="hero__trust">Portable by design. Permission-aware. Built for desktop, tablet and phone.</p>
           </div>
 
-          <div className="product-preview" aria-label="Nexosophy workspace preview">
+          <div className="product-preview" role="img" aria-label="Nexosophy workspace preview">
             <div className="product-preview__rail" aria-hidden="true">
               <span>N</span><span>H</span><span>F</span><span>N</span><span>T</span>
             </div>

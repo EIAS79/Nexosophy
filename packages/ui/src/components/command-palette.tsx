@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { ModalDialog } from "./dialog.js";
 
@@ -25,6 +25,7 @@ export function CommandPalette({
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const listId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     function onKeyDown(event: globalThis.KeyboardEvent) {
@@ -48,7 +49,11 @@ export function CommandPalette({
     );
   }, [commands, query]);
 
-  useEffect(() => setActiveIndex(0), [query]);
+  useEffect(() => {
+    if (open) {
+      requestAnimationFrame(() => inputRef.current?.focus());
+    }
+  }, [open]);
 
   function optionId(index: number) {
     return `${listId}-option-${index}`;
@@ -77,7 +82,7 @@ export function CommandPalette({
       >
         <div className="nx-command">
           <input
-            autoFocus
+            ref={inputRef}
             className="nx-command__input"
             role="combobox"
             aria-label="Search commands"
@@ -87,7 +92,10 @@ export function CommandPalette({
             aria-activedescendant={filtered[activeIndex] ? optionId(activeIndex) : undefined}
             value={query}
             placeholder="Type a command…"
-            onChange={(event) => setQuery(event.currentTarget.value)}
+            onChange={(event) => {
+              setQuery(event.currentTarget.value);
+              setActiveIndex(0);
+            }}
             onKeyDown={(event) => {
               if (event.key === "ArrowDown") {
                 event.preventDefault();

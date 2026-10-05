@@ -66,7 +66,7 @@ export function Menu({ label, items }: MenuProps) {
   };
 
   return (
-    <div className="nx-menu" ref={rootRef} onKeyDown={onKeyDown}>
+    <div className="nx-menu" ref={rootRef}>
       <Button
         variant="ghost"
         aria-haspopup="menu"
@@ -77,7 +77,7 @@ export function Menu({ label, items }: MenuProps) {
         {label}
       </Button>
       {open ? (
-        <div className="nx-menu__surface" id={menuId} role="menu">
+        <div className="nx-menu__surface" id={menuId} role="menu" onKeyDown={onKeyDown}>
           {items.map((item) =>
             item.href ? (
               <a
