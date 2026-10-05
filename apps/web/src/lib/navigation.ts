@@ -15,6 +15,7 @@ export const appNavigation = [
   { href: "/app/calendar", label: "Calendar", glyph: "C" },
   { href: "/app/search", label: "Search", glyph: "S" },
   { href: "/app/inbox", label: "Inbox", glyph: "I" },
+  { href: "/settings/profile", label: "Settings", glyph: "S" },
 ] as const;
 
 export const mobileNavigation = appNavigation.slice(0, 5);
