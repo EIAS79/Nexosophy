@@ -11,6 +11,8 @@
     "clean": "rm -rf .next"
   },
   "dependencies": {
+    "@clerk/nextjs": "7.9.4",
+    "@nexosophy/contracts": "workspace:*",
     "@nexosophy/ui": "workspace:*",
     "next": "16.3.8",
     "react": "19.3.0",

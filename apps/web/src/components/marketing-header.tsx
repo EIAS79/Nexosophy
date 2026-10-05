@@ -18,8 +18,8 @@ export function MarketingHeader() {
         </nav>
 
         <div className="marketing-header__actions">
-          <ButtonLink href="/sign-in" variant="ghost" size="sm">Sign in</ButtonLink>
-          <ButtonLink href="/sign-up" size="sm">Start free</ButtonLink>
+          <ButtonLink href="/login" variant="ghost" size="sm">Sign in</ButtonLink>
+          <ButtonLink href="/signup" size="sm">Start free</ButtonLink>
         </div>
 
         <details className="marketing-header__mobile">
@@ -28,8 +28,8 @@ export function MarketingHeader() {
             {publicNavigation.map((item) => (
               <a key={item.href} href={item.href}>{item.label}</a>
             ))}
-            <a href="/sign-in">Sign in</a>
-            <a href="/sign-up">Start free</a>
+            <a href="/login">Sign in</a>
+            <a href="/signup">Start free</a>
           </nav>
         </details>
       </div>

@@ -32,7 +32,7 @@ export default function HomePage() {
               workspace built for serious knowledge work.
             </p>
             <div className="hero__actions">
-              <ButtonLink href="/sign-up" size="lg">Start free</ButtonLink>
+              <ButtonLink href="/signup" size="lg">Start free</ButtonLink>
               <ButtonLink href="#capabilities" variant="secondary" size="lg">Explore the product</ButtonLink>
             </div>
             <p className="hero__trust">Portable by design. Permission-aware. Built for desktop, tablet and phone.</p>
@@ -108,7 +108,7 @@ export default function HomePage() {
           <p className="eyebrow">Build knowledge that stays connected</p>
           <h2 id="final-cta-title">Start with the work you already have.</h2>
           <div className="hero__actions">
-            <ButtonLink href="/sign-up" size="lg">Create your workspace</ButtonLink>
+            <ButtonLink href="/signup" size="lg">Create your workspace</ButtonLink>
             <ButtonLink href="/features" variant="secondary" size="lg">See all features</ButtonLink>
           </div>
         </section>

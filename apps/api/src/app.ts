@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
+import type { AuthVerifier, IdentityProvider, IdentityStorePort } from "@nexosophy/auth";
 import type { ApiEnv } from "@nexosophy/config";
 import { healthResponseSchema } from "@nexosophy/contracts";
 import { createDatabasePool } from "@nexosophy/db";
@@ -9,9 +10,22 @@ import { createLoggerOptions } from "@nexosophy/observability";
 import Fastify, { type FastifyError, type FastifyInstance } from "fastify";
 import { createClient } from "redis";
 
+import { createAuthRuntime } from "./auth-runtime.js";
+import { registerClerkWebhookRoute } from "./clerk-webhook.js";
+import { registerIdentityRoutes } from "./identity-routes.js";
+
 const serviceVersion = process.env.npm_package_version ?? "0.0.0";
 
-export async function buildApp(env: ApiEnv): Promise<FastifyInstance> {
+export type BuildAppOptions = {
+  authVerifier?: AuthVerifier;
+  identityProvider?: IdentityProvider;
+  identityStore?: IdentityStorePort;
+};
+
+export async function buildApp(
+  env: ApiEnv,
+  options: BuildAppOptions = {},
+): Promise<FastifyInstance> {
   const app = Fastify({
     logger: createLoggerOptions("nexosophy-api", env.LOG_LEVEL),
     genReqId: (request) => {
@@ -83,6 +97,26 @@ export async function buildApp(env: ApiEnv): Promise<FastifyInstance> {
       },
     });
   });
+
+  const runtime =
+    options.authVerifier || options.identityProvider || options.identityStore
+      ? {
+          verifier: options.authVerifier,
+          provider: options.identityProvider,
+          identityStore: options.identityStore,
+        }
+      : createAuthRuntime(env, pool);
+
+  await registerIdentityRoutes(app, pool, runtime.verifier);
+
+  if (runtime.provider && runtime.identityStore) {
+    await registerClerkWebhookRoute(
+      app,
+      pool,
+      runtime.provider,
+      runtime.identityStore,
+    );
+  }
 
   app.get("/health", async (request) => {
     return healthResponseSchema.parse({
