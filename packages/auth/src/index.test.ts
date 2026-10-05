@@ -1,6 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { canAuthenticateInternalAccount, safeReturnTo } from "./index.js";
+import {
+  canAuthenticateInternalAccount,
+  createInternalAuthVerifier,
+  safeReturnTo,
+  type IdentityProvider,
+  type IdentityStorePort,
+  type InternalIdentity,
+} from "./index.js";
 
 describe("safeReturnTo", () => {
   it("preserves internal relative paths", () => {
@@ -36,4 +43,107 @@ describe("internal account authentication state", () => {
       expect(canAuthenticateInternalAccount(state)).toBe(false);
     },
   );
+});
+
+function provider(overrides: Partial<IdentityProvider> = {}): IdentityProvider {
+  return {
+    verifyRequest: vi.fn(async () => ({
+      authenticated: true as const,
+      session: {
+        provider: "clerk",
+        providerUserId: "user_external",
+        sessionId: "sess_123",
+      },
+    })),
+    verifyWebhook: vi.fn(),
+    getUser: vi.fn(async () => ({
+      provider: "clerk",
+      providerUserId: "user_external",
+      verifiedEmails: ["user@example.test"],
+      primaryEmail: "user@example.test",
+      displayName: "Research User",
+      disabled: false,
+    })),
+    ...overrides,
+  };
+}
+
+function store(
+  identity: InternalIdentity | null,
+): IdentityStorePort & { provision: ReturnType<typeof vi.fn> } {
+  let current = identity;
+
+  return {
+    findByProviderUserId: vi.fn(async () => current),
+    provision: vi.fn(async (snapshot) => {
+      current = {
+        internalUserId: "internal_1",
+        externalIdentityId: "identity_1",
+        provider: snapshot.provider,
+        providerUserId: snapshot.providerUserId,
+        accountState: "pending_onboarding",
+        identityDisabled: false,
+      };
+      return {
+        internalUserId: current.internalUserId,
+        externalIdentityId: current.externalIdentityId,
+        created: true,
+      };
+    }),
+    sync: vi.fn(),
+    handleProviderDeletion: vi.fn(),
+  };
+}
+
+describe("createInternalAuthVerifier", () => {
+  it("provisions a missing internal user once after provider authentication", async () => {
+    const identityStore = store(null);
+    const verifier = createInternalAuthVerifier(provider(), identityStore);
+
+    const result = await verifier.verify(new Request("https://nexosophy.test/v1/me"));
+
+    expect(result.authenticated).toBe(true);
+    expect(identityStore.provision).toHaveBeenCalledTimes(1);
+  });
+
+  it("denies an internally suspended user despite valid provider auth", async () => {
+    const identityStore = store({
+      internalUserId: "internal_1",
+      externalIdentityId: "identity_1",
+      provider: "clerk",
+      providerUserId: "user_external",
+      accountState: "suspended",
+      identityDisabled: false,
+    });
+    const verifier = createInternalAuthVerifier(provider(), identityStore);
+
+    await expect(
+      verifier.verify(new Request("https://nexosophy.test/v1/me")),
+    ).resolves.toEqual({
+      authenticated: false,
+      reason: "suspended",
+    });
+  });
+
+  it("does not provision when provider authentication fails", async () => {
+    const identityStore = store(null);
+    const verifier = createInternalAuthVerifier(
+      provider({
+        verifyRequest: vi.fn(async () => ({
+          authenticated: false as const,
+          reason: "invalid" as const,
+        })),
+      }),
+      identityStore,
+    );
+
+    await expect(
+      verifier.verify(new Request("https://nexosophy.test/v1/me")),
+    ).resolves.toEqual({
+      authenticated: false,
+      reason: "invalid",
+    });
+
+    expect(identityStore.provision).not.toHaveBeenCalled();
+  });
 });

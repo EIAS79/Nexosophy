@@ -50,3 +50,40 @@ export function parseWorkerEnv(env: NodeJS.ProcessEnv = process.env): WorkerEnv 
 export function parseRealtimeEnv(env: NodeJS.ProcessEnv = process.env): RealtimeEnv {
   return realtimeEnvSchema.parse(env);
 }
+
+
+export const clerkEnvSchema = z.object({
+  CLERK_SECRET_KEY: z.string().min(1),
+  CLERK_PUBLISHABLE_KEY: z.string().min(1),
+  CLERK_JWT_KEY: z.string().min(1),
+  CLERK_WEBHOOK_SIGNING_SECRET: z.string().min(1),
+  CLERK_AUTHORIZED_PARTIES: z
+    .string()
+    .min(1)
+    .transform((value) =>
+      value
+        .split(",")
+        .map((entry) => entry.trim())
+        .filter(Boolean),
+    )
+    .pipe(z.array(z.url()).min(1)),
+});
+
+export type ClerkEnv = z.infer<typeof clerkEnvSchema>;
+
+export function parseOptionalClerkEnv(
+  env: NodeJS.ProcessEnv = process.env,
+): ClerkEnv | null {
+  const keys = [
+    "CLERK_SECRET_KEY",
+    "CLERK_PUBLISHABLE_KEY",
+    "CLERK_JWT_KEY",
+    "CLERK_WEBHOOK_SIGNING_SECRET",
+    "CLERK_AUTHORIZED_PARTIES",
+  ] as const;
+
+  const configured = keys.filter((key) => Boolean(env[key]));
+  if (configured.length === 0) return null;
+
+  return clerkEnvSchema.parse(env);
+}

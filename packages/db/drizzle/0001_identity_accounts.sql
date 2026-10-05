@@ -69,6 +69,9 @@ CREATE TABLE IF NOT EXISTS "user_identities" (
   "provider_user_id" text NOT NULL,
   "primary_email_snapshot" text,
   "last_synced_at" timestamptz,
+  "provider_updated_at" timestamptz,
+  "last_provider_event_at" timestamptz,
+  "provider_deleted_at" timestamptz,
   "disabled_at" timestamptz,
   "created_at" timestamptz DEFAULT now() NOT NULL,
   "updated_at" timestamptz DEFAULT now() NOT NULL

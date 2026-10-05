@@ -5,8 +5,8 @@ export type IdentitySnapshotInput = {
   providerUserId: string;
   primaryEmail?: string | null;
   displayName?: string | null;
-  avatarAssetId?: string | null;
   disabled?: boolean;
+  providerUpdatedAt?: Date;
 };
 
 export type IdentityProvisionResult = {
@@ -93,8 +93,9 @@ export async function provisionIdentity(
     const existing = await client.query<{
       id: string;
       user_id: string;
+      provider_deleted_at: Date | null;
     }>(
-      `select "id", "user_id"
+      `select "id", "user_id", "provider_deleted_at"
        from "user_identities"
        where "provider" = $1 and "provider_user_id" = $2
        for update`,
@@ -104,29 +105,23 @@ export async function provisionIdentity(
     if (existing.rowCount && existing.rows[0]) {
       const identity = existing.rows[0];
 
-      await client.query(
-        `update "user_identities"
-         set "primary_email_snapshot" = $1,
-             "last_synced_at" = now(),
-             "disabled_at" = case when $2 then coalesce("disabled_at", now()) else null end,
-             "updated_at" = now()
-         where "id" = $3`,
-        [input.primaryEmail ?? null, input.disabled ?? false, identity.id],
-      );
-
-      if (input.displayName !== undefined || input.avatarAssetId !== undefined) {
+      if (!identity.provider_deleted_at) {
         await client.query(
-          `update "user_profiles"
-           set "display_name" = coalesce($1, "display_name"),
-               "avatar_asset_id" = case when $2::boolean then $3 else "avatar_asset_id" end,
-               "updated_at" = now(),
-               "version" = "version" + 1
-           where "user_id" = $4`,
+          `update "user_identities"
+           set "primary_email_snapshot" = $1,
+               "last_synced_at" = now(),
+               "provider_updated_at" = greatest(
+                 coalesce("provider_updated_at", '-infinity'::timestamptz),
+                 coalesce($2::timestamptz, '-infinity'::timestamptz)
+               ),
+               "disabled_at" = case when $3 then coalesce("disabled_at", now()) else null end,
+               "updated_at" = now()
+           where "id" = $4`,
           [
-            input.displayName ?? null,
-            input.avatarAssetId !== undefined,
-            input.avatarAssetId ?? null,
-            identity.user_id,
+            input.primaryEmail ?? null,
+            input.providerUpdatedAt ?? null,
+            input.disabled ?? false,
+            identity.id,
           ],
         );
       }
@@ -148,14 +143,15 @@ export async function provisionIdentity(
 
     const createdIdentity = await client.query<{ id: string }>(
       `insert into "user_identities"
-         ("user_id", "provider", "provider_user_id", "primary_email_snapshot", "last_synced_at", "disabled_at")
-       values ($1, $2, $3, $4, now(), case when $5 then now() else null end)
+         ("user_id", "provider", "provider_user_id", "primary_email_snapshot", "last_synced_at", "provider_updated_at", "disabled_at")
+       values ($1, $2, $3, $4, now(), $5, case when $6 then now() else null end)
        returning "id"`,
       [
         userId,
         input.provider,
         input.providerUserId,
         input.primaryEmail ?? null,
+        input.providerUpdatedAt ?? null,
         input.disabled ?? false,
       ],
     );
@@ -166,9 +162,9 @@ export async function provisionIdentity(
       client.query(
         `insert into "user_profiles"
            ("user_id", "display_name", "avatar_asset_id")
-         values ($1, $2, $3)
+         values ($1, $2, null)
          on conflict ("user_id") do nothing`,
-        [userId, input.displayName ?? "", input.avatarAssetId ?? null],
+        [userId, input.displayName ?? ""],
       ),
       client.query(
         `insert into "user_preferences" ("user_id")
@@ -645,4 +641,74 @@ export async function listSecurityEvents(
     metadata: row.metadata,
     createdAt: row.created_at,
   }));
+}
+
+
+export async function handleProviderIdentityDeletion(
+  pool: Pool,
+  provider: string,
+  providerUserId: string,
+  eventOccurredAt: Date,
+): Promise<void> {
+  await withTransaction(pool, async (client) => {
+    const lockKey = `${provider}:${providerUserId}`;
+    await client.query("select pg_advisory_xact_lock(hashtextextended($1, 0))", [lockKey]);
+
+    const identity = await client.query<{ id: string; user_id: string; last_provider_event_at: Date | null }>(
+      `select "id", "user_id", "last_provider_event_at"
+       from "user_identities"
+       where "provider" = $1 and "provider_user_id" = $2
+       for update`,
+      [provider, providerUserId],
+    );
+
+    const row = identity.rows[0];
+    if (!row) return;
+
+    if (row.last_provider_event_at && row.last_provider_event_at > eventOccurredAt) {
+      return;
+    }
+
+    await client.query(
+      `update "user_identities"
+       set "disabled_at" = coalesce("disabled_at", now()),
+           "provider_deleted_at" = $1,
+           "last_provider_event_at" = $1,
+           "updated_at" = now()
+       where "id" = $2`,
+      [eventOccurredAt, row.id],
+    );
+
+    await client.query(
+      `update "users"
+       set "status" = case
+             when "status" in ('pending_onboarding', 'active', 'deletion_requested')
+               then 'deletion_pending'
+             else "status"
+           end,
+           "version" = "version" + 1,
+           "updated_at" = now()
+       where "id" = $1`,
+      [row.user_id],
+    );
+  });
+}
+
+export async function markProviderIdentityEventApplied(
+  pool: Pool,
+  provider: string,
+  providerUserId: string,
+  eventOccurredAt: Date,
+): Promise<void> {
+  await pool.query(
+    `update "user_identities"
+     set "last_provider_event_at" = greatest(
+           coalesce("last_provider_event_at", '-infinity'::timestamptz),
+           $1
+         ),
+         "updated_at" = now()
+     where "provider" = $2 and "provider_user_id" = $3
+       and "provider_deleted_at" is null`,
+    [eventOccurredAt, provider, providerUserId],
+  );
 }
