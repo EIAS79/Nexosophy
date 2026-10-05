@@ -1,4 +1,8 @@
-import type { AuthPrincipal, AuthVerifier } from "@nexosophy/auth";
+import {
+  hasRecentFactorVerification,
+  type AuthPrincipal,
+  type AuthVerifier,
+} from "@nexosophy/auth";
 import {
   accountDeletionRequestSchema,
   completeOnboardingRequestSchema,
@@ -253,6 +257,24 @@ export async function registerIdentityRoutes(
   app.post("/v1/me/deletion-request", async (request, reply) => {
     const principal = await requirePrincipal(request, reply, verifier);
     if (!principal) return;
+
+    if (!hasRecentFactorVerification(principal)) {
+      await appendSecurityEvent(pool, {
+        userId: principal.internalUserId,
+        eventType: "account.deletion_reverification_required",
+        outcome: "denied",
+        requestId: request.id,
+        providerSessionId: principal.sessionId,
+      });
+
+      return sendError(
+        reply,
+        request.id,
+        403,
+        "RECENT_AUTH_REQUIRED",
+        "Recent credential verification is required for account deletion.",
+      );
+    }
 
     const parsed = accountDeletionRequestSchema.safeParse(request.body ?? {});
     if (!parsed.success) {

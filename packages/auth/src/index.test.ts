@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   canAuthenticateInternalAccount,
   createInternalAuthVerifier,
+  hasRecentFactorVerification,
   safeReturnTo,
   type IdentityProvider,
   type IdentityStorePort,
@@ -26,6 +27,30 @@ describe("safeReturnTo", () => {
     "/app\nSet-Cookie:bad",
   ])("rejects unsafe return target %s", (value) => {
     expect(safeReturnTo(value)).toBe("/app");
+  });
+});
+
+describe("recent factor verification", () => {
+  it("accepts a fresh first factor when no second factor is registered", () => {
+    expect(
+      hasRecentFactorVerification({ factorVerificationAge: [3, -1] }),
+    ).toBe(true);
+  });
+
+  it("accepts fresh first and second factors", () => {
+    expect(
+      hasRecentFactorVerification({ factorVerificationAge: [4, 2] }),
+    ).toBe(true);
+  });
+
+  it.each([
+    undefined,
+    null,
+    [11, -1] as const,
+    [2, 11] as const,
+    [-1, -1] as const,
+  ])("rejects stale or unavailable verification %#", (factorVerificationAge) => {
+    expect(hasRecentFactorVerification({ factorVerificationAge })).toBe(false);
   });
 });
 

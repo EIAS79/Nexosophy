@@ -1,5 +1,6 @@
 "use server";
 
+import { auth, reverificationError } from "@clerk/nextjs/server";
 import type { MeResponse } from "@nexosophy/contracts";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -133,9 +134,14 @@ export async function skipOnboardingAction(): Promise<void> {
 }
 
 export async function requestDeletionAction(
-  _previous: AccountActionState,
   formData: FormData,
 ): Promise<AccountActionState> {
+  const { has } = await auth.protect();
+
+  if (!has({ reverification: "strict" })) {
+    return reverificationError("strict");
+  }
+
   try {
     await nexosophyApi("/v1/me/deletion-request", {
       method: "POST",

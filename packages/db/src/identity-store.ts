@@ -250,18 +250,22 @@ export async function recordAuthWebhookReceipt(
     return { eventId: inserted.rows[0].id, accepted: true };
   }
 
-  const existing = await pool.query<{ id: string }>(
-    `select "id"
+  const existing = await pool.query<{ id: string; payload_hash: string }>(
+    `select "id", "payload_hash"
      from "auth_webhook_events"
      where "provider" = $1 and "provider_event_id" = $2
      limit 1`,
     [input.provider, input.providerEventId],
   );
 
-  const eventId = existing.rows[0]?.id;
-  if (!eventId) throw new Error("Webhook deduplication invariant violated");
+  const row = existing.rows[0];
+  if (!row) throw new Error("Webhook deduplication invariant violated");
 
-  return { eventId, accepted: false };
+  if (row.payload_hash !== input.payloadHash) {
+    throw new Error("Webhook event ID was reused with a different payload hash");
+  }
+
+  return { eventId: row.id, accepted: false };
 }
 
 export async function markAuthWebhookEvent(

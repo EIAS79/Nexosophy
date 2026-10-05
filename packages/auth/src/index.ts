@@ -103,6 +103,32 @@ export interface IdentityStorePort {
   ): Promise<void>;
 }
 
+export function hasRecentFactorVerification(
+  principal: Pick<AuthPrincipal, "factorVerificationAge">,
+  maxAgeMinutes = 10,
+): boolean {
+  const ages = principal.factorVerificationAge;
+  if (!ages) return false;
+
+  const [firstFactorAge, secondFactorAge] = ages;
+
+  if (
+    !Number.isFinite(firstFactorAge) ||
+    firstFactorAge < 0 ||
+    firstFactorAge > maxAgeMinutes
+  ) {
+    return false;
+  }
+
+  if (secondFactorAge === -1) return true;
+
+  return (
+    Number.isFinite(secondFactorAge) &&
+    secondFactorAge >= 0 &&
+    secondFactorAge <= maxAgeMinutes
+  );
+}
+
 export function canAuthenticateInternalAccount(state: InternalAccountState): boolean {
   return (
     state === "pending_onboarding" ||

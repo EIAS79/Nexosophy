@@ -113,6 +113,9 @@ jobs:
           echo "$SECOND_RUN"
           grep -q "Database schema is already current." <<< "$SECOND_RUN"
 
+      - name: Verify identity concurrency and webhook idempotence
+        run: pnpm --filter @nexosophy/db test:identity-integration
+
       - name: Build API
         run: pnpm --filter @nexosophy/api build
 
