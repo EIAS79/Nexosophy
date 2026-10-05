@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 
-import { ModalDialog } from "./dialog.js";
+import { ModalDialog } from "./dialog";
 
 export type CommandItem = {
   id: string;

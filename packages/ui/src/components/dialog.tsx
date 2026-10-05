@@ -9,7 +9,7 @@ import {
 } from "react";
 
 import { Button } from "./button.js";
-import { cx } from "../lib/cx.js";
+import { cx } from "../lib/cx";
 
 export type ModalDialogProps = Omit<DialogHTMLAttributes<HTMLDialogElement>, "open"> & {
   open: boolean;

@@ -8,4 +8,4 @@ export { Tabs, type TabItem, type TabsProps } from "./components/tabs.js";
 export { ToastProvider, useToast, type ToastTone } from "./components/toast.js";
 export { Tooltip, type TooltipProps } from "./components/tooltip.js";
 export { Tree, type TreeNode } from "./components/tree.js";
-export { cx } from "./lib/cx.js";
+export { cx } from "./lib/cx";
