@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import type { IdentityProvider, IdentityStorePort } from "@nexosophy/auth";
+import type {\n  IdentityProvider,\n  IdentityStorePort,\n  IdentityWebhookEvent,\n} from "@nexosophy/auth";
 import {
   markAuthWebhookEvent,
   recordAuthWebhookReceipt,
@@ -65,7 +65,7 @@ export async function registerClerkWebhookRoute(
       const rawBody = request.body;
       const payloadHash = createHash("sha256").update(rawBody).digest("hex");
 
-      let event;
+      let event: IdentityWebhookEvent;
       try {
         event = await provider.verifyWebhook(webhookRequest(request, rawBody));
       } catch (error) {

@@ -163,9 +163,13 @@ export function createInternalAuthVerifier(
           externalIdentityId: identity.externalIdentityId,
           internalUserId: identity.internalUserId,
           providerUserId: identity.providerUserId,
-          sessionId: session.sessionId,
-          authenticatedAt: session.authenticatedAt,
-          factorVerificationAge: session.factorVerificationAge,
+          ...(session.sessionId ? { sessionId: session.sessionId } : {}),
+          ...(session.authenticatedAt
+            ? { authenticatedAt: session.authenticatedAt }
+            : {}),
+          ...(session.factorVerificationAge !== undefined
+            ? { factorVerificationAge: session.factorVerificationAge }
+            : {}),
         },
       };
     },
@@ -181,7 +185,10 @@ export function safeReturnTo(raw: string | null | undefined, fallback = "/app"):
     value.startsWith("//") ||
     value.startsWith("/\\") ||
     value.includes("\\") ||
-    /[\u0000-\u001F\u007F]/u.test(value)
+    Array.from(value).some((character) => {
+      const code = character.charCodeAt(0);
+      return code <= 0x1f || code === 0x7f;
+    })
   ) {
     return fallback;
   }

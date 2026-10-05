@@ -3,10 +3,10 @@ import type { Pool, PoolClient } from "pg";
 export type IdentitySnapshotInput = {
   provider: string;
   providerUserId: string;
-  primaryEmail?: string | null;
-  displayName?: string | null;
-  disabled?: boolean;
-  providerUpdatedAt?: Date;
+  primaryEmail?: string | null | undefined;
+  displayName?: string | null | undefined;
+  disabled?: boolean | undefined;
+  providerUpdatedAt?: Date | undefined;
 };
 
 export type IdentityProvisionResult = {
@@ -386,13 +386,13 @@ export async function patchUserProfile(
   userId: string,
   expectedVersion: number,
   patch: {
-    displayName?: string;
-    preferredName?: string | null;
-    legalName?: string | null;
-    pronouns?: string | null;
-    institutionAffiliation?: string | null;
-    locale?: string;
-    timezone?: string;
+    displayName?: string | undefined;
+    preferredName?: string | null | undefined;
+    legalName?: string | null | undefined;
+    pronouns?: string | null | undefined;
+    institutionAffiliation?: string | null | undefined;
+    locale?: string | undefined;
+    timezone?: string | undefined;
   },
 ): Promise<boolean> {
   const result = await pool.query(
@@ -436,11 +436,11 @@ export async function patchUserPreferences(
   userId: string,
   expectedVersion: number,
   patch: {
-    locale?: string;
-    timezone?: string;
-    theme?: string;
-    density?: string;
-    notificationSettings?: Record<string, unknown>;
+    locale?: string | undefined;
+    timezone?: string | undefined;
+    theme?: string | undefined;
+    density?: string | undefined;
+    notificationSettings?: Record<string, unknown> | undefined;
   },
 ): Promise<boolean> {
   const result = await pool.query(
@@ -514,12 +514,12 @@ export async function finishOnboarding(
 export async function appendSecurityEvent(
   pool: Pool,
   input: {
-    userId?: string;
+    userId?: string | undefined;
     eventType: string;
     outcome: "success" | "denied" | "failed" | "informational";
-    requestId?: string;
-    providerSessionId?: string;
-    metadata?: Record<string, string | number | boolean | null>;
+    requestId?: string | undefined;
+    providerSessionId?: string | undefined;
+    metadata?: Record<string, string | number | boolean | null> | undefined;
   },
 ): Promise<void> {
   await pool.query(

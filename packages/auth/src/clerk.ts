@@ -59,24 +59,34 @@ export function createClerkIdentityProvider(
       const authenticatedAt =
         typeof issuedAt === "number" ? new Date(issuedAt * 1_000) : undefined;
 
+      const factorVerificationAge = toFactorVerificationAge(
+        auth.factorVerificationAge,
+      );
+
       return {
         authenticated: true,
         session: {
           provider: "clerk",
           providerUserId: auth.userId,
-          sessionId: auth.sessionId,
-          authenticatedAt,
-          factorVerificationAge: toFactorVerificationAge(
-            auth.factorVerificationAge,
-          ),
+          ...(auth.sessionId ? { sessionId: auth.sessionId } : {}),
+          ...(authenticatedAt ? { authenticatedAt } : {}),
+          ...(factorVerificationAge !== undefined
+            ? { factorVerificationAge }
+            : {}),
         },
       };
     },
 
     async verifyWebhook(request): Promise<IdentityWebhookEvent> {
       const eventId = request.headers.get("svix-id");
-      if (!eventId) {
-        throw new Error("Missing svix-id webhook header");
+      const timestampHeader = request.headers.get("svix-timestamp");
+      if (!eventId || !timestampHeader) {
+        throw new Error("Missing signed Svix webhook headers");
+      }
+
+      const timestampSeconds = Number.parseInt(timestampHeader, 10);
+      if (!Number.isSafeInteger(timestampSeconds)) {
+        throw new Error("Invalid svix-timestamp webhook header");
       }
 
       const event = await verifyWebhook(request, {
@@ -99,8 +109,8 @@ export function createClerkIdentityProvider(
         provider: "clerk",
         eventId,
         eventType: event.type,
-        occurredAt: new Date(event.timestamp),
-        providerUserId,
+        occurredAt: new Date(timestampSeconds * 1_000),
+        ...(providerUserId ? { providerUserId } : {}),
         deleted,
       };
     },
@@ -118,15 +128,18 @@ export function createClerkIdentityProvider(
             ? user.primaryEmailAddress.emailAddress
             : undefined;
 
+        const displayName = user.fullName ?? undefined;
+        const avatarUrl = user.hasImage ? user.imageUrl : undefined;
+
         return {
           provider: "clerk",
           providerUserId: user.id,
-          primaryEmail,
           verifiedEmails,
-          displayName: user.fullName ?? undefined,
-          avatarUrl: user.hasImage ? user.imageUrl : undefined,
           disabled: user.banned || user.locked,
           providerUpdatedAt: new Date(user.updatedAt),
+          ...(primaryEmail ? { primaryEmail } : {}),
+          ...(displayName ? { displayName } : {}),
+          ...(avatarUrl ? { avatarUrl } : {}),
         };
       } catch (error) {
         const candidate = error as { status?: number; statusCode?: number };
