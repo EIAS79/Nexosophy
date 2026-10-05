@@ -16,8 +16,29 @@ const apps: Awaited<ReturnType<typeof buildApp>>[] = [];
 
 afterEach(async () => {
   await Promise.all(apps.splice(0).map((app) => app.close()));
-});
 
+  it("keeps identity routes closed when no auth verifier is configured", async () => {
+    const app = await buildApp(env);
+    apps.push(app);
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/v1/me",
+      headers: {
+        "x-request-id": "phase-02-no-auth",
+      },
+    });
+
+    expect(response.statusCode).toBe(401);
+    expect(response.json()).toEqual({
+      error: {
+        code: "UNAUTHENTICATED",
+        message: "Authentication is required.",
+        requestId: "phase-02-no-auth",
+      },
+    });
+  });
+});
 describe("API foundation", () => {
   it("returns a typed liveness response without requiring dependencies", async () => {
     const app = await buildApp(env);

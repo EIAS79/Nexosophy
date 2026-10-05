@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
+import type { AuthVerifier } from "@nexosophy/auth";
 import type { ApiEnv } from "@nexosophy/config";
 import { healthResponseSchema } from "@nexosophy/contracts";
 import { createDatabasePool } from "@nexosophy/db";
@@ -9,9 +10,18 @@ import { createLoggerOptions } from "@nexosophy/observability";
 import Fastify, { type FastifyError, type FastifyInstance } from "fastify";
 import { createClient } from "redis";
 
+import { registerIdentityRoutes } from "./identity-routes.js";
+
 const serviceVersion = process.env.npm_package_version ?? "0.0.0";
 
-export async function buildApp(env: ApiEnv): Promise<FastifyInstance> {
+export type BuildAppOptions = {
+  authVerifier?: AuthVerifier;
+};
+
+export async function buildApp(
+  env: ApiEnv,
+  options: BuildAppOptions = {},
+): Promise<FastifyInstance> {
   const app = Fastify({
     logger: createLoggerOptions("nexosophy-api", env.LOG_LEVEL),
     genReqId: (request) => {
@@ -83,6 +93,8 @@ export async function buildApp(env: ApiEnv): Promise<FastifyInstance> {
       },
     });
   });
+
+  await registerIdentityRoutes(app, pool, options.authVerifier);
 
   app.get("/health", async (request) => {
     return healthResponseSchema.parse({

@@ -540,3 +540,109 @@ export async function appendSecurityEvent(
     ],
   );
 }
+
+
+export async function requestAccountDeletion(
+  pool: Pool,
+  userId: string,
+  reasonCategory?: string,
+): Promise<{ requestId: string; created: boolean }> {
+  return withTransaction(pool, async (client) => {
+    await client.query(
+      "select pg_advisory_xact_lock(hashtextextended($1, 0))",
+      [`account-deletion:${userId}`],
+    );
+
+    const existing = await client.query<{ id: string }>(
+      `select "id"
+       from "account_deletion_requests"
+       where "user_id" = $1
+         and "status" in ('requested', 'scheduled', 'processing')
+       order by "requested_at" desc
+       limit 1
+       for update`,
+      [userId],
+    );
+
+    if (existing.rows[0]) {
+      return { requestId: existing.rows[0].id, created: false };
+    }
+
+    const inserted = await client.query<{ id: string }>(
+      `insert into "account_deletion_requests"
+         ("user_id", "status", "reason_category")
+       values ($1, 'requested', $2)
+       returning "id"`,
+      [userId, reasonCategory ?? null],
+    );
+
+    const requestId = inserted.rows[0]?.id;
+    if (!requestId) throw new Error("Failed to create account deletion request");
+
+    await client.query(
+      `update "users"
+       set "status" = case
+             when "status" in ('active', 'pending_onboarding') then 'deletion_requested'
+             else "status"
+           end,
+           "deletion_requested_at" = coalesce("deletion_requested_at", now()),
+           "version" = "version" + 1,
+           "updated_at" = now()
+       where "id" = $1`,
+      [userId],
+    );
+
+    return { requestId, created: true };
+  });
+}
+
+export async function listSecurityEvents(
+  pool: Pool,
+  userId: string,
+  limit = 50,
+): Promise<
+  Array<{
+    id: string;
+    eventType: string;
+    outcome: "success" | "denied" | "failed" | "informational";
+    requestId: string | null;
+    providerSessionId: string | null;
+    metadata: Record<string, string | number | boolean | null>;
+    createdAt: Date;
+  }>
+> {
+  const boundedLimit = Math.min(Math.max(limit, 1), 100);
+  const result = await pool.query<{
+    id: string;
+    event_type: string;
+    outcome: "success" | "denied" | "failed" | "informational";
+    request_id: string | null;
+    provider_session_id: string | null;
+    metadata: Record<string, string | number | boolean | null>;
+    created_at: Date;
+  }>(
+    `select
+       "id",
+       "event_type",
+       "outcome",
+       "request_id",
+       "provider_session_id",
+       "metadata",
+       "created_at"
+     from "security_events"
+     where "user_id" = $1
+     order by "created_at" desc, "id" desc
+     limit $2`,
+    [userId, boundedLimit],
+  );
+
+  return result.rows.map((row) => ({
+    id: row.id,
+    eventType: row.event_type,
+    outcome: row.outcome,
+    requestId: row.request_id,
+    providerSessionId: row.provider_session_id,
+    metadata: row.metadata,
+    createdAt: row.created_at,
+  }));
+}
