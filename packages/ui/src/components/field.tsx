@@ -18,7 +18,7 @@ export function Field({ id, label, hint, error, className, ...props }: FieldProp
   const describedBy = [hintId, errorId].filter(Boolean).join(" ") || undefined;
 
   return (
-    <div className={cx("nx-field", error && "nx-field--error")}>
+    <div className={cx("nx-field", Boolean(error) && "nx-field--error")}>
       <label className="nx-field__label" htmlFor={inputId}>
         {label}
       </label>

@@ -19,7 +19,7 @@ export type TreeNode = {
 type VisibleNode = {
   node: TreeNode;
   depth: number;
-  parentId?: string;
+  parentId: string | undefined;
 };
 
 export function Tree({
