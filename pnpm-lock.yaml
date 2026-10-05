@@ -327,7 +327,6 @@ importers:
         specifier: 19.3.0
         version: 19.3.0(react@19.3.0)
 
-
 packages:
 
   '@biomejs/biome@2.5.15':
