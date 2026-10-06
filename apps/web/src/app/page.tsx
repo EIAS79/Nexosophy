@@ -187,46 +187,92 @@ function HeroVisual() {
     <div
       className={styles.heroVisual}
       role="img"
-      aria-label="Conceptual Nexosophy workspace showing a document, tasks, references, calendar and connected knowledge graph."
+      aria-label="Nexosophy workspace floating over a cinematic research setting with connected tasks, references, calendar and knowledge graph."
     >
-      <div aria-hidden="true">
+      <div aria-hidden="true" className={styles.heroVisualScene}>
         <div className={styles.heroGlow} />
+        <div className={styles.heroPersonLayer} />
+        <div className={styles.heroDeskLayer} />
+
         <div className={styles.heroToday}>
-          <small>Today</small>
-          <strong>Research focus</strong>
-          <span>✓ Review literature</span>
-          <span>○ Lab meeting</span>
-          <span>○ Draft discussion</span>
+          <div className={styles.heroPanelHead}>
+            <div>
+              <strong>Today</strong>
+              <small>Wed, Oct 16</small>
+            </div>
+            <span>▣</span>
+          </div>
+          <span>✓ Write literature review section <b>9:00 AM</b></span>
+          <span>○ Prepare lab meeting slides <b>11:00 AM</b></span>
+          <span>○ Follow up with collaborators <b>2:00 PM</b></span>
+          <span>○ Review experiment results <b>4:00 PM</b></span>
         </div>
+
         <div className={styles.heroGraph}>
-          <small>Knowledge graph</small>
+          <div className={styles.heroPanelTabs}>
+            <strong>Graph</strong>
+            <span>Table</span>
+            <span>Map</span>
+          </div>
           <div className={styles.miniGraph}>
-            <span className={styles.miniGraphCore}>Human-AI</span>
-            <i>Research</i>
-            <i>Methods</i>
+            <span className={styles.miniGraphCore}>Human-AI<br />Collaboration</span>
+            <i>Productivity</i>
+            <i>Research methods</i>
             <i>Education</i>
             <i>Society</i>
           </div>
         </div>
+
         <WorkspaceVisual />
+
         <div className={styles.heroRefs}>
-          <small>References</small>
-          <strong>12 connected</strong>
-          <span>Nature · 2024</span>
-          <span>Bender et al. · 2023</span>
-          <span>Azoulay · 2022</span>
+          <div className={styles.heroPanelHead}>
+            <strong>References</strong>
+            <span>12&nbsp;&nbsp;＋</span>
+          </div>
+          <span><b>1</b> Bender, E. M. (2023).<br />On the Dangers of Stochastic Parrots...</span>
+          <span><b>2</b> Nature (2024).<br />AI in Science: Opportunities and Limits.</span>
+          <span><b>3</b> Azoulay, P. (2022).<br />The Labor of AI in Research...</span>
         </div>
+
         <div className={styles.heroTasks}>
-          <small>Tasks</small>
-          <span>✓ Summarize findings</span>
-          <span>○ Compare methods</span>
-          <span>○ Advisor feedback</span>
+          <div className={styles.heroPanelHead}>
+            <strong>Tasks</strong>
+            <span>＋</span>
+          </div>
+          <span>✓ Summarize key findings from 5 papers</span>
+          <span>○ Compare methodologies</span>
+          <span>○ Draft discussion section</span>
+          <span>○ Get feedback from advisor</span>
+          <div className={styles.heroTaskAvatars}>● ● ● <b>3</b></div>
         </div>
+
         <div className={styles.heroFiles}>
-          <small>Files</small>
-          <span>paper-draft.pdf</span>
-          <span>experiment.csv</span>
-          <span>review-notes.md</span>
+          <div className={styles.heroPanelHead}>
+            <strong>Files</strong>
+            <span>↗</span>
+          </div>
+          <span>▰ Research_Paper_Draft.pdf</span>
+          <span>▰ Experiment_Results.csv</span>
+          <span>▰ Interview_Notes.md</span>
+          <span>▰ Figure_1.png</span>
+        </div>
+
+        <div className={styles.heroAssistant}>
+          <Mark compact />
+          <span>Ask anything about your workspace...</span>
+          <b>➤</b>
+        </div>
+
+        <div className={styles.heroAssistantChips}>
+          <span>Summarize this paper</span>
+          <span>Find related research</span>
+          <span>Draft an outline</span>
+          <span>Compare results</span>
+        </div>
+
+        <div className={styles.heroScribble}>
+          Ideas<br />People<br />Research<br /><em>A brighter world.</em>
         </div>
       </div>
     </div>
@@ -532,18 +578,24 @@ export default function HomePage() {
           <div className={styles.heroCopy}>
             <p className={styles.eyebrow}>A unified knowledge and work platform</p>
             <h1>
-              Connected knowledge for a <em>brighter</em> world.
+              Connected<br />
+              knowledge for<br />
+              a <em>brighter</em> world.
             </h1>
             <p className={styles.lede}>
-              Nexosophy brings research, notes, files, planning, data and people into one
-              intelligent workspace built for deeper thinking and serious work.
+              Nexosophy brings together your research, notes, tasks, files, data and people — in one
+              intelligent workspace for deeper thinking and greater impact.
             </p>
             <div className={styles.actions}>
               <a className={styles.primaryCta} href="/signup">
                 Get started free <span>→</span>
               </a>
               <a className={styles.secondaryCta} href="#product-story">
-                <span>▶</span> Explore the workflow
+                <span className={styles.playIcon}>▶</span>
+                <span>
+                  Watch overview
+                  <small>2 min</small>
+                </span>
               </a>
             </div>
             <div className={styles.heroProof}>
@@ -553,24 +605,29 @@ export default function HomePage() {
                 <span>P</span>
                 <span>L</span>
               </div>
-              <p>For students, researchers, professors, laboratories, reporters and analysts.</p>
+              <p>Join a growing community of researchers, students, and builders shaping what&apos;s next.</p>
             </div>
           </div>
 
           <HeroVisual />
 
           <nav className={styles.personaRail} aria-label="Nexosophy use cases">
-            {["Students", "Researchers", "Professors", "Laboratories", "Reporters", "Analysts"].map(
-              (label) => (
-                <a
-                  key={label}
-                  href={label === "Laboratories" ? "/labs" : "/".concat(label.toLowerCase())}
-                >
-                  <span className={styles.personaRailIcon}>{label.slice(0, 1)}</span>
-                  <strong>{label}</strong>
-                </a>
-              ),
-            )}
+            {[
+              ["Students", "Learn deeper. Do more.", "/students", "◫"],
+              ["Researchers", "From ideas to impact.", "/researchers", "△"],
+              ["Professors", "Teach, mentor, collaborate.", "/professors", "◉"],
+              ["Laboratories", "Organize. Analyze. Advance.", "/labs", "◇"],
+              ["Reporters", "Uncover. Verify. Tell.", "/reporters", "▤"],
+              ["Analysts", "Turn knowledge into insight.", "/analysts", "▥"],
+            ].map(([label, strap, href, glyph]) => (
+              <a key={label} href={href}>
+                <span className={styles.personaRailIcon}>{glyph}</span>
+                <span className={styles.personaRailText}>
+                  <strong>For {label.toLowerCase()}</strong>
+                  <small>{strap}</small>
+                </span>
+              </a>
+            ))}
           </nav>
         </section>
 
