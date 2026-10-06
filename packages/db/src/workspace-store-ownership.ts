@@ -83,32 +83,72 @@ export async function acceptOwnershipTransfer(
     );
     if (locked.rows[0]?.status !== "pending") return false;
 
-    await client.query(
+    const memberships = await client.query<{
+      user_id: string;
+      role: WorkspaceRole;
+      status: WorkspaceMemberStatus;
+    }>(
+      `select "user_id", "role", "status"
+       from "workspace_members"
+       where "workspace_id" = $1 and "user_id" = any($2::uuid[])
+       for update`,
+      [row.workspace_id, [row.from_user_id, row.to_user_id]],
+    );
+    const currentOwner = memberships.rows.find(
+      (membership) =>
+        membership.user_id === row.from_user_id &&
+        membership.role === "owner" &&
+        membership.status === "active",
+    );
+    const target = memberships.rows.find(
+      (membership) =>
+        membership.user_id === row.to_user_id &&
+        membership.status === "active" &&
+        membership.role !== "owner",
+    );
+    if (!currentOwner || !target) return false;
+
+    const demoted = await client.query(
       `update "workspace_members"
        set "role" = 'admin', "version" = "version" + 1, "updated_at" = now()
-       where "workspace_id" = $1 and "user_id" = $2 and "role" = 'owner'`,
+       where "workspace_id" = $1 and "user_id" = $2 and "role" = 'owner' and "status" = 'active'`,
       [row.workspace_id, row.from_user_id],
     );
-    await client.query(
+    if ((demoted.rowCount ?? 0) !== 1) {
+      throw new Error("Ownership transfer lost the current owner invariant");
+    }
+
+    const promoted = await client.query(
       `update "workspace_members"
        set "role" = 'owner', "status" = 'active',
            "version" = "version" + 1, "updated_at" = now()
-       where "workspace_id" = $1 and "user_id" = $2`,
+       where "workspace_id" = $1 and "user_id" = $2 and "status" = 'active'`,
       [row.workspace_id, row.to_user_id],
     );
-    await client.query(
+    if ((promoted.rowCount ?? 0) !== 1) {
+      throw new Error("Ownership transfer lost the target membership invariant");
+    }
+
+    const workspaceUpdate = await client.query(
       `update "workspaces"
        set "owner_user_id" = $2, "permission_version" = "permission_version" + 1,
            "version" = "version" + 1, "updated_at" = now()
-       where "id" = $1`,
-      [row.workspace_id, row.to_user_id],
+       where "id" = $1 and "owner_user_id" = $3`,
+      [row.workspace_id, row.to_user_id, row.from_user_id],
     );
+    if ((workspaceUpdate.rowCount ?? 0) !== 1) {
+      throw new Error("Ownership transfer lost the workspace owner invariant");
+    }
+
     const accepted = await client.query(
       `update "workspace_ownership_transfers"
        set "status" = 'accepted', "accepted_at" = now()
        where "id" = $1 and "status" = 'pending'`,
       [row.id],
     );
-    return (accepted.rowCount ?? 0) === 1;
+    if ((accepted.rowCount ?? 0) !== 1) {
+      throw new Error("Ownership transfer was concurrently consumed");
+    }
+    return true;
   });
 }

@@ -14,6 +14,7 @@ import {
   listWorkspaceMembers,
   listUserWorkspaces,
   requestOwnershipTransfer,
+  removeWorkspaceMember,
   resolveShareLink,
   revokeShareLink,
   revokeWorkspaceInvitation,
@@ -95,6 +96,24 @@ try {
     userId: invited,
   });
   assert.equal(accepted.accepted, true);
+
+  const staleInvite = await createWorkspaceInvitation(pool, {
+    workspaceId: team.id,
+    actorUserId: owner,
+    email: "invited@example.test",
+    role: "guest",
+    expiresInHours: 24,
+  });
+  const staleAccept = await acceptWorkspaceInvitation(pool, {
+    token: staleInvite.token,
+    userId: invited,
+  });
+  assert.equal(staleAccept.accepted, true);
+  const preservedMember = (await listWorkspaceMembers(pool, team.id)).find(
+    (member) => member.userId === invited,
+  );
+  assert(preservedMember);
+  assert.equal(preservedMember.role, "member");
 
   const replay = await acceptWorkspaceInvitation(pool, {
     token: invite.token,
@@ -210,6 +229,33 @@ try {
   assert.equal(await revokeShareLink(pool, team.id, share.id), true);
   assert.equal(await resolveShareLink(pool, share.token, "integration-secret"), null);
 
+  const archivedShare = await createShareLink(pool, {
+    workspaceId: team.id,
+    actorUserId: owner,
+    resourceType: "workspace",
+    resourceId: team.id,
+    allowDownload: false,
+  });
+
+  const removedTargetTransfer = await requestOwnershipTransfer(pool, {
+    workspaceId: team.id,
+    fromUserId: owner,
+    toUserId: outsider,
+    expiresInHours: 1,
+  });
+  assert(removedTargetTransfer);
+  assert.equal(await removeWorkspaceMember(pool, team.id, outsider), true);
+  assert.equal(
+    await acceptOwnershipTransfer(pool, {
+      token: removedTargetTransfer.token,
+      userId: outsider,
+    }),
+    false,
+  );
+  const ownerAfterRemovedTarget = await getWorkspaceAuthorization(pool, owner, team.id);
+  assert(ownerAfterRemovedTarget);
+  assert.equal(ownerAfterRemovedTarget.role, "owner");
+
   const ownerTransfer = await requestOwnershipTransfer(pool, {
     workspaceId: team.id,
     fromUserId: owner,
@@ -239,6 +285,7 @@ try {
     /Personal workspaces cannot be archived/,
   );
   assert.equal(await archiveWorkspace(pool, team.id), true);
+  assert.equal(await resolveShareLink(pool, archivedShare.token), null);
 
   const audit = await listWorkspaceAuditEvents(pool, team.id);
   assert(audit.length > 0);

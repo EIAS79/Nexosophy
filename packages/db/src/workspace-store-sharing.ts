@@ -126,10 +126,12 @@ export async function resolveShareLink(
     password_salt: string | null; password_hash: string | null; allow_download: boolean;
     expires_at: Date | null; revoked_at: Date | null;
   }>(
-    `select "id", "workspace_id", "resource_type", "resource_id",
-            "password_salt", "password_hash", "allow_download", "expires_at", "revoked_at"
-     from "workspace_share_links"
-     where "token_hash" = $1 limit 1`,
+    `select l."id", l."workspace_id", l."resource_type", l."resource_id",
+            l."password_salt", l."password_hash", l."allow_download", l."expires_at", l."revoked_at"
+     from "workspace_share_links" l
+     join "workspaces" w on w."id" = l."workspace_id"
+     where l."token_hash" = $1 and w."archived_at" is null
+     limit 1`,
     [hashWorkspaceToken(token)],
   );
   const row = result.rows[0];

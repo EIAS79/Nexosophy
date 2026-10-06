@@ -4,7 +4,20 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
-import { nexosophyApi } from "./api-server";
+import { nexosophyApi, NexosophyApiError } from "./api-server";
+
+type BearerLinkState = {
+  status: "idle" | "success" | "error";
+  path?: string;
+  message?: string;
+};
+
+function linkActionError(error: unknown): BearerLinkState {
+  if (error instanceof NexosophyApiError) {
+    return { status: "error", message: error.message };
+  }
+  return { status: "error", message: "The request could not be completed." };
+}
 
 export async function switchWorkspaceAction(formData: FormData) {
   const workspaceId = String(formData.get("workspaceId") ?? "");
@@ -48,16 +61,34 @@ export async function archiveWorkspaceAction(formData: FormData) {
   redirect("/app/workspaces");
 }
 
-export async function inviteWorkspaceMemberAction(formData: FormData) {
+export async function inviteWorkspaceMemberAction(
+  _previousState: BearerLinkState,
+  formData: FormData,
+): Promise<BearerLinkState> {
   const workspaceId = String(formData.get("workspaceId") ?? "");
   const email = String(formData.get("email") ?? "").trim();
   const role = String(formData.get("role") ?? "member");
-  if (!workspaceId || !email) return;
-  await nexosophyApi(`/v1/workspaces/${workspaceId}/invitations`, {
-    method: "POST",
-    body: JSON.stringify({ email, role, expiresInHours: 168 }),
-  });
-  revalidatePath(`/app/workspaces/${workspaceId}/settings/members`);
+  if (!workspaceId || !email) {
+    return { status: "error", message: "Workspace and email are required." };
+  }
+
+  try {
+    const invitation = await nexosophyApi<{ token: string }>(
+      `/v1/workspaces/${workspaceId}/invitations`,
+      {
+        method: "POST",
+        body: JSON.stringify({ email, role, expiresInHours: 168 }),
+      },
+    );
+    revalidatePath(`/app/workspaces/${workspaceId}/settings/members`);
+    return {
+      status: "success",
+      path: `/join/${encodeURIComponent(invitation.token)}`,
+      message: "Invitation created. Copy this link now; the raw token is not stored.",
+    };
+  } catch (error) {
+    return linkActionError(error);
+  }
 }
 
 export async function updateWorkspaceMemberAction(formData: FormData) {
@@ -78,34 +109,70 @@ export async function updateWorkspaceMemberAction(formData: FormData) {
   revalidatePath(`/app/workspaces/${workspaceId}/settings/members`);
 }
 
-export async function createOwnershipTransferAction(formData: FormData) {
+export async function createOwnershipTransferAction(
+  _previousState: BearerLinkState,
+  formData: FormData,
+): Promise<BearerLinkState> {
   const workspaceId = String(formData.get("workspaceId") ?? "");
   const toUserId = String(formData.get("toUserId") ?? "");
-  if (!workspaceId || !toUserId) return;
-  await nexosophyApi(`/v1/workspaces/${workspaceId}/ownership-transfer`, {
-    method: "POST",
-    body: JSON.stringify({ toUserId, expiresInHours: 24 }),
-  });
-  revalidatePath(`/app/workspaces/${workspaceId}/settings/members`);
+  if (!workspaceId || !toUserId) {
+    return { status: "error", message: "Select an active member." };
+  }
+
+  try {
+    const transfer = await nexosophyApi<{ token: string }>(
+      `/v1/workspaces/${workspaceId}/ownership-transfer`,
+      {
+        method: "POST",
+        body: JSON.stringify({ toUserId, expiresInHours: 24 }),
+      },
+    );
+    revalidatePath(`/app/workspaces/${workspaceId}/settings/members`);
+    return {
+      status: "success",
+      path: `/ownership-transfer/${encodeURIComponent(transfer.token)}`,
+      message: "Transfer created. Send this one-time acceptance link to the target member.",
+    };
+  } catch (error) {
+    return linkActionError(error);
+  }
 }
 
-export async function createShareLinkAction(formData: FormData) {
+export async function createShareLinkAction(
+  _previousState: BearerLinkState,
+  formData: FormData,
+): Promise<BearerLinkState> {
   const workspaceId = String(formData.get("workspaceId") ?? "");
   const resourceType = String(formData.get("resourceType") ?? "workspace");
   const resourceId = String(formData.get("resourceId") ?? workspaceId);
   const password = String(formData.get("password") ?? "");
   const allowDownload = formData.get("allowDownload") === "on";
-  if (!workspaceId || !resourceId) return;
-  await nexosophyApi(`/v1/workspaces/${workspaceId}/share-links`, {
-    method: "POST",
-    body: JSON.stringify({
-      resourceType,
-      resourceId,
-      allowDownload,
-      ...(password ? { password } : {}),
-    }),
-  });
-  revalidatePath(`/app/workspaces/${workspaceId}/settings/permissions`);
+  if (!workspaceId || !resourceId) {
+    return { status: "error", message: "Workspace and resource are required." };
+  }
+
+  try {
+    const share = await nexosophyApi<{ token: string }>(
+      `/v1/workspaces/${workspaceId}/share-links`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          resourceType,
+          resourceId,
+          allowDownload,
+          ...(password ? { password } : {}),
+        }),
+      },
+    );
+    revalidatePath(`/app/workspaces/${workspaceId}/settings/permissions`);
+    return {
+      status: "success",
+      path: `/share/${encodeURIComponent(share.token)}`,
+      message: "Share link created. Copy it now; only its hash is retained by the API.",
+    };
+  } catch (error) {
+    return linkActionError(error);
+  }
 }
 
 export async function acceptWorkspaceInvitationAction(token: string) {

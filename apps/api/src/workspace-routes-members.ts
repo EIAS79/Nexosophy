@@ -121,14 +121,17 @@ export async function registerWorkspaceMemberRoutes(
     if (!target) {
       return sendWorkspaceError(reply, request.id, 404, "MEMBER_NOT_FOUND", "Member not found.");
     }
-    if (
-      parsed.data.role &&
-      !canChangeWorkspaceMemberRole(authorization.role, target.role, parsed.data.role)
-    ) {
-      return sendWorkspaceError(reply, request.id, 403, "ROLE_CHANGE_FORBIDDEN", "Role change is not allowed.");
-    }
     if (target.role === "owner") {
       return sendWorkspaceError(reply, request.id, 422, "OWNERSHIP_TRANSFER_REQUIRED", "Use ownership transfer for the owner role.");
+    }
+    if (
+      !canChangeWorkspaceMemberRole(
+        authorization.role,
+        target.role,
+        parsed.data.role ?? target.role,
+      )
+    ) {
+      return sendWorkspaceError(reply, request.id, 403, "ROLE_CHANGE_FORBIDDEN", "Role or status change is not allowed.");
     }
     const updated = await updateWorkspaceMember(pool, {
       workspaceId,

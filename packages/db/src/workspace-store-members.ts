@@ -168,12 +168,10 @@ export async function acceptWorkspaceInvitation(
       return { accepted: false as const, reason: "wrong_recipient" as const };
     }
 
-    await client.query(
+    const membershipInsert = await client.query(
       `insert into "workspace_members" ("workspace_id", "user_id", "role", "status")
        values ($1, $2, $3, 'active')
-       on conflict ("workspace_id", "user_id") do update
-       set "role" = excluded."role", "status" = 'active',
-           "version" = "workspace_members"."version" + 1, "updated_at" = now()`,
+       on conflict ("workspace_id", "user_id") do nothing`,
       [invite.workspace_id, input.userId, invite.role],
     );
     await client.query(
@@ -182,11 +180,16 @@ export async function acceptWorkspaceInvitation(
        where "id" = $1`,
       [invite.id, input.userId],
     );
-    await bumpWorkspacePermissionVersion(client, invite.workspace_id);
+    if ((membershipInsert.rowCount ?? 0) === 1) {
+      await bumpWorkspacePermissionVersion(client, invite.workspace_id);
+    }
     await appendWorkspaceAudit(client, {
       workspaceId: invite.workspace_id,
       actorUserId: input.userId,
-      action: "member.invitation_accepted",
+      action:
+        (membershipInsert.rowCount ?? 0) === 1
+          ? "member.invitation_accepted"
+          : "member.invitation_accepted_existing",
       targetType: "workspace_invitation",
       targetId: invite.id,
       requestId: input.requestId,
