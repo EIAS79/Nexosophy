@@ -1,8 +1,13 @@
 import { ButtonLink } from "@nexosophy/ui";
 
-import { publicNavigation } from "../lib/navigation";
-
 export function MarketingHeader() {
+  const primary = [
+    { href: "/features", label: "Product", menu: true },
+    { href: "/students", label: "For", menu: true },
+    { href: "/templates", label: "Resources", menu: true },
+    { href: "/pricing", label: "Pricing", menu: false },
+  ] as const;
+
   return (
     <header className="marketing-header">
       <div className="marketing-header__inner">
@@ -12,24 +17,33 @@ export function MarketingHeader() {
         </a>
 
         <nav className="marketing-header__nav" aria-label="Primary">
-          {publicNavigation.map((item) => (
-            <a key={item.href} href={item.href}>{item.label}</a>
+          {primary.map((item) => (
+            <a key={item.href} href={item.href}>
+              {item.label}
+              {item.menu ? <span aria-hidden="true">⌄</span> : null}
+            </a>
           ))}
         </nav>
 
+        <a className="marketing-header__search" href="/app/search" aria-label="Search Nexosophy">
+          <span aria-hidden="true">⌕</span>
+          <span>Search knowledge, files, people...</span>
+          <kbd>⌘ K</kbd>
+        </a>
+
         <div className="marketing-header__actions">
           <ButtonLink href="/login" variant="ghost" size="sm">Sign in</ButtonLink>
-          <ButtonLink href="/signup" size="sm">Start free</ButtonLink>
+          <ButtonLink href="/signup" size="sm">Get started</ButtonLink>
         </div>
 
         <details className="marketing-header__mobile">
           <summary aria-label="Open navigation">Menu</summary>
           <nav aria-label="Mobile primary navigation">
-            {publicNavigation.map((item) => (
+            {primary.map((item) => (
               <a key={item.href} href={item.href}>{item.label}</a>
             ))}
             <a href="/login">Sign in</a>
-            <a href="/signup">Start free</a>
+            <a href="/signup">Get started</a>
           </nav>
         </details>
       </div>
