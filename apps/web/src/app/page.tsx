@@ -1,5 +1,4 @@
 import type { CSSProperties } from "react";
-import Image from "next/image";
 import type { Metadata } from "next";
 
 import { HomeMotionController } from "../components/home-motion-controller";
@@ -188,18 +187,83 @@ function HeroVisual() {
     <div
       className={styles.heroVisual}
       role="img"
-      aria-label="Nexosophy research workspace illustration with connected tasks, references, files and knowledge graph."
+      aria-label="A connected knowledge constellation showing Nexosophy linking research, notes, files, data, people, and tasks."
     >
-      <Image
-        className={styles.heroProductArtwork}
-        src="/home/hero-product-panels.webp"
-        alt=""
-        aria-hidden="true"
-        width={1536}
-        height={1152}
-        priority
-        sizes="(max-width: 720px) 110vw, (max-width: 1024px) 86vw, 62vw"
-      />
+      <div className={styles.knowledgeScene} aria-hidden="true">
+        <svg className={styles.knowledgeLines} viewBox="0 0 820 660" preserveAspectRatio="none">
+          <title>Connected knowledge graph</title>
+          <path d="M410 330 C325 235 245 205 158 160" />
+          <path d="M410 330 C500 220 582 190 676 142" />
+          <path d="M410 330 C300 332 218 352 112 390" />
+          <path d="M410 330 C520 330 604 352 730 390" />
+          <path d="M410 330 C350 435 298 486 224 536" />
+          <path d="M410 330 C474 438 526 486 606 538" />
+        </svg>
+
+        <div className={`${styles.knowledgeNode} ${styles.nodeResearch}`}>
+          <span>R</span>
+          <strong>Research</strong>
+          <small>24 papers</small>
+        </div>
+        <div className={`${styles.knowledgeNode} ${styles.nodePeople}`}>
+          <span>P</span>
+          <strong>People</strong>
+          <small>8 collaborators</small>
+        </div>
+        <div className={`${styles.knowledgeNode} ${styles.nodeNotes}`}>
+          <span>N</span>
+          <strong>Notes</strong>
+          <small>116 linked</small>
+        </div>
+        <div className={`${styles.knowledgeNode} ${styles.nodeData}`}>
+          <span>D</span>
+          <strong>Data</strong>
+          <small>3 datasets</small>
+        </div>
+        <div className={`${styles.knowledgeNode} ${styles.nodeFiles}`}>
+          <span>F</span>
+          <strong>Files</strong>
+          <small>42 indexed</small>
+        </div>
+        <div className={`${styles.knowledgeNode} ${styles.nodeTasks}`}>
+          <span>T</span>
+          <strong>Tasks</strong>
+          <small>6 active</small>
+        </div>
+
+        <div className={styles.knowledgeCore}>
+          <Mark compact />
+          <small>Nexosophy</small>
+          <strong>Context engine</strong>
+          <p>Everything connected.</p>
+        </div>
+
+        <div className={styles.heroBriefCard}>
+          <div className={styles.heroBriefTop}>
+            <span>Research brief</span>
+            <small>Updated now</small>
+          </div>
+          <strong>Human–AI collaboration in science</strong>
+          <p>12 papers, 4 notes and 3 datasets converge on the same emerging theme.</p>
+          <div className={styles.heroBriefMeta}>
+            <span>12 sources</span>
+            <span>4 connections</span>
+            <span>High confidence</span>
+          </div>
+        </div>
+
+        <div className={styles.heroTodayCard}>
+          <span>Today</span>
+          <strong>3 focused actions</strong>
+          <p>Review findings · Draft discussion · Share with Maya</p>
+        </div>
+
+        <div className={styles.heroCommandBar}>
+          <Mark compact />
+          <span>Ask across your research...</span>
+          <b>↗</b>
+        </div>
+      </div>
     </div>
   );
 }
