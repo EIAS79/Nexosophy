@@ -52,7 +52,7 @@
   box-shadow:
     0 36px 90px rgb(0 0 0 / 38%),
     0 0 50px rgb(51 184 255 / 8%);
-  transform: perspective(1600px) rotateY(-1deg) rotateX(.3deg);
+  transform: perspective(1600px) rotateY(-1deg) rotateX(0.3deg);
 }
 
 .workspaceHeader {
@@ -71,7 +71,7 @@
   align-items: center;
   gap: 9px;
   color: #edf9fd;
-  font-size: .78rem;
+  font-size: 0.78rem;
   text-decoration: none;
 }
 
@@ -83,7 +83,7 @@
   border-radius: 9px 5px 9px 5px;
   background: linear-gradient(135deg, #75f3ff, #55d2ff 48%, #7568ff);
   color: #03131f;
-  font-size: .68rem;
+  font-size: 0.68rem;
   font-weight: 900;
   box-shadow: 0 0 22px rgb(67 206 255 / 25%);
 }
@@ -112,7 +112,7 @@
   background: transparent;
   color: #dbe9f1;
   font: inherit;
-  font-size: .58rem;
+  font-size: 0.58rem;
 }
 
 .workspaceSearch input::placeholder {
@@ -122,7 +122,7 @@
 .workspaceSearch kbd {
   color: #66879a;
   font: inherit;
-  font-size: .48rem;
+  font-size: 0.48rem;
 }
 
 .workspaceAvatars {
@@ -141,7 +141,7 @@
   border-radius: 999px;
   background: linear-gradient(135deg, #966d57, #375778);
   color: white;
-  font-size: .45rem;
+  font-size: 0.45rem;
   font-weight: 700;
 }
 
@@ -176,7 +176,7 @@
   padding: 0 8px;
   color: #90a9b8;
   font: inherit;
-  font-size: .52rem;
+  font-size: 0.52rem;
   text-align: left;
   cursor: pointer;
 }
@@ -193,16 +193,16 @@
   background: rgb(92 190 239 / 11%);
   padding: 2px 5px;
   color: #7bc9e8;
-  font-size: .43rem;
+  font-size: 0.43rem;
   text-align: center;
 }
 
 .sidebar p {
   margin: 13px 8px 5px;
   color: #627e90;
-  font-size: .43rem;
+  font-size: 0.43rem;
   font-weight: 760;
-  letter-spacing: .08em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -238,7 +238,7 @@
   display: flex;
   gap: 5px;
   color: #80929d;
-  font-size: .45rem;
+  font-size: 0.45rem;
 }
 
 .canvasTop > div strong {
@@ -258,7 +258,7 @@
   padding: 0 7px;
   color: #748994;
   font: inherit;
-  font-size: .44rem;
+  font-size: 0.44rem;
   font-weight: 640;
   cursor: pointer;
 }
@@ -277,7 +277,7 @@
   flex-wrap: wrap;
   gap: 7px;
   color: #81939d;
-  font-size: .43rem;
+  font-size: 0.43rem;
 }
 
 .documentMeta span:first-child {
@@ -299,14 +299,14 @@
   font-size: 1.45rem;
   font-weight: 600;
   line-height: 1.02;
-  letter-spacing: -.035em;
+  letter-spacing: -0.035em;
 }
 
 .documentView > p {
   max-width: 57ch;
   margin: 0;
   color: #617681;
-  font-size: .58rem;
+  font-size: 0.58rem;
   line-height: 1.5;
 }
 
@@ -317,18 +317,18 @@
   background: #e4eef3;
   padding: 10px 13px;
   color: #506b79;
-  font-size: .56rem;
+  font-size: 0.56rem;
   line-height: 1.5;
 }
 
 .documentView h4 {
   margin: 13px 0 6px;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: .82rem;
+  font-size: 0.82rem;
 }
 
 .documentView .documentBody {
-  font-size: .5rem;
+  font-size: 0.5rem;
 }
 
 .connectionView {
@@ -363,13 +363,13 @@
 
 .connectionCore strong {
   font-family: Georgia, "Times New Roman", serif;
-  font-size: .78rem;
+  font-size: 0.78rem;
   line-height: 1.05;
 }
 
 .connectionCore span {
   color: #75909d;
-  font-size: .45rem;
+  font-size: 0.45rem;
 }
 
 .connectionView button {
@@ -390,22 +390,40 @@
 }
 
 .connectionView button span {
-  font-size: .52rem;
+  font-size: 0.52rem;
   font-weight: 700;
 }
 
 .connectionView button small {
   margin-top: 2px;
   color: #83959e;
-  font-size: .4rem;
+  font-size: 0.4rem;
 }
 
-.connectionView button[data-index="0"] { top: 17%; left: 15%; }
-.connectionView button[data-index="1"] { top: 12%; right: 15%; }
-.connectionView button[data-index="2"] { top: 48%; left: 6%; }
-.connectionView button[data-index="3"] { top: 48%; right: 5%; }
-.connectionView button[data-index="4"] { bottom: 10%; left: 18%; }
-.connectionView button[data-index="5"] { right: 17%; bottom: 9%; }
+.connectionView button[data-index="0"] {
+  top: 17%;
+  left: 15%;
+}
+.connectionView button[data-index="1"] {
+  top: 12%;
+  right: 15%;
+}
+.connectionView button[data-index="2"] {
+  top: 48%;
+  left: 6%;
+}
+.connectionView button[data-index="3"] {
+  top: 48%;
+  right: 5%;
+}
+.connectionView button[data-index="4"] {
+  bottom: 10%;
+  left: 18%;
+}
+.connectionView button[data-index="5"] {
+  right: 17%;
+  bottom: 9%;
+}
 
 .taskView {
   padding: 24px 26px;
@@ -424,17 +442,17 @@
 
 .taskProgress span {
   color: #6e8590;
-  font-size: .5rem;
+  font-size: 0.5rem;
 }
 
 .taskProgress strong {
   color: #254858;
-  font-size: .72rem;
+  font-size: 0.72rem;
 }
 
 .taskProgress b {
   color: #3f8598;
-  font-size: .74rem;
+  font-size: 0.74rem;
 }
 
 .progressTrack {
@@ -461,7 +479,7 @@
   gap: 8px;
   border-bottom: 1px solid #e1e9ed;
   color: #526c78;
-  font-size: .57rem;
+  font-size: 0.57rem;
   cursor: pointer;
 }
 
@@ -502,7 +520,10 @@
   border-radius: 17px;
   padding: 13px 14px;
   transform: rotate(-1.2deg);
-  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
 }
 
 .insightCard[data-open="true"] {
@@ -537,7 +558,7 @@
   width: 58%;
   border-radius: 15px;
   padding: 10px 11px;
-  transform: rotate(.4deg);
+  transform: rotate(0.4deg);
 }
 
 .cardEyebrow {
@@ -545,7 +566,7 @@
   align-items: center;
   gap: 8px;
   color: #dff4fb;
-  font-size: .56rem;
+  font-size: 0.56rem;
 }
 
 .cardEyebrow strong {
@@ -590,7 +611,7 @@
   background: rgb(71 215 236 / 10%);
   padding: 4px 7px;
   color: #61e4ef;
-  font-size: .43rem;
+  font-size: 0.43rem;
   font-weight: 700;
 }
 
@@ -623,32 +644,32 @@
 
 .notesList button > span:first-child {
   color: #63dce9;
-  font-size: .45rem;
+  font-size: 0.45rem;
 }
 
 .notesList button > span:nth-child(2) {
   overflow: hidden;
-  font-size: .48rem;
+  font-size: 0.48rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .notesList small {
   color: #668597;
-  font-size: .4rem;
+  font-size: 0.4rem;
 }
 
 .insightTitle {
   margin: 11px 0 5px;
   color: #f0f8fc;
-  font-size: .62rem;
+  font-size: 0.62rem;
   font-weight: 720;
 }
 
 .insightCopy {
   margin: 0;
   color: #88a6b7;
-  font-size: .5rem;
+  font-size: 0.5rem;
   line-height: 1.45;
 }
 
@@ -664,7 +685,7 @@
   padding: 0 11px;
   color: #75e9f1;
   font: inherit;
-  font-size: .48rem;
+  font-size: 0.48rem;
   font-weight: 700;
   cursor: pointer;
 }
@@ -703,7 +724,7 @@
   background: rgb(5 28 46 / 85%);
   color: #e9f9fd;
   font: inherit;
-  font-size: .48rem;
+  font-size: 0.48rem;
   font-weight: 700;
   cursor: pointer;
   transform: translate(-50%, -50%);
@@ -712,7 +733,7 @@
 .graphCenter span {
   display: block;
   color: #85dfea;
-  font-size: .42rem;
+  font-size: 0.42rem;
   font-weight: 500;
 }
 
@@ -722,13 +743,25 @@
 .graphLabelMethods {
   position: absolute;
   color: #7695a7;
-  font-size: .4rem;
+  font-size: 0.4rem;
 }
 
-.graphLabelResearch { top: 22%; left: 2%; }
-.graphLabelCreativity { top: 7%; right: 16%; }
-.graphLabelEducation { right: 0; bottom: 19%; }
-.graphLabelMethods { bottom: 6%; left: 8%; }
+.graphLabelResearch {
+  top: 22%;
+  left: 2%;
+}
+.graphLabelCreativity {
+  top: 7%;
+  right: 16%;
+}
+.graphLabelEducation {
+  right: 0;
+  bottom: 19%;
+}
+.graphLabelMethods {
+  bottom: 6%;
+  left: 8%;
+}
 
 .referenceList {
   display: grid;
@@ -759,7 +792,7 @@
 
 .referenceIndex {
   color: #64ddeb;
-  font-size: .43rem;
+  font-size: 0.43rem;
 }
 
 .referenceList button > span:last-child {
@@ -777,12 +810,12 @@
 
 .referenceList strong {
   color: #bfd5df;
-  font-size: .47rem;
+  font-size: 0.47rem;
 }
 
 .referenceList small {
   color: #688798;
-  font-size: .4rem;
+  font-size: 0.4rem;
 }
 
 .relatedTitle {
@@ -790,7 +823,7 @@
   align-items: center;
   gap: 7px;
   color: #d9edf7;
-  font-size: .52rem;
+  font-size: 0.52rem;
 }
 
 .relatedTitle span {
@@ -841,14 +874,14 @@
 .relatedItems strong {
   overflow: hidden;
   color: #c9dce5;
-  font-size: .43rem;
+  font-size: 0.43rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .relatedItems small {
   color: #657f90;
-  font-size: .38rem;
+  font-size: 0.38rem;
 }
 
 @media (max-width: 1280px) {
@@ -946,7 +979,7 @@
   }
 
   .workspaceBrand {
-    font-size: .66rem;
+    font-size: 0.66rem;
   }
 
   .workspaceBrand > span {
@@ -972,7 +1005,7 @@
   .sidebar nav button {
     grid-template-columns: 15px 1fr;
     padding-inline: 5px;
-    font-size: .45rem;
+    font-size: 0.45rem;
   }
 
   .sidebar nav button b {
@@ -998,7 +1031,7 @@
   }
 
   .documentView > p {
-    font-size: .52rem;
+    font-size: 0.52rem;
   }
 
   .relatedBar {
@@ -1049,11 +1082,11 @@
 
   .canvasTop nav button {
     padding-inline: 5px;
-    font-size: .4rem;
+    font-size: 0.4rem;
   }
 
   .documentView h3 {
-    font-size: .98rem;
+    font-size: 0.98rem;
   }
 
   .documentView blockquote,
