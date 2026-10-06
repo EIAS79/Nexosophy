@@ -4213,7 +4213,7 @@
   pointer-events: none;
 }
 
-.knowledgeScene {
+.heroVisual > .knowledgeScene {
   position: absolute;
   inset: 2% -1% 3% 0;
   overflow: visible;
