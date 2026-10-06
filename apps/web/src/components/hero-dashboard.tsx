@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import type { CSSProperties, FormEvent } from "react";
+import { useMemo, useState } from "react";
 
 import styles from "./hero-dashboard.module.css";
 
@@ -207,7 +208,7 @@ export function HeroDashboard() {
               <div className={styles.fullGraph}>
                 <div className={styles.fullGraphCore}>Human–AI<br />Collaboration</div>
                 {["Methods", "Results", "Ethics", "Education", "Datasets", "Impact"].map((label, index) => (
-                  <button key={label} type="button" style={{ "--i": index } as React.CSSProperties}>
+                  <button key={label} type="button" style={{ "--i": index } as CSSProperties}>
                     {label}
                   </button>
                 ))}
