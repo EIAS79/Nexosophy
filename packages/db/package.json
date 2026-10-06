@@ -12,7 +12,8 @@
     "db:check": "drizzle-kit check",
     "clean": "rm -rf dist",
     "db:migrate": "tsx src/migrate.ts",
-    "test:identity-integration": "tsx src/identity-integration.ts"
+    "test:identity-integration": "tsx src/identity-integration.ts",
+    "test:workspace-integration": "tsx src/workspace-integration.ts"
   },
   "dependencies": {
     "drizzle-orm": "0.45.3",

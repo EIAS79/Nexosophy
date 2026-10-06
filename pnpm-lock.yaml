@@ -238,6 +238,9 @@ importers:
       '@clerk/nextjs':
         specifier: 7.9.4
         version: 7.9.4(next@16.3.8(@types/node@26.6.4)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@nexosophy/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
       '@nexosophy/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
@@ -281,6 +284,9 @@ importers:
       '@clerk/backend':
         specifier: 3.20.1
         version: 3.20.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@nexosophy/contracts':
+        specifier: workspace:*
+        version: link:../contracts
 
   packages/billing: {}
 

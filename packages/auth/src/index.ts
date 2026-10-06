@@ -235,3 +235,5 @@ export {
   createClerkIdentityProvider,
   type ClerkIdentityProviderConfig,
 } from "./clerk.js";
+
+export * from "./workspace-policy.js";

@@ -1,17 +1,30 @@
 import { CommandPalette, Tree } from "@nexosophy/ui";
 import type { ReactNode } from "react";
 
+import { switchWorkspaceAction } from "../lib/workspace-actions";
+
 import { appNavigation, mobileNavigation } from "../lib/navigation";
 import type { ShellWorkspace } from "../lib/shell-data";
 import { AppearanceControl } from "./appearance-control";
 
-function WorkspacePane({ workspace }: { workspace: ShellWorkspace }) {
+function WorkspacePane({ workspace, workspaces }: { workspace: ShellWorkspace; workspaces: readonly { id: string; name: string }[] }) {
   return (
     <>
       <label className="app-shell__workspace-label" htmlFor="workspace-switcher">Workspace</label>
-      <select className="app-shell__workspace-select" id="workspace-switcher" defaultValue={workspace.id}>
-        <option value={workspace.id}>{workspace.name}</option>
-      </select>
+      <form action={switchWorkspaceAction}>
+        <select
+          className="app-shell__workspace-select"
+          id="workspace-switcher"
+          name="workspaceId"
+          defaultValue={workspace.id}
+          aria-label="Current workspace"
+        >
+          {workspaces.map((item) => (
+            <option key={item.id} value={item.id}>{item.name}</option>
+          ))}
+        </select>
+        <button className="app-shell__workspace-switch" type="submit">Switch</button>
+      </form>
       <div className="app-shell__tree">
         <Tree label="Workspace files and sections" nodes={workspace.tree} defaultExpanded={["workspace-root"]} />
       </div>
@@ -21,9 +34,11 @@ function WorkspacePane({ workspace }: { workspace: ShellWorkspace }) {
 
 export function AppShell({
   workspace,
+  workspaces = [{ id: workspace.id, name: workspace.name }],
   children,
 }: {
   workspace: ShellWorkspace;
+  workspaces?: readonly { id: string; name: string }[];
   children: ReactNode;
 }) {
   const commands = appNavigation.map((item) => ({
@@ -54,7 +69,7 @@ export function AppShell({
             <span>Nexosophy</span>
           </a>
         </div>
-        <WorkspacePane workspace={workspace} />
+        <WorkspacePane workspace={workspace} workspaces={workspaces} />
       </aside>
 
       <div className="app-shell__main">
@@ -62,7 +77,7 @@ export function AppShell({
           <details className="app-topbar__workspace-drawer">
             <summary aria-label="Open workspace navigation">Workspace</summary>
             <div className="app-topbar__workspace-panel">
-              <WorkspacePane workspace={workspace} />
+              <WorkspacePane workspace={workspace} workspaces={workspaces} />
             </div>
           </details>
 
