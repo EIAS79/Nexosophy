@@ -575,6 +575,7 @@ export default function HomePage() {
 
       <main id="main-content" className={styles.main}>
         <section className={styles.hero} data-motion-scene>
+          <div className={styles.heroHumanBackdrop} aria-hidden="true" />
           <div className={styles.heroCopy}>
             <p className={styles.eyebrow}>A unified knowledge and work platform</p>
             <h1>
