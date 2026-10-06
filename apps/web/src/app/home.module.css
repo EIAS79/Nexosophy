@@ -4037,3 +4037,159 @@
     transform: none;
   }
 }
+
+
+/* === FINAL HYBRID HERO: static generated art + real text/actions === */
+
+.ambientLayer {
+  display: none;
+}
+
+.hero {
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  z-index: -5;
+  inset: 0;
+  border-radius: 0;
+  background:
+    linear-gradient(90deg, rgb(2 9 18 / 92%) 0%, rgb(2 10 20 / 72%) 27%, rgb(2 11 22 / 22%) 54%, rgb(2 10 20 / 4%) 75%),
+    linear-gradient(180deg, rgb(1 8 16 / 16%) 0%, transparent 54%, rgb(1 7 14 / 58%) 100%),
+    url("/home/hero-background.webp") center center / cover no-repeat;
+  filter: none;
+}
+
+.hero::after {
+  content: "";
+  position: absolute;
+  z-index: -4;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 73% 48%, rgb(61 201 255 / 7%), transparent 35%),
+    linear-gradient(180deg, transparent 68%, rgb(2 8 15 / 35%) 100%);
+}
+
+.heroHumanBackdrop {
+  display: none;
+}
+
+.heroCopy {
+  z-index: 14;
+  opacity: 1;
+  transform: none;
+  animation: hero-copy-in 420ms ease-out both;
+}
+
+.heroVisual {
+  position: relative;
+  z-index: 8;
+  min-width: 0;
+  min-height: 710px;
+  margin-bottom: 72px;
+  opacity: 1;
+  transform: none;
+  perspective: none;
+  contain: layout paint style;
+  pointer-events: none;
+}
+
+.heroVisual > div {
+  position: static;
+}
+
+.heroProductArtwork {
+  position: absolute;
+  z-index: 9;
+  top: 50%;
+  left: 50%;
+  width: min(112%, 980px);
+  height: auto;
+  object-fit: contain;
+  mix-blend-mode: screen;
+  filter: drop-shadow(0 30px 52px rgb(0 0 0 / 42%));
+  transform: translate(-47%, -50%);
+  transform-origin: center;
+  animation: hero-art-in 560ms cubic-bezier(.2,.8,.2,1) both;
+  will-change: auto;
+}
+
+@keyframes hero-copy-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes hero-art-in {
+  from { opacity: 0; transform: translate(-44%, -48%) scale(.988); }
+  to { opacity: 1; transform: translate(-47%, -50%) scale(1); }
+}
+
+@media (max-width: 1240px) {
+  .heroProductArtwork {
+    width: min(118%, 900px);
+  }
+}
+
+@media (max-width: 1023px) {
+  .hero::before {
+    background:
+      linear-gradient(180deg, rgb(2 9 18 / 76%) 0%, rgb(2 10 20 / 38%) 48%, rgb(1 7 14 / 78%) 100%),
+      url("/home/hero-background.webp") 58% center / cover no-repeat;
+  }
+
+  .heroVisual {
+    width: min(920px, 100%);
+    min-height: 625px;
+    margin: 0 auto 74px;
+  }
+
+  .heroProductArtwork {
+    width: min(102%, 840px);
+    transform: translate(-50%, -50%);
+  }
+
+  @keyframes hero-art-in {
+    from { opacity: 0; transform: translate(-50%, -48%) scale(.988); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  }
+}
+
+@media (max-width: 720px) {
+  .hero::before {
+    background:
+      linear-gradient(180deg, rgb(2 9 18 / 88%) 0%, rgb(2 10 20 / 55%) 45%, rgb(1 7 14 / 92%) 100%),
+      url("/home/hero-background.webp") 61% center / cover no-repeat;
+  }
+
+  .heroVisual {
+    min-height: 455px;
+    margin: -6px -4px 62px;
+  }
+
+  .heroProductArtwork {
+    width: 118%;
+    max-width: none;
+    transform: translate(-50%, -50%);
+  }
+}
+
+@media (max-width: 460px) {
+  .heroVisual {
+    min-height: 405px;
+  }
+
+  .heroProductArtwork {
+    width: 126%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroCopy,
+  .heroProductArtwork {
+    animation: none;
+  }
+}
