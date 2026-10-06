@@ -23,3 +23,5 @@ export const apiErrorSchema = z.object({
 export type ApiError = z.infer<typeof apiErrorSchema>;
 
 export * from "./identity.js";
+
+export * from "./workspace.js";

@@ -13,6 +13,7 @@ import { createClient } from "redis";
 import { createAuthRuntime } from "./auth-runtime.js";
 import { registerClerkWebhookRoute } from "./clerk-webhook.js";
 import { registerIdentityRoutes } from "./identity-routes.js";
+import { registerWorkspaceRoutes } from "./workspace-routes.js";
 
 const serviceVersion = process.env.npm_package_version ?? "0.0.0";
 
@@ -108,6 +109,7 @@ export async function buildApp(
       : createAuthRuntime(env, pool);
 
   await registerIdentityRoutes(app, pool, runtime.verifier);
+  await registerWorkspaceRoutes(app, pool, runtime.verifier);
 
   if (runtime.provider && runtime.identityStore) {
     await registerClerkWebhookRoute(

@@ -8,7 +8,7 @@ export const publicNavigation = [
 
 export const appNavigation = [
   { href: "/app", label: "Home", glyph: "H" },
-  { href: "/app/workspace", label: "Workspace", glyph: "W" },
+  { href: "/app/workspaces", label: "Workspace", glyph: "W" },
   { href: "/app/files", label: "Files", glyph: "F" },
   { href: "/app/notes", label: "Notes", glyph: "N" },
   { href: "/app/tasks", label: "Tasks", glyph: "T" },

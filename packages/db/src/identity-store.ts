@@ -180,6 +180,31 @@ export async function provisionIdentity(
       ),
     ]);
 
+    await client.query(
+      `with inserted as (
+         insert into "workspaces" ("type", "owner_user_id", "name", "slug")
+         values ('personal', $1::uuid, $2, 'personal-' || replace($1::uuid::text, '-', ''))
+         on conflict ("owner_user_id") where "type" = 'personal' and "archived_at" is null
+         do nothing
+         returning "id"
+       ), personal as (
+         select "id" from inserted
+         union all
+         select "id" from "workspaces"
+         where "owner_user_id" = $1::uuid and "type" = 'personal' and "archived_at" is null
+         limit 1
+       )
+       insert into "workspace_members" ("workspace_id", "user_id", "role", "status")
+       select "id", $1::uuid, 'owner', 'active' from personal
+       on conflict ("workspace_id", "user_id") do nothing`,
+      [
+        userId,
+        input.displayName?.trim()
+          ? `${input.displayName.trim()}'s workspace`.slice(0, 120)
+          : "Personal workspace",
+      ],
+    );
+
     return {
       internalUserId: userId,
       externalIdentityId: identityId,
