@@ -128,7 +128,7 @@ export function HeroDashboard() {
           </label>
 
           <div className={styles.topActions}>
-            <div className={styles.avatarGroup} role="group" aria-label="3 collaborators">
+            <div className={styles.avatarGroup}>
               <span>M</span>
               <span>D</span>
               <span>+3</span>
