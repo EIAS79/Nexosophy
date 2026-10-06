@@ -4717,3 +4717,191 @@
     min-height: 520px;
   }
 }
+
+
+/* === Knowledge Orbit hero composition === */
+
+.hero {
+  min-height: 100svh;
+  grid-template-columns: minmax(410px, .78fr) minmax(760px, 1.32fr);
+  gap: clamp(24px, 3vw, 56px);
+  padding: 108px max(4.5vw, 58px) 54px;
+}
+
+.hero::before {
+  background:
+    linear-gradient(90deg, rgb(2 9 18 / 94%) 0%, rgb(2 10 20 / 74%) 27%, rgb(2 11 22 / 26%) 53%, rgb(2 10 20 / 4%) 76%),
+    linear-gradient(180deg, rgb(1 8 16 / 14%) 0%, transparent 56%, rgb(1 7 14 / 52%) 100%),
+    url("/home/hero-background.webp") center center / cover no-repeat;
+}
+
+.heroCopy {
+  align-self: center;
+  max-width: 610px;
+  padding: 0 0 18px;
+}
+
+.hero .eyebrow {
+  margin-bottom: 22px;
+  border-color: rgb(94 224 255 / 28%);
+  background: rgb(4 23 38 / 52%);
+  color: #a6c8d8;
+}
+
+.hero .eyebrow::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  display: inline-block;
+  margin-right: 8px;
+  border-radius: 999px;
+  background: #55e2f0;
+  box-shadow: 0 0 14px rgb(74 224 240 / 75%);
+}
+
+.hero h1 {
+  max-width: 650px;
+  font-size: clamp(4.15rem, 5.55vw, 6.25rem);
+  line-height: .9;
+  letter-spacing: -.052em;
+}
+
+.hero h1 em {
+  color: #57e9f2;
+  text-shadow: 0 0 28px rgb(80 224 242 / 18%);
+}
+
+.hero .lede {
+  max-width: 590px;
+  margin-top: 28px;
+  color: #c8d8e1;
+  font-size: clamp(.98rem, 1.12vw, 1.08rem);
+  line-height: 1.58;
+}
+
+.hero .actions {
+  margin-top: 28px;
+}
+
+.heroProof {
+  margin-top: 23px;
+}
+
+.heroProof p {
+  max-width: 365px;
+  color: #9db3c1;
+}
+
+.heroVisual {
+  min-height: 740px;
+  margin: 0;
+  align-self: center;
+  overflow: visible;
+  pointer-events: auto;
+}
+
+.heroVisual > div {
+  position: relative;
+}
+
+@media (max-width: 1320px) {
+  .hero {
+    grid-template-columns: minmax(370px, .72fr) minmax(680px, 1.28fr);
+    padding-inline: 42px;
+  }
+
+  .hero h1 {
+    font-size: clamp(3.9rem, 5.25vw, 5.55rem);
+  }
+
+  .heroVisual {
+    min-height: 700px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .hero {
+    grid-template-columns: 1fr;
+    min-height: auto;
+    padding: 116px 28px 62px;
+  }
+
+  .hero::before {
+    background:
+      linear-gradient(180deg, rgb(2 9 18 / 78%) 0%, rgb(2 10 20 / 44%) 46%, rgb(1 7 14 / 78%) 100%),
+      url("/home/hero-background.webp") 58% center / cover no-repeat;
+  }
+
+  .heroCopy {
+    width: min(760px, 100%);
+    max-width: none;
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  .hero .eyebrow {
+    margin-inline: auto;
+  }
+
+  .hero h1,
+  .hero .lede {
+    margin-inline: auto;
+  }
+
+  .hero .actions,
+  .heroProof {
+    justify-content: center;
+  }
+
+  .heroVisual {
+    width: min(980px, 100%);
+    min-height: 660px;
+    margin-inline: auto;
+  }
+}
+
+@media (max-width: 720px) {
+  .hero {
+    padding: 104px 14px 46px;
+  }
+
+  .hero h1 {
+    font-size: clamp(3.2rem, 13.4vw, 4.7rem);
+    line-height: .92;
+  }
+
+  .hero .lede {
+    font-size: .93rem;
+  }
+
+  .hero .actions {
+    width: min(390px, 100%);
+    display: grid;
+    margin-inline: auto;
+  }
+
+  .hero .primaryCta,
+  .hero .secondaryCta {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .heroProof {
+    width: min(380px, 100%);
+    margin-inline: auto;
+  }
+
+  .heroVisual {
+    min-height: 600px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero h1 {
+    font-size: clamp(2.95rem, 14.8vw, 4rem);
+  }
+
+  .heroVisual {
+    min-height: 525px;
+  }
+}
