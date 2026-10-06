@@ -613,14 +613,14 @@ export default function HomePage() {
           <HeroVisual />
 
           <nav className={styles.personaRail} aria-label="Nexosophy use cases">
-            {[
+            {([
               ["Students", "Learn deeper. Do more.", "/students", "◫"],
               ["Researchers", "From ideas to impact.", "/researchers", "△"],
               ["Professors", "Teach, mentor, collaborate.", "/professors", "◉"],
               ["Laboratories", "Organize. Analyze. Advance.", "/labs", "◇"],
               ["Reporters", "Uncover. Verify. Tell.", "/reporters", "▤"],
               ["Analysts", "Turn knowledge into insight.", "/analysts", "▥"],
-            ].map(([label, strap, href, glyph]) => (
+            ] as const).map(([label, strap, href, glyph]) => (
               <a key={label} href={href}>
                 <span className={styles.personaRailIcon}>{glyph}</span>
                 <span className={styles.personaRailText}>
