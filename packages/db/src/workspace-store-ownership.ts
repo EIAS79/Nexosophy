@@ -25,7 +25,7 @@ export async function requestOwnershipTransfer(
        where "workspace_id" = $1 and "user_id" = $2 for update`,
       [input.workspaceId, input.toUserId],
     );
-    if (!target.rows[0] || target.rows[0].status !== "active") return null;
+    if (target.rows[0]?.status !== "active") return null;
 
     await client.query(
       `update "workspace_ownership_transfers"

@@ -58,7 +58,7 @@ describe("workspace policy", () => {
         status: "suspended",
         customPermissions: ["workspace.delete"],
       }),
-    ).toEqual([]);
+    ).toEqual(new Set());
   });
 
   it("accepts only known custom permissions", () => {
