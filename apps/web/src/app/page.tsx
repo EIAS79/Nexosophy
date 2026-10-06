@@ -191,6 +191,7 @@ function HeroVisual() {
     >
       <div className={styles.knowledgeScene} aria-hidden="true">
         <svg className={styles.knowledgeLines} viewBox="0 0 820 660" preserveAspectRatio="none">
+          <title>Connected knowledge graph</title>
           <path d="M410 330 C325 235 245 205 158 160" />
           <path d="M410 330 C500 220 582 190 676 142" />
           <path d="M410 330 C300 332 218 352 112 390" />
