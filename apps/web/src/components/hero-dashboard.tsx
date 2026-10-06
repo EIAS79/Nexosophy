@@ -1,192 +1,184 @@
 "use client";
 
-import type { CSSProperties, FormEvent } from "react";
 import { useMemo, useState } from "react";
 
 import styles from "./hero-dashboard.module.css";
 
-type DashboardTab = "document" | "graph" | "tasks" | "references";
+type View = "brief" | "connections" | "tasks";
 
-type Task = {
-  id: number;
-  label: string;
-  done: boolean;
-};
-
-const workspaces = ["Literature Review", "Experiments", "Analysis", "Papers & Writing"] as const;
+const notes = [
+  "Research questions for next phase",
+  "Ideas on evaluation framework",
+  "Potential collaboration with MIT",
+] as const;
 
 const references = [
-  ["Bender, E. M. (2023)", "On the Dangers of Stochastic Parrots"],
+  ["Bender et al. (2023)", "On the Dangers of Stochastic Parrots"],
   ["Nature (2024)", "AI in Science: Opportunities and Limits"],
   ["Azoulay, P. (2022)", "The Labor of AI in Research"],
 ] as const;
 
-const initialTasks: Task[] = [
-  { id: 1, label: "Summarize key findings from 5 papers", done: true },
-  { id: 2, label: "Compare methodologies", done: false },
-  { id: 3, label: "Draft discussion section", done: false },
-  { id: 4, label: "Get feedback from advisor", done: false },
-];
+const tasks = [
+  "Summarize key findings from 5 papers",
+  "Compare methodologies",
+  "Draft discussion section",
+] as const;
 
 export function HeroDashboard() {
-  const [activeWorkspace, setActiveWorkspace] = useState<(typeof workspaces)[number]>("Literature Review");
-  const [tab, setTab] = useState<DashboardTab>("document");
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
-  const [query, setQuery] = useState("");
-  const [assistantReply, setAssistantReply] = useState("Ask anything about your research.");
-  const [shared, setShared] = useState(false);
+  const [view, setView] = useState<View>("brief");
+  const [activeReference, setActiveReference] = useState(0);
+  const [doneTasks, setDoneTasks] = useState<number[]>([0]);
+  const [insightOpen, setInsightOpen] = useState(false);
 
-  const completedTasks = useMemo(() => tasks.filter((task) => task.done).length, [tasks]);
+  const progress = useMemo(
+    () => Math.round((doneTasks.length / tasks.length) * 100),
+    [doneTasks],
+  );
 
-  function toggleTask(id: number) {
-    setTasks((current) =>
-      current.map((task) => (task.id === id ? { ...task, done: !task.done } : task)),
+  function toggleTask(index: number) {
+    setDoneTasks((current) =>
+      current.includes(index) ? current.filter((item) => item !== index) : [...current, index],
     );
   }
 
-  function submitQuery(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const cleanQuery = query.trim();
-
-    if (!cleanQuery) {
-      setAssistantReply("Try asking for a summary, a connection, or your next step.");
-      return;
-    }
-
-    const lower = cleanQuery.toLowerCase();
-
-    if (lower.includes("summar")) {
-      setAssistantReply("Across 12 sources, the strongest theme is that AI expands scientific throughput when human judgment stays in the loop.");
-    } else if (lower.includes("connect") || lower.includes("related")) {
-      setAssistantReply("I found 4 strong links between your literature notes, experiment results, and the collaboration paper.");
-    } else if (lower.includes("next") || lower.includes("plan")) {
-      setAssistantReply("Next: compare the two dominant methodologies, resolve one citation gap, then draft the discussion section.");
-    } else {
-      setAssistantReply("I found relevant context across your papers, notes, tasks, and experiment data. Open a source or ask me to synthesize it.");
-    }
-
-    setQuery("");
-  }
-
-  function runSuggestion(message: string) {
-    setQuery("");
-    setAssistantReply(message);
-  }
-
   return (
-    <div className={styles.stage}>
-      <div className={styles.todayCard}>
-        <div className={styles.smallCardTitle}>
-          <div>
-            <strong>Today</strong>
-            <span>Wed, Oct 16</span>
-          </div>
-          <span className={styles.iconBadge}>◷</span>
-        </div>
-        <ul>
-          <li><span className={styles.doneDot}>✓</span><span>Write literature review</span><time>9:00</time></li>
-          <li><span className={styles.openDot}>○</span><span>Prepare lab slides</span><time>11:00</time></li>
-          <li><span className={styles.openDot}>○</span><span>Review experiment results</span><time>4:00</time></li>
-        </ul>
-      </div>
+    <div className={styles.orbitStage}>
+      <svg
+        className={styles.orbitLines}
+        viewBox="0 0 920 650"
+        preserveAspectRatio="none"
+        aria-hidden="true"
+      >
+        <path d="M205 178 C330 102 510 92 652 145" />
+        <path d="M675 145 C760 194 797 266 785 340" />
+        <path d="M792 355 C770 474 659 540 542 545" />
+        <path d="M530 548 C406 558 281 510 225 423" />
+      </svg>
 
-      <div className={styles.graphCard}>
-        <div className={styles.graphTabs}>
-          <strong>Graph</strong>
-          <span>Table</span>
-          <span>Map</span>
+      <article className={styles.notesCard}>
+        <div className={styles.cardEyebrow}>
+          <span className={styles.cardIcon}>▤</span>
+          <strong>Notes</strong>
+          <button type="button" aria-label="Add note">＋</button>
         </div>
-        <div className={styles.graphCanvas} aria-hidden="true">
-          <svg viewBox="0 0 280 120">
-            <title>Research relationship graph</title>
-            <path d="M140 60 68 30M140 60 212 26M140 60 232 82M140 60 82 94M140 60 145 14" />
-            <circle cx="140" cy="60" r="18" />
-            <circle cx="68" cy="30" r="7" />
-            <circle cx="212" cy="26" r="7" />
-            <circle cx="232" cy="82" r="7" />
-            <circle cx="82" cy="94" r="7" />
-            <circle cx="145" cy="14" r="7" />
+        <div className={styles.notesList}>
+          {notes.map((note, index) => (
+            <button key={note} type="button" onClick={() => setView("brief")}>
+              <span>{index + 1}</span>
+              <span>{note}</span>
+              <small>{index === 0 ? "Today" : index === 1 ? "Yesterday" : "Oct 14"}</small>
+            </button>
+          ))}
+        </div>
+      </article>
+
+      <article className={styles.insightCard} data-open={insightOpen}>
+        <div className={styles.cardEyebrow}>
+          <span className={styles.insightOrb}>✦</span>
+          <strong>AI Insight</strong>
+          <span className={styles.beta}>Beta</span>
+        </div>
+        <p className={styles.insightTitle}>Emerging connection detected</p>
+        <p className={styles.insightCopy}>
+          Your notes on human–AI collaboration connect strongly with recent work on cognitive
+          augmentation.
+        </p>
+        <button
+          type="button"
+          className={styles.insightButton}
+          onClick={() => {
+            setInsightOpen((value) => !value);
+            setView("connections");
+          }}
+        >
+          {insightOpen ? "Connection opened" : "Explore connection"} <span>→</span>
+        </button>
+      </article>
+
+      <article className={styles.graphCard}>
+        <div className={styles.cardEyebrow}>
+          <span className={styles.cardIcon}>⌘</span>
+          <strong>Knowledge Graph</strong>
+          <span className={styles.cardAction}>↗</span>
+        </div>
+        <div className={styles.graphVisual}>
+          <svg viewBox="0 0 300 170" role="img" aria-label="Connected research knowledge graph">
+            <title>Connected research knowledge graph</title>
+            <path d="M150 82 72 48M150 82 224 42M150 82 248 108M150 82 89 130M150 82 146 22" />
+            <circle cx="150" cy="82" r="21" />
+            <circle cx="72" cy="48" r="7" />
+            <circle cx="224" cy="42" r="7" />
+            <circle cx="248" cy="108" r="7" />
+            <circle cx="89" cy="130" r="7" />
+            <circle cx="146" cy="22" r="7" />
           </svg>
-          <span className={styles.graphCore}>Human–AI<br />Collaboration</span>
-          <span className={styles.graphLabelOne}>Research</span>
-          <span className={styles.graphLabelTwo}>Methods</span>
-          <span className={styles.graphLabelThree}>Education</span>
+          <button type="button" className={styles.graphCenter} onClick={() => setView("connections")}>
+            Human–AI
+            <span>Collaboration</span>
+          </button>
+          <span className={styles.graphLabelResearch}>Research</span>
+          <span className={styles.graphLabelCreativity}>Creativity</span>
+          <span className={styles.graphLabelEducation}>Education</span>
+          <span className={styles.graphLabelMethods}>Methods</span>
         </div>
-      </div>
+      </article>
 
-      <section className={styles.dashboard} aria-label="Interactive Nexosophy workspace demo">
-        <header className={styles.topbar}>
-          <a className={styles.brand} href="/" aria-label="Nexosophy home">
-            <span className={styles.brandMark}>N</span>
-            <span>Nexosophy</span>
+      <section className={styles.workspace} aria-label="Interactive Nexosophy product preview">
+        <header className={styles.workspaceHeader}>
+          <a className={styles.workspaceBrand} href="/" aria-label="Nexosophy home">
+            <span>N</span>
+            <strong>Nexosophy</strong>
           </a>
 
-          <label className={styles.search}>
+          <label className={styles.workspaceSearch}>
             <span aria-hidden="true">⌕</span>
-            <input aria-label="Search workspace" placeholder="Search across your knowledge..." />
+            <input aria-label="Search workspace" placeholder="Search your knowledge..." />
             <kbd>⌘ K</kbd>
           </label>
 
-          <div className={styles.topActions}>
-            <div className={styles.avatarGroup}>
-              <span>M</span>
-              <span>D</span>
-              <span>+3</span>
-            </div>
-            <button type="button" className={styles.shareButton} onClick={() => setShared((value) => !value)}>
-              {shared ? "Shared ✓" : "Share"}
-            </button>
+          <div className={styles.workspaceAvatars} aria-hidden="true">
+            <span>M</span>
+            <span>D</span>
+            <span>+3</span>
           </div>
         </header>
 
-        <div className={styles.body}>
+        <div className={styles.workspaceBody}>
           <aside className={styles.sidebar}>
             <nav aria-label="Workspace navigation">
-              <button type="button" className={styles.utilityItem}><span>⌂</span>Home</button>
-              <button type="button" className={styles.utilityItem}><span>▣</span>Inbox <b>3</b></button>
+              <button type="button"><span>⌂</span>Home</button>
+              <button type="button"><span>▣</span>Inbox <b>3</b></button>
             </nav>
-
-            <div className={styles.sidebarLabel}>Workspaces</div>
-            <div className={styles.workspaceList}>
-              {workspaces.map((workspace) => (
-                <button
-                  key={workspace}
-                  type="button"
-                  className={workspace === activeWorkspace ? styles.workspaceActive : styles.workspaceItem}
-                  onClick={() => setActiveWorkspace(workspace)}
-                >
-                  <span>{workspace === "Literature Review" ? "▤" : workspace === "Experiments" ? "◫" : workspace === "Analysis" ? "⌁" : "✎"}</span>
-                  {workspace}
-                </button>
-              ))}
-            </div>
-
-            <div className={styles.sidebarDivider} />
-            <button type="button" className={styles.utilityItem}><span>☆</span>Starred</button>
-            <button type="button" className={styles.utilityItem}><span>◷</span>Recent</button>
+            <p>Workspaces</p>
+            <button type="button" className={styles.workspaceActive}><span>▤</span>Literature Review</button>
+            <button type="button"><span>◫</span>Experiments</button>
+            <button type="button"><span>⌁</span>Analysis</button>
+            <button type="button"><span>✎</span>Papers & Writing</button>
+            <div className={styles.sidebarRule} />
+            <button type="button"><span>☆</span>Starred</button>
+            <button type="button"><span>◷</span>Recent</button>
           </aside>
 
-          <main className={styles.content}>
-            <div className={styles.contentHeader}>
+          <main className={styles.canvas}>
+            <div className={styles.canvasTop}>
               <div>
-                <span>PhD Research</span>
+                <small>Literature Review</small>
                 <span>/</span>
-                <strong>{activeWorkspace}</strong>
+                <strong>{view === "brief" ? "Document" : view === "connections" ? "Connections" : "Tasks"}</strong>
               </div>
-              <nav className={styles.tabs} aria-label="Workspace views">
-                <button type="button" data-active={tab === "document"} onClick={() => setTab("document")}>Document</button>
-                <button type="button" data-active={tab === "graph"} onClick={() => setTab("graph")}>Graph</button>
-                <button type="button" data-active={tab === "tasks"} onClick={() => setTab("tasks")}>Tasks</button>
-                <button type="button" data-active={tab === "references"} onClick={() => setTab("references")}>References</button>
+              <nav aria-label="Preview views">
+                <button type="button" data-active={view === "brief"} onClick={() => setView("brief")}>Document</button>
+                <button type="button" data-active={view === "connections"} onClick={() => setView("connections")}>Connections</button>
+                <button type="button" data-active={view === "tasks"} onClick={() => setView("tasks")}>Tasks</button>
               </nav>
             </div>
 
-            {tab === "document" ? (
-              <article className={styles.document}>
+            {view === "brief" ? (
+              <article className={styles.documentView}>
                 <div className={styles.documentMeta}>
                   <span>Article</span>
-                  <span className={styles.progress}>● In progress</span>
-                  <span>Edited 2h ago</span>
+                  <span>● In progress</span>
+                  <small>Edited 2h ago</small>
                 </div>
                 <h3>The future of human–AI collaboration in science</h3>
                 <p>
@@ -198,98 +190,93 @@ export function HeroDashboard() {
                   we can explore together.
                 </blockquote>
                 <h4>1. Introduction</h4>
-                <p className={styles.bodyCopy}>
+                <p className={styles.documentBody}>
                   The integration of artificial intelligence into the research process is creating new
                   possibilities for human creativity, productivity, and discovery.
                 </p>
               </article>
             ) : null}
 
-            {tab === "graph" ? (
-              <div className={styles.fullGraph}>
-                <div className={styles.fullGraphCore}>Human–AI<br />Collaboration</div>
-                {["Methods", "Results", "Ethics", "Education", "Datasets", "Impact"].map((label, index) => (
-                  <button key={label} type="button" style={{ "--i": index } as CSSProperties}>
-                    {label}
+            {view === "connections" ? (
+              <div className={styles.connectionView}>
+                <div className={styles.connectionCore}>
+                  <strong>Human–AI<br />Collaboration</strong>
+                  <span>12 sources</span>
+                </div>
+                {["Methods", "Cognition", "Creativity", "Education", "Ethics", "Datasets"].map((label, index) => (
+                  <button key={label} type="button" data-index={index}>
+                    <span>{label}</span>
+                    <small>{index % 2 === 0 ? "Strong link" : "Related"}</small>
                   </button>
                 ))}
               </div>
             ) : null}
 
-            {tab === "tasks" ? (
+            {view === "tasks" ? (
               <div className={styles.taskView}>
-                <div className={styles.taskViewHeader}>
+                <div className={styles.taskProgress}>
                   <div>
                     <span>Research plan</span>
-                    <strong>{completedTasks}/{tasks.length} complete</strong>
+                    <strong>{doneTasks.length}/{tasks.length} complete</strong>
                   </div>
-                  <span>{Math.round((completedTasks / tasks.length) * 100)}%</span>
+                  <b>{progress}%</b>
                 </div>
-                {tasks.map((task) => (
-                  <label key={task.id} className={styles.taskRow}>
-                    <input type="checkbox" checked={task.done} onChange={() => toggleTask(task.id)} />
-                    <span>{task.label}</span>
+                <div className={styles.progressTrack}><span style={{ width: `${progress}%` }} /></div>
+                {tasks.map((task, index) => (
+                  <label key={task} className={styles.taskRow}>
+                    <input
+                      type="checkbox"
+                      checked={doneTasks.includes(index)}
+                      onChange={() => toggleTask(index)}
+                    />
+                    <span>{task}</span>
                   </label>
                 ))}
               </div>
             ) : null}
-
-            {tab === "references" ? (
-              <div className={styles.referenceView}>
-                <div className={styles.referenceViewHeader}>Reference library <span>{references.length}</span></div>
-                {references.map(([author, title]) => (
-                  <button key={author} type="button" className={styles.referenceRow}>
-                    <span className={styles.referenceIcon}>▤</span>
-                    <span><strong>{author}</strong><small>{title}</small></span>
-                    <span>↗</span>
-                  </button>
-                ))}
-              </div>
-            ) : null}
           </main>
-
-          <aside className={styles.rightRail}>
-            <section>
-              <div className={styles.railHeader}><strong>References</strong><span>12</span></div>
-              {references.map(([author, title], index) => (
-                <button key={author} type="button" className={styles.railReference} onClick={() => setTab("references")}>
-                  <span>{index + 1}</span>
-                  <span><strong>{author}</strong><small>{title}</small></span>
-                </button>
-              ))}
-            </section>
-
-            <section>
-              <div className={styles.railHeader}><strong>Tasks</strong><span>{completedTasks}/{tasks.length}</span></div>
-              {tasks.slice(0, 3).map((task) => (
-                <label key={task.id} className={styles.railTask}>
-                  <input type="checkbox" checked={task.done} onChange={() => toggleTask(task.id)} />
-                  <span>{task.label}</span>
-                </label>
-              ))}
-            </section>
-          </aside>
-        </div>
-
-        <div className={styles.assistant}>
-          <div className={styles.assistantSuggestions}>
-            <button type="button" onClick={() => runSuggestion("Across 12 sources, the strongest theme is that AI expands scientific throughput when human judgment stays in the loop.")}>Summarize</button>
-            <button type="button" onClick={() => runSuggestion("I found 4 strong links between your literature notes, experiment results, and collaboration paper.")}>Find connections</button>
-            <button type="button" onClick={() => runSuggestion("Next: compare the two dominant methodologies, resolve one citation gap, then draft the discussion section.")}>Plan next steps</button>
-          </div>
-          <form onSubmit={submitQuery}>
-            <span className={styles.assistantMark}>N</span>
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              aria-label="Ask Nexosophy"
-              placeholder="Ask anything about your research..."
-            />
-            <button type="submit" aria-label="Send question">➤</button>
-          </form>
-          <p aria-live="polite">{assistantReply}</p>
         </div>
       </section>
+
+      <article className={styles.referenceCard}>
+        <div className={styles.cardEyebrow}>
+          <span className={styles.cardIcon}>▤</span>
+          <strong>References</strong>
+          <span className={styles.countBadge}>12</span>
+        </div>
+        <div className={styles.referenceList}>
+          {references.map(([author, title], index) => (
+            <button
+              key={author}
+              type="button"
+              data-active={activeReference === index}
+              onClick={() => {
+                setActiveReference(index);
+                setView("brief");
+              }}
+            >
+              <span className={styles.referenceIndex}>{index + 1}</span>
+              <span>
+                <strong>{author}</strong>
+                <small>{title}</small>
+              </span>
+            </button>
+          ))}
+        </div>
+      </article>
+
+      <article className={styles.relatedBar}>
+        <div className={styles.relatedTitle}>
+          <span>⌘</span>
+          <strong>Related content</strong>
+        </div>
+        <div className={styles.relatedItems}>
+          <button type="button" onClick={() => setView("brief")}><span>▤</span><strong>Similar papers</strong><small>12 results</small></button>
+          <button type="button" onClick={() => setView("brief")}><span>◫</span><strong>Related notes</strong><small>8 notes</small></button>
+          <button type="button" onClick={() => setView("connections")}><span>◉</span><strong>Related people</strong><small>4 researchers</small></button>
+          <button type="button" onClick={() => setView("connections")}><span>⌁</span><strong>Related topics</strong><small>6 topics</small></button>
+        </div>
+      </article>
     </div>
   );
 }
