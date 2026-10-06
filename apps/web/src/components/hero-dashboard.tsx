@@ -30,10 +30,7 @@ export function HeroDashboard() {
   const [doneTasks, setDoneTasks] = useState<number[]>([0]);
   const [insightOpen, setInsightOpen] = useState(false);
 
-  const progress = useMemo(
-    () => Math.round((doneTasks.length / tasks.length) * 100),
-    [doneTasks],
-  );
+  const progress = useMemo(() => Math.round((doneTasks.length / tasks.length) * 100), [doneTasks]);
 
   function toggleTask(index: number) {
     setDoneTasks((current) =>
@@ -59,7 +56,9 @@ export function HeroDashboard() {
         <div className={styles.cardEyebrow}>
           <span className={styles.cardIcon}>▤</span>
           <strong>Notes</strong>
-          <button type="button" aria-label="Add note">＋</button>
+          <button type="button" aria-label="Add note">
+            ＋
+          </button>
         </div>
         <div className={styles.notesList}>
           {notes.map((note, index) => (
@@ -112,7 +111,11 @@ export function HeroDashboard() {
             <circle cx="89" cy="130" r="7" />
             <circle cx="146" cy="22" r="7" />
           </svg>
-          <button type="button" className={styles.graphCenter} onClick={() => setView("connections")}>
+          <button
+            type="button"
+            className={styles.graphCenter}
+            onClick={() => setView("connections")}
+          >
             Human–AI
             <span>Collaboration</span>
           </button>
@@ -146,17 +149,33 @@ export function HeroDashboard() {
         <div className={styles.workspaceBody}>
           <aside className={styles.sidebar}>
             <nav aria-label="Workspace navigation">
-              <button type="button"><span>⌂</span>Home</button>
-              <button type="button"><span>▣</span>Inbox <b>3</b></button>
+              <button type="button">
+                <span>⌂</span>Home
+              </button>
+              <button type="button">
+                <span>▣</span>Inbox <b>3</b>
+              </button>
             </nav>
             <p>Workspaces</p>
-            <button type="button" className={styles.workspaceActive}><span>▤</span>Literature Review</button>
-            <button type="button"><span>◫</span>Experiments</button>
-            <button type="button"><span>⌁</span>Analysis</button>
-            <button type="button"><span>✎</span>Papers & Writing</button>
+            <button type="button" className={styles.workspaceActive}>
+              <span>▤</span>Literature Review
+            </button>
+            <button type="button">
+              <span>◫</span>Experiments
+            </button>
+            <button type="button">
+              <span>⌁</span>Analysis
+            </button>
+            <button type="button">
+              <span>✎</span>Papers & Writing
+            </button>
             <div className={styles.sidebarRule} />
-            <button type="button"><span>☆</span>Starred</button>
-            <button type="button"><span>◷</span>Recent</button>
+            <button type="button">
+              <span>☆</span>Starred
+            </button>
+            <button type="button">
+              <span>◷</span>Recent
+            </button>
           </aside>
 
           <main className={styles.canvas}>
@@ -164,12 +183,32 @@ export function HeroDashboard() {
               <div>
                 <small>Literature Review</small>
                 <span>/</span>
-                <strong>{view === "brief" ? "Document" : view === "connections" ? "Connections" : "Tasks"}</strong>
+                <strong>
+                  {view === "brief" ? "Document" : view === "connections" ? "Connections" : "Tasks"}
+                </strong>
               </div>
               <nav aria-label="Preview views">
-                <button type="button" data-active={view === "brief"} onClick={() => setView("brief")}>Document</button>
-                <button type="button" data-active={view === "connections"} onClick={() => setView("connections")}>Connections</button>
-                <button type="button" data-active={view === "tasks"} onClick={() => setView("tasks")}>Tasks</button>
+                <button
+                  type="button"
+                  data-active={view === "brief"}
+                  onClick={() => setView("brief")}
+                >
+                  Document
+                </button>
+                <button
+                  type="button"
+                  data-active={view === "connections"}
+                  onClick={() => setView("connections")}
+                >
+                  Connections
+                </button>
+                <button
+                  type="button"
+                  data-active={view === "tasks"}
+                  onClick={() => setView("tasks")}
+                >
+                  Tasks
+                </button>
               </nav>
             </div>
 
@@ -183,16 +222,17 @@ export function HeroDashboard() {
                 <h3>The future of human–AI collaboration in science</h3>
                 <p>
                   Human–AI collaboration is reshaping how we discover, learn and create. This review
-                  explores current progress, key challenges and emerging opportunities across research.
+                  explores current progress, key challenges and emerging opportunities across
+                  research.
                 </p>
                 <blockquote>
-                  AI amplifies human intellect not by replacing it, but by expanding the space of what
-                  we can explore together.
+                  AI amplifies human intellect not by replacing it, but by expanding the space of
+                  what we can explore together.
                 </blockquote>
                 <h4>1. Introduction</h4>
                 <p className={styles.documentBody}>
-                  The integration of artificial intelligence into the research process is creating new
-                  possibilities for human creativity, productivity, and discovery.
+                  The integration of artificial intelligence into the research process is creating
+                  new possibilities for human creativity, productivity, and discovery.
                 </p>
               </article>
             ) : null}
@@ -200,15 +240,21 @@ export function HeroDashboard() {
             {view === "connections" ? (
               <div className={styles.connectionView}>
                 <div className={styles.connectionCore}>
-                  <strong>Human–AI<br />Collaboration</strong>
+                  <strong>
+                    Human–AI
+                    <br />
+                    Collaboration
+                  </strong>
                   <span>12 sources</span>
                 </div>
-                {["Methods", "Cognition", "Creativity", "Education", "Ethics", "Datasets"].map((label, index) => (
-                  <button key={label} type="button" data-index={index}>
-                    <span>{label}</span>
-                    <small>{index % 2 === 0 ? "Strong link" : "Related"}</small>
-                  </button>
-                ))}
+                {["Methods", "Cognition", "Creativity", "Education", "Ethics", "Datasets"].map(
+                  (label, index) => (
+                    <button key={label} type="button" data-index={index}>
+                      <span>{label}</span>
+                      <small>{index % 2 === 0 ? "Strong link" : "Related"}</small>
+                    </button>
+                  ),
+                )}
               </div>
             ) : null}
 
@@ -217,11 +263,15 @@ export function HeroDashboard() {
                 <div className={styles.taskProgress}>
                   <div>
                     <span>Research plan</span>
-                    <strong>{doneTasks.length}/{tasks.length} complete</strong>
+                    <strong>
+                      {doneTasks.length}/{tasks.length} complete
+                    </strong>
                   </div>
                   <b>{progress}%</b>
                 </div>
-                <div className={styles.progressTrack}><span style={{ width: `${progress}%` }} /></div>
+                <div className={styles.progressTrack}>
+                  <span style={{ width: `${progress}%` }} />
+                </div>
                 {tasks.map((task, index) => (
                   <label key={task} className={styles.taskRow}>
                     <input
@@ -271,10 +321,26 @@ export function HeroDashboard() {
           <strong>Related content</strong>
         </div>
         <div className={styles.relatedItems}>
-          <button type="button" onClick={() => setView("brief")}><span>▤</span><strong>Similar papers</strong><small>12 results</small></button>
-          <button type="button" onClick={() => setView("brief")}><span>◫</span><strong>Related notes</strong><small>8 notes</small></button>
-          <button type="button" onClick={() => setView("connections")}><span>◉</span><strong>Related people</strong><small>4 researchers</small></button>
-          <button type="button" onClick={() => setView("connections")}><span>⌁</span><strong>Related topics</strong><small>6 topics</small></button>
+          <button type="button" onClick={() => setView("brief")}>
+            <span>▤</span>
+            <strong>Similar papers</strong>
+            <small>12 results</small>
+          </button>
+          <button type="button" onClick={() => setView("brief")}>
+            <span>◫</span>
+            <strong>Related notes</strong>
+            <small>8 notes</small>
+          </button>
+          <button type="button" onClick={() => setView("connections")}>
+            <span>◉</span>
+            <strong>Related people</strong>
+            <small>4 researchers</small>
+          </button>
+          <button type="button" onClick={() => setView("connections")}>
+            <span>⌁</span>
+            <strong>Related topics</strong>
+            <small>6 topics</small>
+          </button>
         </div>
       </article>
     </div>
