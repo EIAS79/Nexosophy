@@ -162,7 +162,7 @@ export async function registerWorkspaceMemberRoutes(
     if (!principal) return;
     const { workspaceId } = request.params as { workspaceId: string };
     const authorization = await authorizeWorkspace(pool, principal, workspaceId, "workspace.delete", request, reply);
-    if (!authorization || authorization.role !== "owner") return;
+    if (authorization?.role !== "owner") return;
     const parsed = createOwnershipTransferRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       return sendWorkspaceError(reply, request.id, 400, "VALIDATION_ERROR", "Transfer input is invalid.");

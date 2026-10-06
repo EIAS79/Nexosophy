@@ -1,4 +1,4 @@
-import type { WorkspaceMemberStatus, WorkspaceRole } from "@nexosophy/contracts";
+import type { WorkspaceMemberStatus, WorkspaceRole } from "./workspace-types.js";
 import type { Pool } from "pg";
 
 import {

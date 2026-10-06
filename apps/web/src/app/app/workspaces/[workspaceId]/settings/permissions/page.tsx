@@ -1,7 +1,23 @@
-import {
-  effectiveWorkspacePermissions,
-  workspaceRolePermissions,
-} from "@nexosophy/auth";
+import type { WorkspacePermission, WorkspaceRole } from "@nexosophy/contracts";
+
+const workspaceRolePermissions: Record<WorkspaceRole, readonly WorkspacePermission[]> = {
+  owner: [
+    "workspace.read", "workspace.update", "workspace.delete", "members.read",
+    "members.invite", "members.manage", "roles.manage", "sharing.read",
+    "sharing.manage", "content.read", "content.create", "content.update", "content.delete",
+  ],
+  admin: [
+    "workspace.read", "workspace.update", "members.read", "members.invite",
+    "members.manage", "roles.manage", "sharing.read", "sharing.manage",
+    "content.read", "content.create", "content.update", "content.delete",
+  ],
+  member: [
+    "workspace.read", "members.read", "sharing.read", "content.read",
+    "content.create", "content.update",
+  ],
+  viewer: ["workspace.read", "members.read", "sharing.read", "content.read"],
+  guest: ["workspace.read", "content.read"],
+};
 
 import { nexosophyApi } from "../../../../../../lib/api-server";
 import { createShareLinkAction } from "../../../../../../lib/workspace-actions";
@@ -9,7 +25,7 @@ import { createShareLinkAction } from "../../../../../../lib/workspace-actions";
 type Workspace = {
   id: string;
   name: string;
-  role: keyof typeof workspaceRolePermissions;
+  role: WorkspaceRole;
   memberStatus: "active" | "suspended";
   permissionVersion: number;
 };
@@ -35,10 +51,8 @@ export default async function WorkspacePermissionsPage({
   ]);
   const workspace = workspaceData.workspaces.find((item) => item.id === workspaceId);
   if (!workspace) return null;
-  const effective = effectiveWorkspacePermissions({
-    role: workspace.role,
-    status: workspace.memberStatus,
-  });
+  const effective =
+    workspace.memberStatus === "active" ? workspaceRolePermissions[workspace.role] : [];
 
   return (
     <section className="workspace-page">

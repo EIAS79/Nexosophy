@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 
-import type { WorkspacePermission } from "@nexosophy/contracts";
+import type { WorkspacePermission } from "./workspace-types.js";
 import type { Pool } from "pg";
 
 import {
