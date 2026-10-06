@@ -490,8 +490,10 @@ export default function HomePage() {
           <div className={styles.heroCopy}>
             <p className={styles.eyebrow}>Ideas · People · Research · All connected</p>
             <h1>
-              Turn scattered<br />
-              knowledge into<br />
+              Turn scattered
+              <br />
+              knowledge into
+              <br />
               <em>what&apos;s next.</em>
             </h1>
             <p className={styles.lede}>
@@ -517,7 +519,9 @@ export default function HomePage() {
                 <span>P</span>
                 <span>L</span>
               </div>
-              <p>Built for researchers, students, builders and teams turning knowledge into progress.</p>
+              <p>
+                Built for researchers, students, builders and teams turning knowledge into progress.
+              </p>
             </div>
           </div>
 
