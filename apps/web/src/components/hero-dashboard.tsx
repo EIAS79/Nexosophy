@@ -98,6 +98,7 @@ export function HeroDashboard() {
         </div>
         <div className={styles.graphCanvas} aria-hidden="true">
           <svg viewBox="0 0 280 120">
+            <title>Research relationship graph</title>
             <path d="M140 60 68 30M140 60 212 26M140 60 232 82M140 60 82 94M140 60 145 14" />
             <circle cx="140" cy="60" r="18" />
             <circle cx="68" cy="30" r="7" />
@@ -127,7 +128,7 @@ export function HeroDashboard() {
           </label>
 
           <div className={styles.topActions}>
-            <div className={styles.avatarGroup} aria-label="3 collaborators">
+            <div className={styles.avatarGroup} role="group" aria-label="3 collaborators">
               <span>M</span>
               <span>D</span>
               <span>+3</span>
