@@ -488,15 +488,15 @@ export default function HomePage() {
       <main id="main-content" className={styles.main}>
         <section className={styles.hero} data-motion-scene>
           <div className={styles.heroCopy}>
-            <p className={styles.eyebrow}>A unified knowledge and work platform</p>
+            <p className={styles.eyebrow}>Ideas · People · Research · All connected</p>
             <h1>
-              Connected<br />
-              knowledge for<br />
-              a <em>brighter</em> world.
+              Turn scattered<br />
+              knowledge into<br />
+              <em>what&apos;s next.</em>
             </h1>
             <p className={styles.lede}>
-              Nexosophy brings together your research, notes, tasks, files, data and people — in one
-              intelligent workspace for deeper thinking and greater impact.
+              Nexosophy brings together your research, notes, tasks, files, data and people — then
+              uses AI to surface connections, generate insight, and keep your work moving.
             </p>
             <div className={styles.actions}>
               <a className={styles.primaryCta} href="/signup">
@@ -505,7 +505,7 @@ export default function HomePage() {
               <a className={styles.secondaryCta} href="#product-story">
                 <span className={styles.playIcon}>▶</span>
                 <span>
-                  Watch overview
+                  Watch the story
                   <small>2 min</small>
                 </span>
               </a>
@@ -517,30 +517,11 @@ export default function HomePage() {
                 <span>P</span>
                 <span>L</span>
               </div>
-              <p>Join a growing community of researchers, students, and builders shaping what&apos;s next.</p>
+              <p>Built for researchers, students, builders and teams turning knowledge into progress.</p>
             </div>
           </div>
 
           <HeroVisual />
-
-          <nav className={styles.personaRail} aria-label="Nexosophy use cases">
-            {([
-              ["Students", "Learn deeper. Do more.", "/students", "◫"],
-              ["Researchers", "From ideas to impact.", "/researchers", "△"],
-              ["Professors", "Teach, mentor, collaborate.", "/professors", "◉"],
-              ["Laboratories", "Organize. Analyze. Advance.", "/labs", "◇"],
-              ["Reporters", "Uncover. Verify. Tell.", "/reporters", "▤"],
-              ["Analysts", "Turn knowledge into insight.", "/analysts", "▥"],
-            ] as const).map(([label, strap, href, glyph]) => (
-              <a key={label} href={href}>
-                <span className={styles.personaRailIcon}>{glyph}</span>
-                <span className={styles.personaRailText}>
-                  <strong>For {label.toLowerCase()}</strong>
-                  <small>{strap}</small>
-                </span>
-              </a>
-            ))}
-          </nav>
         </section>
 
         <section className={styles.scatterSection} id="product-story" data-motion-scene>
