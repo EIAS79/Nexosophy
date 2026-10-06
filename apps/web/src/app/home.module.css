@@ -3202,10 +3202,22 @@
   inset: 0;
   border-radius: 0;
   background:
-    linear-gradient(90deg, rgb(3 13 24 / 88%) 0%, rgb(3 14 26 / 64%) 31%, rgb(5 16 30 / 22%) 58%, rgb(5 17 31 / 16%) 100%),
-    linear-gradient(180deg, rgb(2 10 19 / 28%) 0%, rgb(2 10 19 / 8%) 54%, rgb(2 9 16 / 48%) 84%, rgb(2 8 15 / 88%) 100%),
+    linear-gradient(
+      90deg,
+      rgb(3 13 24 / 88%) 0%,
+      rgb(3 14 26 / 64%) 31%,
+      rgb(5 16 30 / 22%) 58%,
+      rgb(5 17 31 / 16%) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgb(2 10 19 / 28%) 0%,
+      rgb(2 10 19 / 8%) 54%,
+      rgb(2 9 16 / 48%) 84%,
+      rgb(2 8 15 / 88%) 100%
+    ),
     url("https://images.unsplash.com/photo-1765142356549-357806b307ea?auto=format&fit=crop&fm=jpg&q=88&w=2600")
-      center 68% / cover no-repeat;
+    center 68% / cover no-repeat;
   filter: saturate(0.8) contrast(1.03) brightness(0.72);
 }
 
@@ -3232,7 +3244,7 @@
   background:
     linear-gradient(180deg, rgb(5 17 30 / 6%), rgb(5 17 30 / 18%) 55%, rgb(3 11 20 / 65%) 100%),
     url("https://images.unsplash.com/photo-1641736796132-56951e122ef4?auto=format&fit=crop&fm=jpg&q=86&w=1400")
-      50% 48% / cover no-repeat;
+    50% 48% / cover no-repeat;
   filter: saturate(0.56) contrast(1.08) brightness(0.72) hue-rotate(172deg);
   opacity: 0.84;
   transform: scale(1.04);
@@ -3809,9 +3821,14 @@
 
   .hero::before {
     background:
-      linear-gradient(180deg, rgb(3 12 22 / 78%) 0%, rgb(3 12 22 / 48%) 48%, rgb(3 11 20 / 82%) 100%),
+      linear-gradient(
+        180deg,
+        rgb(3 12 22 / 78%) 0%,
+        rgb(3 12 22 / 48%) 48%,
+        rgb(3 11 20 / 82%) 100%
+      ),
       url("https://images.unsplash.com/photo-1765142356549-357806b307ea?auto=format&fit=crop&fm=jpg&q=86&w=1800")
-        54% 50% / cover no-repeat;
+      54% 50% / cover no-repeat;
   }
 
   .heroHumanBackdrop {
@@ -3898,9 +3915,14 @@
 
   .hero::before {
     background:
-      linear-gradient(180deg, rgb(3 12 22 / 77%) 0%, rgb(3 12 22 / 58%) 54%, rgb(3 11 20 / 91%) 100%),
+      linear-gradient(
+        180deg,
+        rgb(3 12 22 / 77%) 0%,
+        rgb(3 12 22 / 58%) 54%,
+        rgb(3 11 20 / 91%) 100%
+      ),
       url("https://images.unsplash.com/photo-1765142356549-357806b307ea?auto=format&fit=crop&fm=jpg&q=84&w=1200")
-        57% 50% / cover no-repeat;
+      57% 50% / cover no-repeat;
   }
 
   .heroHumanBackdrop {
@@ -4038,7 +4060,6 @@
   }
 }
 
-
 /* === FINAL HYBRID HERO: static generated art + real text/actions === */
 
 .ambientLayer {
@@ -4057,7 +4078,13 @@
   inset: 0;
   border-radius: 0;
   background:
-    linear-gradient(90deg, rgb(2 9 18 / 92%) 0%, rgb(2 10 20 / 72%) 27%, rgb(2 11 22 / 22%) 54%, rgb(2 10 20 / 4%) 75%),
+    linear-gradient(
+      90deg,
+      rgb(2 9 18 / 92%) 0%,
+      rgb(2 10 20 / 72%) 27%,
+      rgb(2 11 22 / 22%) 54%,
+      rgb(2 10 20 / 4%) 75%
+    ),
     linear-gradient(180deg, rgb(1 8 16 / 16%) 0%, transparent 54%, rgb(1 7 14 / 58%) 100%),
     url("/home/hero-background.webp") center center / cover no-repeat;
   filter: none;
@@ -4114,18 +4141,30 @@
   filter: drop-shadow(0 30px 52px rgb(0 0 0 / 42%));
   transform: translate(-47%, -50%);
   transform-origin: center;
-  animation: hero-art-in 560ms cubic-bezier(.2,.8,.2,1) both;
+  animation: hero-art-in 560ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
   will-change: auto;
 }
 
 @keyframes hero-copy-in {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes hero-art-in {
-  from { opacity: 0; transform: translate(-44%, -48%) scale(.988); }
-  to { opacity: 1; transform: translate(-47%, -50%) scale(1); }
+  from {
+    opacity: 0;
+    transform: translate(-44%, -48%) scale(0.988);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-47%, -50%) scale(1);
+  }
 }
 
 @media (max-width: 1240px) {
@@ -4153,8 +4192,14 @@
   }
 
   @keyframes hero-art-in {
-    from { opacity: 0; transform: translate(-50%, -48%) scale(.988); }
-    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    from {
+      opacity: 0;
+      transform: translate(-50%, -48%) scale(0.988);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
   }
 }
 
@@ -4194,7 +4239,6 @@
   }
 }
 
-
 /* === CODED HERO KNOWLEDGE CONSTELLATION === */
 
 .heroProductArtwork {
@@ -4217,7 +4261,7 @@
   position: absolute;
   inset: 2% -1% 3% 0;
   overflow: visible;
-  animation: knowledge-scene-in 540ms cubic-bezier(.2,.8,.2,1) both;
+  animation: knowledge-scene-in 540ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 .knowledgeScene::before {
@@ -4336,8 +4380,7 @@
   border-radius: 999px;
   background:
     radial-gradient(circle at 38% 28%, rgb(106 225 255 / 17%), transparent 24%),
-    radial-gradient(circle at 50% 60%, rgb(99 75 224 / 14%), transparent 52%),
-    rgb(4 20 34 / 78%);
+    radial-gradient(circle at 50% 60%, rgb(99 75 224 / 14%), transparent 52%), rgb(4 20 34 / 78%);
   box-shadow:
     0 0 0 18px rgb(59 191 241 / 3%),
     0 0 0 42px rgb(90 75 229 / 2%),
@@ -4513,7 +4556,7 @@
 @keyframes knowledge-scene-in {
   from {
     opacity: 0;
-    transform: translateY(8px) scale(.992);
+    transform: translateY(8px) scale(0.992);
   }
   to {
     opacity: 1;
@@ -4598,12 +4641,30 @@
     font-size: 0.45rem;
   }
 
-  .nodeResearch { top: 10%; left: 2%; }
-  .nodePeople { top: 8%; right: 2%; }
-  .nodeNotes { top: 45%; left: 0; }
-  .nodeData { top: 44%; right: 0; }
-  .nodeFiles { bottom: 8%; left: 4%; }
-  .nodeTasks { right: 4%; bottom: 7%; }
+  .nodeResearch {
+    top: 10%;
+    left: 2%;
+  }
+  .nodePeople {
+    top: 8%;
+    right: 2%;
+  }
+  .nodeNotes {
+    top: 45%;
+    left: 0;
+  }
+  .nodeData {
+    top: 44%;
+    right: 0;
+  }
+  .nodeFiles {
+    bottom: 8%;
+    left: 4%;
+  }
+  .nodeTasks {
+    right: 4%;
+    bottom: 7%;
+  }
 
   .knowledgeCore {
     width: 124px;
@@ -4688,7 +4749,6 @@
   }
 }
 
-
 /* Interactive dashboard hero overrides */
 .heroVisual {
   min-height: 720px;
@@ -4718,19 +4778,24 @@
   }
 }
 
-
 /* === Knowledge Orbit hero composition === */
 
 .hero {
   min-height: 100svh;
-  grid-template-columns: minmax(410px, .78fr) minmax(760px, 1.32fr);
-  gap: clamp(24px, 3vw, 56px);
-  padding: 108px max(4.5vw, 58px) 54px;
+  grid-template-columns: minmax(460px, 0.84fr) minmax(700px, 1.26fr);
+  gap: clamp(22px, 2.6vw, 48px);
+  padding: 108px max(4vw, 52px) 54px;
 }
 
 .hero::before {
   background:
-    linear-gradient(90deg, rgb(2 9 18 / 94%) 0%, rgb(2 10 20 / 74%) 27%, rgb(2 11 22 / 26%) 53%, rgb(2 10 20 / 4%) 76%),
+    linear-gradient(
+      90deg,
+      rgb(2 9 18 / 94%) 0%,
+      rgb(2 10 20 / 74%) 27%,
+      rgb(2 11 22 / 26%) 53%,
+      rgb(2 10 20 / 4%) 76%
+    ),
     linear-gradient(180deg, rgb(1 8 16 / 14%) 0%, transparent 56%, rgb(1 7 14 / 52%) 100%),
     url("/home/hero-background.webp") center center / cover no-repeat;
 }
@@ -4762,8 +4827,8 @@
 .hero h1 {
   max-width: 650px;
   font-size: clamp(4.15rem, 5.55vw, 6.25rem);
-  line-height: .9;
-  letter-spacing: -.052em;
+  line-height: 0.9;
+  letter-spacing: -0.052em;
 }
 
 .hero h1 em {
@@ -4775,7 +4840,7 @@
   max-width: 590px;
   margin-top: 28px;
   color: #c8d8e1;
-  font-size: clamp(.98rem, 1.12vw, 1.08rem);
+  font-size: clamp(0.98rem, 1.12vw, 1.08rem);
   line-height: 1.58;
 }
 
@@ -4806,7 +4871,7 @@
 
 @media (max-width: 1320px) {
   .hero {
-    grid-template-columns: minmax(370px, .72fr) minmax(680px, 1.28fr);
+    grid-template-columns: minmax(370px, 0.72fr) minmax(680px, 1.28fr);
     padding-inline: 42px;
   }
 
@@ -4867,11 +4932,11 @@
 
   .hero h1 {
     font-size: clamp(3.2rem, 13.4vw, 4.7rem);
-    line-height: .92;
+    line-height: 0.92;
   }
 
   .hero .lede {
-    font-size: .93rem;
+    font-size: 0.93rem;
   }
 
   .hero .actions {
