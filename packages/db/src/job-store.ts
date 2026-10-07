@@ -387,3 +387,54 @@ export async function replayDeadLetter(pool: Pool, deadLetterId: string): Promis
     return true;
   });
 }
+
+
+export async function listWorkspaceDeadLetters(
+  pool: Pool,
+  workspaceId: string,
+  limit = 50,
+): Promise<Array<{
+  id: string;
+  sourceType: string;
+  sourceId: string;
+  queue: string;
+  payload: Record<string, unknown>;
+  errorCode: string | null;
+  errorMessage: string | null;
+  attempts: number;
+  failedAt: Date;
+  replayedAt: Date | null;
+}>> {
+  const result = await pool.query<{
+    id: string;
+    source_type: string;
+    source_id: string;
+    queue: string;
+    payload: Record<string, unknown>;
+    error_code: string | null;
+    error_message: string | null;
+    attempts: number;
+    failed_at: Date;
+    replayed_at: Date | null;
+  }>(
+    `select "id", "source_type", "source_id", "queue", "payload",
+            "error_code", "error_message", "attempts", "failed_at", "replayed_at"
+     from "dead_letters"
+     where coalesce("payload" ->> 'workspaceId', '') = $1
+     order by "failed_at" desc, "id" desc
+     limit $2`,
+    [workspaceId, limit],
+  );
+  return result.rows.map((row) => ({
+    id: row.id,
+    sourceType: row.source_type,
+    sourceId: row.source_id,
+    queue: row.queue,
+    payload: row.payload ?? {},
+    errorCode: row.error_code,
+    errorMessage: row.error_message,
+    attempts: row.attempts,
+    failedAt: row.failed_at,
+    replayedAt: row.replayed_at,
+  }));
+}
