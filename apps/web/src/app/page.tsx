@@ -469,19 +469,14 @@ export default function HomePage() {
 
         <section className={styles.scatterSection} id="product-story" data-motion-scene>
           <header className={`${styles.sectionHeader} ${styles.contextSectionHeader}`}>
-            <div className={styles.contextTitle}>
-              <p className={styles.eyebrow}>Context, not containers</p>
-              <h2>
-                Your work stops living in tabs. It starts <em>thinking together.</em>
-              </h2>
-            </div>
-            <aside className={styles.contextThesis}>
-              <span>One relationship layer</span>
-              <p>
-                Notes, papers, data, tasks and people keep the reason they belong together — so
-                Nexosophy can surface meaning without rebuilding context every time.
-              </p>
-            </aside>
+            <p className={styles.eyebrow}>One connected workspace</p>
+            <h2>
+              From scattered tools to a <em>connected workspace.</em>
+            </h2>
+            <p className={styles.contextIntro}>
+              Research today lives in too many places — files, notes, tasks, calendars, references,
+              data and people. Nexosophy brings it together so context stays attached to the work.
+            </p>
           </header>
 
           <ConnectedWorkspaceDemo />
