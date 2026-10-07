@@ -11,11 +11,14 @@ import { S3CompatibleStorageAdapter, type StorageAdapter } from "@nexosophy/stor
 import Fastify, { type FastifyError, type FastifyInstance } from "fastify";
 import { createClient } from "redis";
 
+import { installApiPlatform } from "./api-platform.js";
 import { registerAssetRoutes } from "./asset-routes.js";
 import { createAuthRuntime } from "./auth-runtime.js";
 import { registerClerkWebhookRoute } from "./clerk-webhook.js";
 import { registerContentRoutes } from "./content-routes.js";
+import { registerEditorRoutes } from "./editor-routes.js";
 import { registerIdentityRoutes } from "./identity-routes.js";
+import { registerJobRoutes } from "./job-routes.js";
 import { registerWorkspaceRoutes } from "./workspace-routes.js";
 
 const serviceVersion = process.env.npm_package_version ?? "0.0.0";
@@ -41,6 +44,7 @@ export async function buildApp(
 
   const pool = createDatabasePool(env.DATABASE_URL, { max: 10 });
   const redis = createClient({ url: env.REDIS_URL });
+  installApiPlatform(app, redis);
 
   redis.on("error", (error) => {
     app.log.warn({ err: error }, "Redis connection error");
@@ -131,6 +135,8 @@ export async function buildApp(
   await registerWorkspaceRoutes(app, pool, runtime.verifier);
   await registerContentRoutes(app, pool, runtime.verifier);
   await registerAssetRoutes(app, pool, storage, runtime.verifier);
+  await registerEditorRoutes(app, pool, runtime.verifier);
+  await registerJobRoutes(app, pool, runtime.verifier);
 
   if (runtime.provider && runtime.identityStore) {
     await registerClerkWebhookRoute(app, pool, runtime.provider, runtime.identityStore);
@@ -183,6 +189,8 @@ export async function buildApp(
       dependencies: checks,
     };
   });
+
+  app.get("/openapi.json", async () => app.swagger());
 
   app.get("/v1/meta", async (request) => ({
     name: "Nexosophy",
