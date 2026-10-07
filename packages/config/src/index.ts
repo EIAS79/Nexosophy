@@ -12,6 +12,7 @@ export const baseEnvSchema = z.object({
 const dataEnvSchema = baseEnvSchema.extend({
   DATABASE_URL: z.string().min(1),
   REDIS_URL: z.string().min(1),
+  DB_POOL_MAX: z.coerce.number().int().min(2).max(50).default(10),
 });
 
 export const apiEnvSchema = dataEnvSchema.extend({
