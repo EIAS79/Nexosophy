@@ -12,6 +12,7 @@ import { createClient } from "redis";
 
 import { createAuthRuntime } from "./auth-runtime.js";
 import { registerClerkWebhookRoute } from "./clerk-webhook.js";
+import { registerContentRoutes } from "./content-routes.js";
 import { registerIdentityRoutes } from "./identity-routes.js";
 import { registerWorkspaceRoutes } from "./workspace-routes.js";
 
@@ -110,14 +111,10 @@ export async function buildApp(
 
   await registerIdentityRoutes(app, pool, runtime.verifier);
   await registerWorkspaceRoutes(app, pool, runtime.verifier);
+  await registerContentRoutes(app, pool, runtime.verifier);
 
   if (runtime.provider && runtime.identityStore) {
-    await registerClerkWebhookRoute(
-      app,
-      pool,
-      runtime.provider,
-      runtime.identityStore,
-    );
+    await registerClerkWebhookRoute(app, pool, runtime.provider, runtime.identityStore);
   }
 
   app.get("/health", async (request) => {

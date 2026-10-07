@@ -5,6 +5,9 @@ export * from "./schema/system.js";
 export * from "./schema/identity.js";
 export * from "./identity-store.js";
 export * from "./workspace-store.js";
+export * from "./content-types.js";
+export * from "./content-store-core.js";
+export * from "./content-store-operations.js";
 
 export type DatabasePoolOptions = Pick<
   PoolConfig,

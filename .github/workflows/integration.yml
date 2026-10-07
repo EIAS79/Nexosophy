@@ -119,6 +119,9 @@ jobs:
       - name: Verify workspace isolation, RBAC and sharing invariants
         run: pnpm --filter @nexosophy/db test:workspace-integration
 
+      - name: Verify recursive content tree, scale and job invariants
+        run: pnpm --filter @nexosophy/db test:content-integration
+
       - name: Build API
         run: pnpm --filter @nexosophy/api build
 
