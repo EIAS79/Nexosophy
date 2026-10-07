@@ -2,6 +2,7 @@ import { parseMediaServicesEnv, parseOptionalStorageEnv, parseWorkerEnv } from "
 import {
   claimNextAssetJob,
   claimNextContentOperation,
+  claimOutboxEvent,
   completeAssetCleanup,
   completeAssetScan,
   completeAssetVariant,
@@ -9,15 +10,17 @@ import {
   createDatabasePool,
   failAssetJob,
   failContentOperation,
+  failOutboxEvent,
   getAsset,
   getAssetStorageKeys,
   listExpiredMultipartUploads,
   markExpiredUpload,
+  markOutboxPublished,
   processContentOperationBatch,
 } from "@nexosophy/db";
 import { createLogger } from "@nexosophy/observability";
 import { S3CompatibleStorageAdapter } from "@nexosophy/storage";
-import { Worker } from "bullmq";
+import { Queue, Worker } from "bullmq";
 import Fastify from "fastify";
 
 const env = parseWorkerEnv();
@@ -49,6 +52,8 @@ const connection = {
   maxRetriesPerRequest: null,
   ...(redisUrl.protocol === "rediss:" ? { tls: {} } : {}),
 };
+
+const systemQueue = new Queue("nexosophy-system", { connection });
 
 const worker = new Worker(
   "nexosophy-system",
@@ -309,8 +314,59 @@ async function runAssetOperationLoop(): Promise<void> {
   }
 }
 
+
+async function runOutboxPublisherLoop(): Promise<void> {
+  while (!stopping) {
+    try {
+      const waiting = await systemQueue.getWaitingCount();
+      if (waiting > 10_000) {
+        logger.warn({ waiting }, "System queue backpressure active");
+        await delay(1_000);
+        continue;
+      }
+
+      const event = await claimOutboxEvent(contentPool, workerId);
+      if (!event) {
+        await delay(350);
+        continue;
+      }
+
+      try {
+        await systemQueue.add(
+          event.eventType,
+          {
+            outboxEventId: event.id,
+            workspaceId: event.workspaceId,
+            aggregateType: event.aggregateType,
+            aggregateId: event.aggregateId,
+            payload: event.payload,
+          },
+          {
+            jobId: "outbox-" + event.id,
+            attempts: 5,
+            backoff: { type: "exponential", delay: 1000 },
+            removeOnComplete: { age: 3600, count: 5000 },
+            removeOnFail: { age: 7 * 24 * 3600, count: 10000 },
+          },
+        );
+        await markOutboxPublished(contentPool, event.id);
+      } catch (error) {
+        await failOutboxEvent(
+          contentPool,
+          event,
+          error instanceof Error ? error : new Error("Unknown outbox publication failure."),
+        );
+      }
+    } catch (error) {
+      logger.error({ err: error }, "Outbox publisher loop failed");
+      await delay(750);
+    }
+  }
+}
+
 const contentLoop = runContentOperationLoop();
 const assetLoop = runAssetOperationLoop();
+const outboxLoop = runOutboxPublisherLoop();
 const health = Fastify({ loggerInstance: logger });
 
 health.get("/health", async () => ({
@@ -343,7 +399,8 @@ async function shutdown(signal: string) {
   stopping = true;
   await health.close();
   await worker.close();
-  await Promise.all([contentLoop, assetLoop]);
+  await systemQueue.close();
+  await Promise.all([contentLoop, assetLoop, outboxLoop]);
   await contentPool.end();
   process.exit(0);
 }
@@ -361,6 +418,7 @@ logger.info(
     concurrency: env.WORKER_CONCURRENCY,
     contentBatchSize: 200,
     assetProcessing: true,
+    outboxPublisher: true,
     storageConfigured: Boolean(storage),
   },
   "Worker started",
