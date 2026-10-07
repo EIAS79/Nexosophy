@@ -1109,3 +1109,21 @@ export async function completeAssetCleanup(
     );
   });
 }
+
+
+export async function getAssetVariantStorageKey(
+  pool: Pool,
+  workspaceId: string,
+  assetId: string,
+  kind: string,
+): Promise<string | null> {
+  const result = await pool.query<{ object_key: string | null }>(
+    `select "object_key"
+     from "asset_variants"
+     where "workspace_id" = $1 and "asset_id" = $2 and "kind" = $3::asset_variant_kind
+       and "status" = 'ready'
+     limit 1`,
+    [workspaceId, assetId, kind],
+  );
+  return result.rows[0]?.object_key ?? null;
+}
