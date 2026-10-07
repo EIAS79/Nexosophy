@@ -42,7 +42,7 @@ export async function buildApp(
     },
   });
 
-  const pool = createDatabasePool(env.DATABASE_URL, { max: 10 });
+  const pool = createDatabasePool(env.DATABASE_URL, { max: env.DB_POOL_MAX });
   const redis = createClient({ url: env.REDIS_URL });
   installApiPlatform(app, redis);
 
@@ -187,6 +187,14 @@ export async function buildApp(
       timestamp: new Date().toISOString(),
       requestId: request.id,
       dependencies: checks,
+      capacity: {
+        dbPool: {
+          max: env.DB_POOL_MAX,
+          total: pool.totalCount,
+          idle: pool.idleCount,
+          waiting: pool.waitingCount,
+        },
+      },
     };
   });
 
