@@ -17,3 +17,15 @@
 @media(max-width:760px){.scene{inset:0 -8px}.planet{top:50%;width:min(76vw,480px)}.orbits{opacity:.7}.document,.ai{top:8%;width:43vw;padding:10px}.graph,.tasks{top:48%;width:42vw;padding:10px}.references,.timeline{display:none}.document>em{font-size:.8rem}.graphBody{height:110px}.chips i:nth-child(n+2){display:none}}
 @media(max-width:500px){.planet{top:52%;width:90vw}.graph,.tasks{top:55%}.document,.ai{width:45vw}.panelHead>strong{font-size:.55rem}.document>small,.ai>small{display:none}.graphBody{height:90px}.tasks label{font-size:.45rem}}
 @media(prefers-reduced-motion:reduce){.document,.graph,.ai,.tasks,.references,.timeline,.orbits path,.orbits circle{animation:none}}
+
+/* Keep the orbit framing the message instead of crossing it. */
+.planet{top:56%;width:clamp(310px,34vw,610px)}
+.graph{top:42%;left:1%;width:clamp(220px,20vw,310px)}
+.tasks{top:40%;right:1%;width:clamp(225px,19vw,300px)}
+.document{left:9%;top:5%;width:clamp(215px,18vw,290px)}
+.ai{right:8%;top:5%;width:clamp(235px,19vw,310px)}
+.references{left:10%;bottom:2%;width:clamp(225px,19vw,300px)}
+.timeline{right:9%;bottom:2%;width:clamp(225px,19vw,300px)}
+@media(max-width:1180px){.planet{width:40vw}.graph{left:0}.tasks{right:0}.document{left:4%}.ai{right:4%}.references{left:5%}.timeline{right:5%}}
+@media(max-width:900px){.planet{top:58%;width:52vw}.graph{top:48%}.tasks{top:47%}}
+@media(max-width:760px){.planet{top:58%;width:72vw}.document,.ai{top:3%}.graph,.tasks{top:57%}}
