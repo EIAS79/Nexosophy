@@ -14,24 +14,24 @@ Implement durable binary storage and preview pipelines without routing large fil
 
 ## Prerequisites
 
-- [ ] Phase 04 exit gate passed.
+- [x] Phase 04 exit gate passed.
 - [ ] Object-storage development/staging buckets configured.
 - [ ] Worker queue operational.
 
 ## Required deliverables
 
-- [ ] Asset and UploadSession schema.
-- [ ] Signed multipart/resumable direct-upload flow.
-- [ ] Checksum/size/type verification.
-- [ ] Scan/quarantine hook and trust states.
-- [ ] Image thumbnail/preview workers.
-- [ ] PDF preview/text extraction boundary.
-- [ ] Office file preview/convert strategy and fidelity labels.
-- [ ] Audio/video metadata and waveform/thumbnail jobs where supported.
-- [ ] Private signed delivery URLs/CDN strategy.
-- [ ] Upload quota/concurrency enforcement.
-- [ ] Abandoned upload cleanup lifecycle.
-- [ ] Progress/retry/cancel UI integrated with file explorer.
+- [x] Asset and UploadSession schema.
+- [x] Signed multipart/resumable direct-upload flow.
+- [x] Checksum/size/type verification.
+- [x] Scan/quarantine hook and trust states.
+- [x] Image thumbnail/preview workers.
+- [x] PDF preview/text extraction boundary.
+- [x] Office file preview/convert strategy and fidelity labels.
+- [x] Audio/video metadata and waveform/thumbnail jobs where supported.
+- [x] Private signed delivery URLs/CDN strategy.
+- [x] Upload quota/concurrency enforcement.
+- [x] Abandoned upload cleanup lifecycle.
+- [x] Progress/retry/cancel UI integrated with file explorer.
 
 ## Scale / resilience rules
 
@@ -60,10 +60,10 @@ Implement durable binary storage and preview pipelines without routing large fil
 
 ## Phase completion record
 
-- Commit/PR:
-- Migration version(s):
-- Staging deployment:
-- Test report:
-- Load/performance evidence where applicable:
-- Known deferred items (must not violate exit gate):
-- Approval/date:
+- Commit/PR: implementation staged on branch `phases-05-07-storage-editor-history`; merge intentionally deferred until the combined Phase 05–10 validation tranche.
+- Migration version(s): `0004_assets_uploads.sql`.
+- Staging deployment: deferred to the combined Phase 05–10 validation/staging pass.
+- Test report: required test matrix intentionally remains open until the combined Phase 05–10 CI/integration run.
+- Load/performance evidence where applicable: direct browser-to-object-storage multipart flow is implemented so API memory is independent of object size; formal load evidence is deferred.
+- Known deferred items (must not violate exit gate): external development/staging object-storage bucket credentials and scanner/media processor endpoints must be configured in deployment secrets before the exit gate can be evaluated.
+- Approval/date: implementation deliverables completed in the shared Phase 05–07 branch; phase validation/approval intentionally deferred.
