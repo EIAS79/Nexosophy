@@ -428,6 +428,7 @@ export default function HomePage() {
             <div className={styles.heroHumanBackdrop} />
           </div>
 
+          <div className={styles.heroStage}>
           <div className={styles.heroCopy}>
             <p className={styles.eyebrow}>A unified knowledge and work platform</p>
             <h1>
@@ -460,6 +461,7 @@ export default function HomePage() {
           </div>
 
           <HeroVisual />
+          </div>
         </section>
 
         <section className={styles.scatterSection} id="product-story" data-motion-scene>
