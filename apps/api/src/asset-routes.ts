@@ -98,6 +98,24 @@ function sendAssetError(
   return true;
 }
 
+function publicAsset(asset: Awaited<ReturnType<typeof getAsset>> | NonNullable<Awaited<ReturnType<typeof getAsset>>>) {
+  if (!asset) return null;
+  return {
+    id: asset.id,
+    workspaceId: asset.workspaceId,
+    nodeId: asset.nodeId,
+    originalFilename: asset.originalFilename,
+    declaredMime: asset.declaredMime,
+    detectedMime: asset.detectedMime,
+    sizeBytes: asset.sizeBytes,
+    checksumSha256: asset.checksumSha256,
+    trustState: asset.trustState,
+    metadata: asset.metadata,
+    createdAt: asset.createdAt,
+    updatedAt: asset.updatedAt,
+  };
+}
+
 function storageUnavailable(reply: FastifyReply, requestId: string) {
   return sendWorkspaceError(
     reply,
@@ -165,7 +183,7 @@ export async function registerAssetRoutes(
 
       reply.code(201);
       return {
-        asset: created.asset,
+        asset: publicAsset(created.asset),
         upload: {
           ...created.session,
           status: "uploading",
@@ -194,7 +212,11 @@ export async function registerAssetRoutes(
         "Upload session not found or unavailable.",
       );
     }
-    return state;
+    return {
+      session: state.session,
+      parts: state.parts,
+      asset: publicAsset(state.asset),
+    };
   });
 
   app.post(
@@ -335,7 +357,7 @@ export async function registerAssetRoutes(
           requestId: request.id,
         });
         reply.code(202);
-        return { asset, status: "scanning" };
+        return { asset: publicAsset(asset), status: "scanning" };
       } catch (error) {
         if (sendAssetError(error, request, reply)) return;
         throw error;
@@ -395,8 +417,10 @@ export async function registerAssetRoutes(
       );
     }
     return {
-      asset,
-      variants: await listAssetVariants(pool, workspaceId, assetId),
+      asset: publicAsset(asset),
+      variants: await listAssetVariants(pool, workspaceId, assetId).then((items) =>
+        items.map(({ objectKey: _objectKey, ...variant }) => variant),
+      ),
     };
   });
 
