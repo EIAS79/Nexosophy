@@ -1,5 +1,6 @@
 import type { ContentNode } from "@nexosophy/contracts";
 
+import { AssetViewer } from "../../../../../../components/asset-viewer";
 import { nexosophyApi } from "../../../../../../lib/api-server";
 
 export default async function WorkspaceNodePage({
@@ -14,6 +15,11 @@ export default async function WorkspaceNodePage({
       `/v1/workspaces/${workspaceId}/nodes/${nodeId}/breadcrumbs`,
     ),
   ]);
+
+  const assetId =
+    node.kind === "attachment" && typeof node.metadata.assetId === "string"
+      ? node.metadata.assetId
+      : null;
 
   return (
     <section className="workspace-page">
@@ -48,6 +54,9 @@ export default async function WorkspaceNodePage({
         </a>
       </header>
 
+      {assetId ? (
+        <AssetViewer workspaceId={workspaceId} assetId={assetId} />
+      ) : (
       <div className="content-node-placeholder">
         <div>
           <p className="eyebrow">Phase 04 node surface</p>
@@ -76,6 +85,7 @@ export default async function WorkspaceNodePage({
           </div>
         </dl>
       </div>
+      )}
     </section>
   );
 }
