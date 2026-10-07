@@ -67,3 +67,82 @@
  .planet{top:69%;width:86vw}.document,.ai{top:35%;width:44vw}.graph,.tasks{top:62%;width:43vw}
  .panelHead>strong{font-size:.54rem}.document>small,.ai>small{display:none}.graphBody{height:84px}.tasks label{font-size:.43rem}
 }
+
+
+/* === Stable orbit composition: no panel/text collisions across desktop/tablet === */
+.scene{overflow:hidden}
+.orbits{z-index:1;opacity:.76}
+.planet{
+  z-index:0;
+  top:68%;
+  left:50%;
+  width:clamp(300px,29vw,500px);
+  transform:translate(-50%,-50%);
+  background:
+    radial-gradient(ellipse at 31% 31%,#58b9d1 0 2.6%,transparent 3.2%),
+    radial-gradient(ellipse at 27% 37%,#2584a9 0 7%,transparent 7.6%),
+    radial-gradient(ellipse at 36% 44%,#1b6e94 0 5.2%,transparent 5.8%),
+    radial-gradient(ellipse at 62% 30%,#4bb8c5 0 3.2%,transparent 3.8%),
+    radial-gradient(ellipse at 68% 38%,#258aa4 0 7.5%,transparent 8.2%),
+    radial-gradient(ellipse at 62% 49%,#176c92 0 5.8%,transparent 6.5%),
+    radial-gradient(ellipse at 54% 62%,#155b82 0 6.2%,transparent 6.9%),
+    radial-gradient(circle at 36% 24%,rgb(125 235 255/.34),transparent 25%),
+    radial-gradient(circle at 48% 46%,#0b609d 0 42%,#06447e 57%,#032b62 70%,#01183d 82%);
+  border:1px solid rgb(115 231 255/.7);
+  box-shadow:
+    inset -58px -68px 86px rgb(0 4 24/.84),
+    inset 24px 16px 58px rgb(120 235 255/.2),
+    0 0 0 1px rgb(138 240 255/.12),
+    0 0 34px rgb(74 224 255/.5),
+    0 0 105px rgb(24 135 255/.28);
+}
+.planet:before{
+  inset:5%;
+  border-color:rgb(137 236 255/.17);
+  transform:rotate(13deg) scaleY(.38);
+}
+.planet:after{
+  inset:18% -10%;
+  border-color:rgb(106 160 255/.14);
+  transform:rotate(-13deg) scaleY(.29);
+}
+.planet span{
+  inset:3%;
+  background:
+    repeating-radial-gradient(ellipse at 50% 49%,transparent 0 22px,rgb(138 231 255/.04) 23px 24px),
+    linear-gradient(90deg,transparent 49.7%,rgb(142 230 255/.05) 50%,transparent 50.3%);
+}
+.document,.graph,.ai,.tasks,.references,.timeline{
+  max-width:290px;
+  border-radius:16px;
+}
+.document{left:6%;top:7%;width:clamp(205px,17vw,275px)}
+.ai{right:6%;top:7%;width:clamp(215px,18vw,285px)}
+.graph{left:3%;top:39%;width:clamp(210px,18vw,285px)}
+.tasks{right:3%;top:39%;width:clamp(210px,18vw,280px)}
+.references{left:8%;bottom:4%;width:clamp(210px,17vw,275px)}
+.timeline{right:8%;bottom:4%;width:clamp(210px,17vw,275px)}
+@media(max-width:1180px){
+  .planet{top:69%;width:clamp(285px,34vw,410px)}
+  .document{left:2%;top:8%;width:210px}.ai{right:2%;top:8%;width:220px}
+  .graph{left:1%;top:42%;width:215px}.tasks{right:1%;top:42%;width:215px}
+  .references{left:3%;bottom:3%;width:210px}.timeline{right:3%;bottom:3%;width:210px}
+}
+@media(max-width:900px){
+  .planet{top:70%;width:min(42vw,360px)}
+  .document,.ai{top:10%;width:190px}.document{left:1%}.ai{right:1%}
+  .graph,.tasks{top:48%;width:195px}
+  .references,.timeline{bottom:2%;width:185px}.references{left:2%}.timeline{right:2%}
+}
+@media(max-width:760px){
+  .orbits{opacity:.5}
+  .planet{top:72%;width:min(60vw,390px)}
+  .document,.ai{top:36%;width:40vw;max-width:210px}.document{left:3%}.ai{right:3%}
+  .graph,.tasks{top:61%;width:39vw;max-width:205px}.graph{left:2%}.tasks{right:2%}
+  .references,.timeline{display:none}
+}
+@media(max-width:500px){
+  .planet{top:74%;width:76vw}
+  .document,.ai{top:39%;width:43vw}
+  .graph,.tasks{top:64%;width:42vw}
+}
