@@ -44,10 +44,19 @@ export async function GET(
 }
 
 type ActionBody = {
-  action?: "initiate" | "signPart" | "recordPart" | "complete" | "abort" | "download" | "delete";
+  action?:
+    | "initiate"
+    | "signPart"
+    | "recordPart"
+    | "complete"
+    | "abort"
+    | "download"
+    | "variantDownload"
+    | "delete";
   uploadSessionId?: string;
   assetId?: string;
   partNumber?: number;
+  variantKind?: string;
   filename?: string;
   mimeType?: string;
   sizeBytes?: number;
@@ -127,6 +136,15 @@ export async function POST(
             `/v1/workspaces/${workspaceId}/assets/${encodeURIComponent(
               body.assetId ?? "",
             )}/download-url`,
+            { method: "POST" },
+          ),
+        );
+      case "variantDownload":
+        return NextResponse.json(
+          await nexosophyApi(
+            `/v1/workspaces/${workspaceId}/assets/${encodeURIComponent(
+              body.assetId ?? "",
+            )}/variants/${encodeURIComponent(body.variantKind ?? "")}/download-url`,
             { method: "POST" },
           ),
         );
