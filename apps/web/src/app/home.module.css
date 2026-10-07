@@ -4970,3 +4970,137 @@
     min-height: 525px;
   }
 }
+
+/* === Context Weave: section after Knowledge Orbit hero === */
+
+.scatterSection {
+  width: min(1480px, calc(100% - 36px));
+  min-height: auto;
+  padding: 118px 0 112px;
+  isolation: isolate;
+}
+
+.scatterSection::before {
+  top: -180px;
+  right: -18vw;
+  left: -18vw;
+  height: 430px;
+  background:
+    radial-gradient(ellipse at 76% 30%, rgb(61 177 232 / 12%), transparent 36%),
+    radial-gradient(ellipse at 24% 28%, rgb(80 76 211 / 8%), transparent 32%),
+    linear-gradient(180deg, transparent 0%, rgb(7 22 37 / 72%) 50%, transparent 100%);
+  filter: blur(32px);
+}
+
+.scatterSection::after {
+  content: "";
+  position: absolute;
+  z-index: -2;
+  inset: 15% -10% 2%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 54% 46%, rgb(61 190 230 / 7%), transparent 28%),
+    radial-gradient(circle at 46% 54%, rgb(92 73 216 / 5%), transparent 48%);
+  filter: blur(28px);
+  pointer-events: none;
+}
+
+.contextSectionHeader {
+  width: 100%;
+  max-width: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(280px, .55fr);
+  align-items: end;
+  gap: clamp(36px, 7vw, 110px);
+  margin: 0 0 42px;
+  text-align: left;
+}
+
+.contextSectionHeader .eyebrow {
+  margin-bottom: 16px;
+}
+
+.contextTitle h2 {
+  max-width: 980px;
+  font-size: clamp(3.55rem, 5.65vw, 6.15rem);
+  line-height: .93;
+}
+
+.contextThesis {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  border-left: 1px solid rgb(98 219 247 / 24%);
+  padding: 7px 0 8px 22px;
+}
+
+.contextThesis::before {
+  content: "";
+  position: absolute;
+  top: 7px;
+  left: -3px;
+  width: 5px;
+  height: 46px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #59e1ed, rgb(91 87 232 / 42%));
+  box-shadow: 0 0 18px rgb(77 218 239 / 22%);
+}
+
+.contextThesis span {
+  color: #86e3ec;
+  font-size: .62rem;
+  font-weight: 760;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.contextThesis p {
+  max-width: 39ch;
+  margin: 0;
+  color: #91aabb;
+  font-size: .83rem;
+  line-height: 1.62;
+}
+
+@media (max-width: 1040px) {
+  .scatterSection {
+    width: min(100% - 28px, 980px);
+    padding-top: 100px;
+  }
+
+  .contextSectionHeader {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+
+  .contextTitle h2 {
+    max-width: 850px;
+  }
+
+  .contextThesis {
+    max-width: 650px;
+  }
+}
+
+@media (max-width: 720px) {
+  .scatterSection {
+    width: min(100% - 20px, 680px);
+    padding: 84px 0 92px;
+  }
+
+  .contextSectionHeader {
+    margin-bottom: 28px;
+  }
+
+  .contextTitle h2 {
+    font-size: clamp(2.85rem, 12.5vw, 4.5rem);
+  }
+
+  .contextThesis {
+    padding-left: 18px;
+  }
+
+  .contextThesis p {
+    font-size: .76rem;
+  }
+}
