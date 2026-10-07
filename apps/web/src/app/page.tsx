@@ -425,12 +425,7 @@ export default function HomePage() {
       <main id="main-content" className={styles.main}>
         <section className={styles.hero} data-motion-scene>
           <div className={styles.heroBackdrop} aria-hidden="true">
-            <div className={styles.heroSkyGlow} />
-            <div className={styles.heroPlanet} />
-            <div className={styles.heroMountainLeft} />
-            <div className={styles.heroMountainRight} />
-            <div className={styles.heroLake} />
-            <div className={styles.heroForeground} />
+            <div className={styles.heroHumanBackdrop} />
           </div>
 
           <div className={styles.heroCopy}>
