@@ -152,6 +152,7 @@ function allowedUploadMime(mimeType: string): boolean {
   return new Set([
     "application/pdf",
     "application/json",
+    "application/octet-stream",
     "application/zip",
     "application/msword",
     "application/vnd.ms-excel",
@@ -824,9 +825,9 @@ export async function completeAssetScan(
     );
     const expectedChecksum = currentAsset.rows[0]?.checksum_sha256?.toLowerCase() ?? null;
     const scannedChecksum = input.checksumSha256?.toLowerCase() ?? null;
-    const checksumValid = expectedChecksum
-      ? scannedChecksum !== null && scannedChecksum === expectedChecksum
-      : true;
+    const checksumValid =
+      scannedChecksum !== null &&
+      (!expectedChecksum || scannedChecksum === expectedChecksum);
     const detectedMimeAllowed = allowedUploadMime(input.detectedMime);
     const effectiveClean = input.clean && checksumValid && detectedMimeAllowed;
     const trustedState = effectiveClean ? "trusted" : "quarantined";
