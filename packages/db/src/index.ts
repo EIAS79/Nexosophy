@@ -8,6 +8,7 @@ export * from "./workspace-store.js";
 export * from "./content-types.js";
 export * from "./content-store-core.js";
 export * from "./content-store-operations.js";
+export * from "./asset-store.js";
 
 export type DatabasePoolOptions = Pick<
   PoolConfig,
