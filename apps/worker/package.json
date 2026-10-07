@@ -16,6 +16,7 @@
     "@nexosophy/db": "workspace:*",
     "@nexosophy/observability": "workspace:*",
     "bullmq": "6.3.10",
-    "fastify": "5.12.5"
+    "fastify": "5.12.5",
+    "@nexosophy/storage": "workspace:*"
   }
 }
