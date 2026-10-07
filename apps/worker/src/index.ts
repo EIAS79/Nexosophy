@@ -195,6 +195,7 @@ async function processAssetJob(job: Awaited<ReturnType<typeof claimNextAssetJob>
       scanner?: string;
       scannerVersion?: string;
       resultCode?: string;
+      checksumSha256?: string;
       metadata?: Record<string, unknown>;
     }>(mediaServices.MALWARE_SCANNER_URL, {
       sourceUrl: source.url,
@@ -213,6 +214,7 @@ async function processAssetJob(job: Awaited<ReturnType<typeof claimNextAssetJob>
       scanner: result.scanner ?? "remote-policy",
       scannerVersion: result.scannerVersion,
       resultCode: result.resultCode,
+      checksumSha256: result.checksumSha256,
       metadata: result.metadata,
     });
     return;
@@ -260,7 +262,9 @@ async function processAssetJob(job: Awaited<ReturnType<typeof claimNextAssetJob>
     mimeType: result.mimeType,
     sizeBytes: result.sizeBytes,
     checksumSha256: result.checksumSha256,
-    fidelityLabel: result.fidelityLabel,
+    fidelityLabel:
+      result.fidelityLabel ??
+      (job.jobType === "office_preview" ? "converted-preview" : null),
     metadata: result.metadata,
   });
 }
