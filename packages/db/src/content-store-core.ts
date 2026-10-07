@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import type { Pool, PoolClient } from "pg";
 
 import {
@@ -378,6 +380,7 @@ export async function moveContentNode(
     parentId: string | null;
     expectedVersion: number;
     requestId?: string | undefined;
+    idempotencyKey?: string | undefined;
   },
 ): Promise<ContentNode> {
   try {
@@ -385,6 +388,47 @@ export async function moveContentNode(
       await client.query("select pg_advisory_xact_lock(hashtextextended($1, 0))", [
         `content-tree:${input.workspaceId}`,
       ]);
+
+      const requestHash = input.idempotencyKey
+        ? createHash("sha256")
+            .update(
+              JSON.stringify({
+                operation: "move",
+                nodeId: input.nodeId,
+                parentId: input.parentId,
+              }),
+            )
+            .digest("hex")
+        : null;
+
+      if (input.idempotencyKey && requestHash) {
+        await client.query(
+          `delete from "content_idempotency"
+           where "workspace_id" = $1 and "idempotency_key" = $2 and "expires_at" <= now()`,
+          [input.workspaceId, input.idempotencyKey],
+        );
+        const replay = await client.query<{ request_hash: string }>(
+          `select "request_hash"
+           from "content_idempotency"
+           where "workspace_id" = $1 and "idempotency_key" = $2
+           for update`,
+          [input.workspaceId, input.idempotencyKey],
+        );
+        const existing = replay.rows[0];
+        if (existing) {
+          if (existing.request_hash !== requestHash) {
+            throw new ContentStoreError(
+              "IDEMPOTENCY_CONFLICT",
+              "The idempotency key was already used for a different content move.",
+            );
+          }
+          const replayed = await selectNode(client, input.workspaceId, input.nodeId);
+          if (!replayed) {
+            throw new ContentStoreError("NODE_NOT_FOUND", "Content node not found.");
+          }
+          return replayed;
+        }
+      }
 
       const source = await client.query<{ version: number }>(
         `select "version" from "content_nodes"
@@ -454,6 +498,21 @@ export async function moveContentNode(
 
       const node = await selectNode(client, input.workspaceId, input.nodeId);
       if (!node) throw new Error("Moved content node could not be reloaded.");
+
+      if (input.idempotencyKey && requestHash) {
+        await client.query(
+          `insert into "content_idempotency"
+             ("workspace_id", "idempotency_key", "request_hash", "response")
+           values ($1, $2, $3, $4::jsonb)`,
+          [
+            input.workspaceId,
+            input.idempotencyKey,
+            requestHash,
+            JSON.stringify({ nodeId: node.id, version: node.version }),
+          ],
+        );
+      }
+
       return node;
     });
   } catch (error) {
@@ -481,7 +540,7 @@ export async function getContentBreadcrumbs(
        select parent.*, child."depth" + 1
        from "content_nodes" parent
        join ancestors child on child."parent_id" = parent."id"
-       where parent."workspace_id" = $1 and parent."trashed_at" is null and child."depth" < 127
+       where parent."workspace_id" = $1 and parent."trashed_at" is null
      )
      select a."id", a."workspace_id", a."parent_id", a."kind", a."name",
             a."target_node_id", a."metadata", a."trashed_at", a."version",
