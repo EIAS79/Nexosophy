@@ -3,6 +3,7 @@ import type { ContentNode, DocumentRecord } from "@nexosophy/contracts";
 import { AssetViewer } from "../../../../../../components/asset-viewer";
 import { RichDocumentEditor } from "../../../../../../components/rich-document-editor";
 import { nexosophyApi } from "../../../../../../lib/api-server";
+import { resolveEditorPlugin } from "../../../../../../lib/editor-registry";
 
 export default async function WorkspaceNodePage({
   params,
@@ -21,15 +22,9 @@ export default async function WorkspaceNodePage({
     node.kind === "attachment" && typeof node.metadata.assetId === "string"
       ? node.metadata.assetId
       : null;
-  const richDocumentKinds = new Set([
-    "note",
-    "document",
-    "report",
-    "research_item",
-    "lab_record",
-  ]);
+  const editorPlugin = resolveEditorPlugin(node.kind);
   const document =
-    richDocumentKinds.has(node.kind)
+    editorPlugin?.id === "rich-document"
       ? await nexosophyApi<DocumentRecord>(
           `/v1/workspaces/${workspaceId}/documents/${node.id}`,
         )
