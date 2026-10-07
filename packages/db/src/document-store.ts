@@ -108,6 +108,29 @@ async function selectDocument(
   return result.rows[0] ? toDocument(result.rows[0]) : null;
 }
 
+export async function getDocument(
+  pool: Pool,
+  input: {
+    workspaceId: string;
+    nodeId: string;
+  },
+): Promise<DocumentRecord> {
+  await assertEditableNode(pool, input.workspaceId, input.nodeId);
+  const existing = await selectDocument(pool, input.workspaceId, input.nodeId);
+  if (existing) return existing;
+
+  const now = new Date();
+  return {
+    workspaceId: input.workspaceId,
+    nodeId: input.nodeId,
+    schemaVersion: 1,
+    body: { type: "doc", blocks: [] },
+    revision: 1,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
 export async function getOrCreateDocument(
   pool: Pool,
   input: {
@@ -178,6 +201,17 @@ export async function saveDocument(
     const hash = requestHash(input);
 
     if (input.idempotencyKey) {
+      await client.query(
+        "select pg_advisory_xact_lock(hashtextextended($1, 0))",
+        [
+          [
+            "api-idempotency",
+            input.workspaceId,
+            input.actorUserId,
+            input.idempotencyKey,
+          ].join(":"),
+        ],
+      );
       await client.query(
         `delete from "api_idempotency_records"
          where "workspace_id" = $1 and "actor_user_id" = $2
