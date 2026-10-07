@@ -25,3 +25,4 @@ export type ApiError = z.infer<typeof apiErrorSchema>;
 export * from "./identity.js";
 export * from "./workspace.js";
 export * from "./content.js";
+export * from "./storage.js";
