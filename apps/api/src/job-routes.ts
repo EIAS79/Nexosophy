@@ -1,5 +1,5 @@
 import type { AuthVerifier } from "@nexosophy/auth";
-import { jobParamsSchema } from "@nexosophy/contracts";
+import { jobParamsSchema, listJobsQuerySchema } from "@nexosophy/contracts";
 import {
   getDurableJob,
   listWorkspaceDeadLetters,
@@ -52,6 +52,7 @@ export async function registerJobRoutes(
 
   app.get("/v1/workspaces/:workspaceId/jobs", async (request, reply) => {
     const { workspaceId } = request.params as { workspaceId: string };
+    const query = listJobsQuerySchema.parse(request.query);
     const principal = await requireWorkspacePrincipal(request, reply, verifier);
     if (!principal) return;
     if (
@@ -66,7 +67,10 @@ export async function registerJobRoutes(
     ) {
       return;
     }
-    return { items: await listWorkspaceJobs(pool, workspaceId, 50) };
+    return listWorkspaceJobs(pool, workspaceId, {
+      limit: query.limit,
+      cursor: query.cursor,
+    });
   });
 
   app.get("/v1/workspaces/:workspaceId/dead-letters", async (request, reply) => {
