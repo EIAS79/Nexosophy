@@ -5,7 +5,7 @@ import {
 } from "@nexosophy/contracts";
 import {
   DocumentStoreError,
-  getOrCreateDocument,
+  getDocument,
   saveDocument,
 } from "@nexosophy/db";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
@@ -65,10 +65,9 @@ export async function registerEditorRoutes(
       }
 
       try {
-        return await getOrCreateDocument(pool, {
+        return await getDocument(pool, {
           workspaceId,
           nodeId,
-          actorUserId: principal.internalUserId,
         });
       } catch (error) {
         if (sendDocumentError(error, request, reply)) return;
