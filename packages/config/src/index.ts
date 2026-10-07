@@ -87,3 +87,43 @@ export function parseOptionalClerkEnv(
 
   return clerkEnvSchema.parse(env);
 }
+
+
+export const storageEnvSchema = z.object({
+  S3_ENDPOINT: z.string().url(),
+  S3_REGION: z.string().min(1),
+  S3_BUCKET: z.string().min(1),
+  S3_ACCESS_KEY_ID: z.string().min(1),
+  S3_SECRET_ACCESS_KEY: z.string().min(1),
+  S3_SESSION_TOKEN: z.string().min(1).optional(),
+});
+
+export type StorageEnv = z.infer<typeof storageEnvSchema>;
+
+export function parseOptionalStorageEnv(
+  env: NodeJS.ProcessEnv = process.env,
+): StorageEnv | null {
+  const required = [
+    "S3_ENDPOINT",
+    "S3_REGION",
+    "S3_BUCKET",
+    "S3_ACCESS_KEY_ID",
+    "S3_SECRET_ACCESS_KEY",
+  ] as const;
+  const configured = required.filter((key) => Boolean(env[key]));
+  if (configured.length === 0) return null;
+  return storageEnvSchema.parse(env);
+}
+
+export const mediaServicesEnvSchema = z.object({
+  MALWARE_SCANNER_URL: z.string().url().optional(),
+  MEDIA_PROCESSOR_URL: z.string().url().optional(),
+});
+
+export type MediaServicesEnv = z.infer<typeof mediaServicesEnvSchema>;
+
+export function parseMediaServicesEnv(
+  env: NodeJS.ProcessEnv = process.env,
+): MediaServicesEnv {
+  return mediaServicesEnvSchema.parse(env);
+}
