@@ -1,6 +1,7 @@
-import type { ContentNode } from "@nexosophy/contracts";
+import type { ContentNode, DocumentRecord } from "@nexosophy/contracts";
 
 import { AssetViewer } from "../../../../../../components/asset-viewer";
+import { RichDocumentEditor } from "../../../../../../components/rich-document-editor";
 import { nexosophyApi } from "../../../../../../lib/api-server";
 
 export default async function WorkspaceNodePage({
@@ -19,6 +20,19 @@ export default async function WorkspaceNodePage({
   const assetId =
     node.kind === "attachment" && typeof node.metadata.assetId === "string"
       ? node.metadata.assetId
+      : null;
+  const richDocumentKinds = new Set([
+    "note",
+    "document",
+    "report",
+    "research_item",
+    "lab_record",
+  ]);
+  const document =
+    richDocumentKinds.has(node.kind)
+      ? await nexosophyApi<DocumentRecord>(
+          `/v1/workspaces/${workspaceId}/documents/${node.id}`,
+        )
       : null;
 
   return (
@@ -56,14 +70,16 @@ export default async function WorkspaceNodePage({
 
       {assetId ? (
         <AssetViewer workspaceId={workspaceId} assetId={assetId} />
+      ) : document ? (
+        <RichDocumentEditor workspaceId={workspaceId} node={node} initialDocument={document} />
       ) : (
       <div className="content-node-placeholder">
         <div>
-          <p className="eyebrow">Phase 04 node surface</p>
+          <p className="eyebrow">Universal node surface</p>
           <h2>{node.name}</h2>
           <p>
-            This route is the stable identity surface reused by note, document, whiteboard, dataset,
-            spreadsheet, notebook, report, research, lab, and attachment editors in later phases.
+            This content type keeps the same stable node identity while its specialized editor is
+            delivered by the capability registry in its owning phase.
           </p>
         </div>
         <dl>
