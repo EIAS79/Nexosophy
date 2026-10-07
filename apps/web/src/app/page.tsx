@@ -424,18 +424,25 @@ export default function HomePage() {
 
       <main id="main-content" className={styles.main}>
         <section className={styles.hero} data-motion-scene>
+          <div className={styles.heroBackdrop} aria-hidden="true">
+            <div className={styles.heroSkyGlow} />
+            <div className={styles.heroPlanet} />
+            <div className={styles.heroMountainLeft} />
+            <div className={styles.heroMountainRight} />
+            <div className={styles.heroLake} />
+            <div className={styles.heroForeground} />
+          </div>
+
           <div className={styles.heroCopy}>
-            <p className={styles.eyebrow}>Ideas · People · Research · All connected</p>
+            <p className={styles.eyebrow}>A unified knowledge and work platform</p>
             <h1>
-              Turn scattered
+              Your knowledge
               <br />
-              knowledge into
-              <br />
-              <em>what&apos;s next.</em>
+              in a <em>brighter</em> orbit.
             </h1>
             <p className={styles.lede}>
-              Nexosophy brings together your research, notes, tasks, files, data and people — then
-              uses AI to surface connections, generate insight, and keep your work moving.
+              Nexosophy connects your research, notes, tasks, files, data and people with AI — so
+              you can think deeper, move faster, and create what&apos;s next.
             </p>
             <div className={styles.actions}>
               <a className={styles.primaryCta} href="/signup">
@@ -444,21 +451,16 @@ export default function HomePage() {
               <a className={styles.secondaryCta} href="#product-story">
                 <span className={styles.playIcon}>▶</span>
                 <span>
-                  Watch the story
+                  Watch overview
                   <small>2 min</small>
                 </span>
               </a>
             </div>
             <div className={styles.heroProof}>
               <div className={styles.avatarStack} aria-hidden="true">
-                <span>A</span>
-                <span>R</span>
-                <span>P</span>
-                <span>L</span>
+                <span>A</span><span>R</span><span>P</span><span>L</span>
               </div>
-              <p>
-                Built for researchers, students, builders and teams turning knowledge into progress.
-              </p>
+              <p>Join people turning research, learning and serious work into connected progress.</p>
             </div>
           </div>
 
