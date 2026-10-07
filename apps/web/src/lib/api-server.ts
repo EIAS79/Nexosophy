@@ -63,7 +63,24 @@ export async function nexosophyApi<T>(
     throw new NexosophyApiError(response.status, code, message);
   }
 
-  return (await response.json()) as T;
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  const raw = await response.text();
+  if (!raw.trim()) {
+    return undefined as T;
+  }
+
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    throw new NexosophyApiError(
+      502,
+      "INVALID_API_RESPONSE",
+      "The Nexosophy API returned an invalid success response.",
+    );
+  }
 }
 
 export function getMe(): Promise<MeResponse> {

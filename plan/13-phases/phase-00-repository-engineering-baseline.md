@@ -57,7 +57,7 @@ Create the production engineering skeleton that every later phase builds on. No 
 ## Exit gate
 
 - [x] One documented command installs and validates the repo.
-- [ ] Main branch is releasable and CI-gated. **Engineering side is green; GitHub branch/ruleset enforcement remains an external repository-setting blocker because the connected GitHub integration does not expose write access for branch protection/rulesets.**
+- [ ] Main branch is releasable and CI-gated. **Engineering side is green; GitHub branch/ruleset enforcement remains an external repository-setting blocker. Reverified 2026-10-07: the repository ruleset collection is empty and `main` reports `protected: false`; the connected GitHub integration exposes these settings for read but provides no branch-protection/ruleset mutation action.**
 - [x] All four deployables build independently.
 - [x] Database migration up/down or forward-recovery convention works.
 - [x] Staging skeleton deploys without manual source edits.
@@ -76,5 +76,5 @@ Create the production engineering skeleton that every later phase builds on. No 
   - Full Regression run `37244126231` — success.
   - Independent Build run `37243917776` — success.
 - Load/performance evidence where applicable: not required for Phase 00 product traffic; capacity/load certification belongs to later scale/hardening phases.
-- Known deferred items: GitHub branch/ruleset enforcement on `main` requires repository-setting write access not exposed by the connected GitHub integration. CI itself is active and green.
-- Approval/date: engineering baseline verified 2026-10-04; phase exit remains administratively open only for branch/ruleset enforcement.
+- Known deferred items: GitHub branch/ruleset enforcement on `main` requires repository-setting write access not exposed by the connected GitHub integration. CI itself is active and green. Reverification on 2026-10-07 found zero repository rulesets and `main` unprotected, so this control remains genuinely open rather than a stale documentation item.
+- Approval/date: engineering baseline verified 2026-10-04 and repository-setting status reverified 2026-10-07; phase exit remains administratively open only for branch/ruleset enforcement.

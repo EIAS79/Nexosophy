@@ -109,7 +109,7 @@ try {
   );
 
   const deepFolders = [rootFolder];
-  for (let depth = 1; depth <= 64; depth += 1) {
+  for (let depth = 1; depth <= 140; depth += 1) {
     deepFolders.push(
       await createContentNode(pool, {
         workspaceId: workspace.id,
@@ -251,7 +251,38 @@ try {
     nodeId: shortcut.id,
   });
   assert.equal(restored.status, "completed");
-  assert(await getContentNode(pool, workspace.id, shortcut.id));
+  const restoredShortcut = await getContentNode(pool, workspace.id, shortcut.id);
+  assert(restoredShortcut);
+
+  const secondTrashParent = await createContentNode(pool, {
+    workspaceId: workspace.id,
+    actorUserId: owner,
+    parentId: null,
+    kind: "folder",
+    name: "Second trash parent",
+  });
+  const movedShortcut = await moveContentNode(pool, {
+    workspaceId: workspace.id,
+    actorUserId: owner,
+    nodeId: shortcut.id,
+    parentId: secondTrashParent.id,
+    expectedVersion: restoredShortcut.version,
+  });
+  await trashContentSubtree(pool, {
+    workspaceId: workspace.id,
+    actorUserId: owner,
+    nodeId: shortcut.id,
+  });
+  const restoredAgain = await restoreContentSubtree(pool, {
+    workspaceId: workspace.id,
+    actorUserId: owner,
+    nodeId: shortcut.id,
+  });
+  assert.equal(restoredAgain.status, "completed");
+  const restoredAfterMove = await getContentNode(pool, workspace.id, shortcut.id);
+  assert(restoredAfterMove);
+  assert.equal(restoredAfterMove.parentId, secondTrashParent.id);
+  assert(restoredAfterMove.version > movedShortcut.version);
 
   const syntheticWorkspace = await createWorkspace(pool, {
     userId: owner,
@@ -374,6 +405,36 @@ try {
   const copiedRoot = await resolveContentPath(pool, workspace.id, "Large subtree copy");
   assert(copiedRoot);
 
+  const invalidatedCopyTarget = await createContentNode(pool, {
+    workspaceId: workspace.id,
+    actorUserId: owner,
+    parentId: null,
+    kind: "folder",
+    name: "Invalidated copy target",
+  });
+  const invalidatedCopy = await copyContentSubtree(pool, {
+    workspaceId: workspace.id,
+    actorUserId: owner,
+    nodeId: largeRoot.id,
+    parentId: invalidatedCopyTarget.id,
+    name: "Invalidated large copy",
+    idempotencyKey: "invalidated-large-copy",
+  });
+  assert.equal(invalidatedCopy.status, "queued");
+  assert(invalidatedCopy.status === "queued");
+  await trashContentSubtree(pool, {
+    workspaceId: workspace.id,
+    actorUserId: owner,
+    nodeId: invalidatedCopyTarget.id,
+  });
+  claimed = await claimNextContentOperation(pool, "content-integration-worker");
+  assert(claimed);
+  assert.equal(claimed.id, invalidatedCopy.operation.id);
+  await expectContentError(
+    processContentOperationBatch(pool, claimed.id, 125),
+    "PARENT_NOT_FOUND",
+  );
+
   const bulkFolder = await createContentNode(pool, {
     workspaceId: workspace.id,
     actorUserId: owner,
@@ -401,8 +462,29 @@ try {
     operation: "move",
     nodeIds: [bulkA.id, bulkB.id],
     parentId: bulkFolder.id,
+    idempotencyKey: "bulk-move-replay",
   });
   assert.deepEqual(new Set(bulk.completed), new Set([bulkA.id, bulkB.id]));
+
+  const bulkAAfterFirstMove = await getContentNode(pool, workspace.id, bulkA.id);
+  const bulkBAfterFirstMove = await getContentNode(pool, workspace.id, bulkB.id);
+  assert(bulkAAfterFirstMove);
+  assert(bulkBAfterFirstMove);
+
+  const bulkReplay = await bulkContentNodes(pool, {
+    workspaceId: workspace.id,
+    actorUserId: owner,
+    operation: "move",
+    nodeIds: [bulkA.id, bulkB.id],
+    parentId: bulkFolder.id,
+    idempotencyKey: "bulk-move-replay",
+  });
+  assert.deepEqual(new Set(bulkReplay.completed), new Set([bulkA.id, bulkB.id]));
+
+  const bulkAAfterReplay = await getContentNode(pool, workspace.id, bulkA.id);
+  const bulkBAfterReplay = await getContentNode(pool, workspace.id, bulkB.id);
+  assert.equal(bulkAAfterReplay?.version, bulkAAfterFirstMove.version);
+  assert.equal(bulkBAfterReplay?.version, bulkBAfterFirstMove.version);
 
   process.stdout.write("Content integration checks passed.\n");
 } finally {

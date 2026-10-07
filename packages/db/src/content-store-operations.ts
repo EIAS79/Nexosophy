@@ -415,7 +415,7 @@ export async function trashContentSubtree(
          where child."workspace_id" = $1 and child."trashed_at" is null
        )
        update "content_nodes" n
-       set "original_parent_id" = coalesce(n."original_parent_id", n."parent_id"),
+       set "original_parent_id" = n."parent_id",
            "trashed_at" = now(),
            "trashed_by_user_id" = $3,
            "updated_by_user_id" = $3,
@@ -511,7 +511,8 @@ export async function restoreContentSubtree(
            where child."workspace_id" = $1 and child."trashed_at" is not null
          )
          update "content_nodes" n
-         set "trashed_at" = null,
+         set "original_parent_id" = null,
+             "trashed_at" = null,
              "trashed_by_user_id" = null,
              "updated_by_user_id" = $3,
              "updated_at" = now(),
@@ -570,6 +571,7 @@ export async function bulkContentNodes(
         parentId: input.parentId ?? null,
         expectedVersion: node.version,
         requestId: input.requestId,
+        idempotencyKey: perNodeKey,
       });
       completed.push(nodeId);
       continue;
@@ -683,6 +685,32 @@ export async function processContentOperationBatch(
       let processed = 0;
 
       if (job.operation === "copy_subtree") {
+        await client.query("select pg_advisory_xact_lock(hashtextextended($1, 0))", [
+          `content-tree:${job.workspace_id}`,
+        ]);
+        await assertContentParent(client, job.workspace_id, job.target_parent_id);
+
+        if (job.processed_nodes > 0) {
+          const copiedRoot = await client.query(
+            `select 1
+             from "content_operation_items" i
+             join "content_nodes" n
+               on n."workspace_id" = i."workspace_id"
+              and n."id" = i."destination_node_id"
+             where i."job_id" = $1
+               and i."depth" = 0
+               and n."trashed_at" is null
+             limit 1`,
+            [jobId],
+          );
+          if ((copiedRoot.rowCount ?? 0) === 0) {
+            throw new ContentStoreError(
+              "PARENT_NOT_FOUND",
+              "The copied subtree root is no longer available.",
+            );
+          }
+        }
+
         const result = await client.query(
           `with batch as (
              select i."job_id", i."workspace_id", i."source_node_id", i."source_parent_id",
@@ -751,8 +779,8 @@ export async function processContentOperationBatch(
            ), changed as (
              update "content_nodes" n
              set "original_parent_id" = case
-                   when $4::boolean then n."original_parent_id"
-                   else coalesce(n."original_parent_id", n."parent_id")
+                   when $4::boolean then null
+                   else n."parent_id"
                  end,
                  "trashed_at" = case when $4::boolean then null else now() end,
                  "trashed_by_user_id" = case when $4::boolean then null else $3::uuid end,
