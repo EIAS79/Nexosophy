@@ -1,6 +1,7 @@
 import type { ContentNode, ContentNodePage } from "@nexosophy/contracts";
 
 import { ContentExplorer } from "../../../../../components/content-explorer";
+import { UploadManager } from "../../../../../components/upload-manager";
 import { nexosophyApi } from "../../../../../lib/api-server";
 
 export default async function WorkspaceFilesPage({
@@ -16,11 +17,14 @@ export default async function WorkspaceFilesPage({
   ]);
 
   return (
-    <ContentExplorer
+    <>
+      <UploadManager workspaceId={workspaceId} />
+      <ContentExplorer
       workspaceId={workspaceId}
       initialRoot={initialRoot}
       favorites={favorites.items}
-      recent={recent.items}
-    />
+        recent={recent.items}
+      />
+    </>
   );
 }
