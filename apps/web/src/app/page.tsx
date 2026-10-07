@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 
+import { ConnectedWorkspaceDemo } from "../components/connected-workspace-demo";
 import { HeroDashboard } from "../components/hero-dashboard";
 import { HomeMotionController } from "../components/home-motion-controller";
 import { MarketingHeader } from "../components/marketing-header";
@@ -187,70 +188,6 @@ function HeroVisual() {
   return (
     <div className={styles.heroVisual}>
       <HeroDashboard />
-    </div>
-  );
-}
-
-function ScatterVisual() {
-  return (
-    <div
-      className={styles.scatterVisual}
-      role="img"
-      aria-label="Scattered files, notes, tasks and references converging into one connected Nexosophy workspace."
-    >
-      <div aria-hidden="true" className={styles.scatterCanvas}>
-        <div className={styles.scatterOld}>
-          <div className={styles.toolNotes}>
-            <small>Notes</small>
-            <strong>Research ideas</strong>
-            <span>Meeting notes</span>
-            <span>Draft outline</span>
-          </div>
-          <div className={styles.toolCalendar}>
-            <small>Calendar</small>
-            <strong>Lab meeting</strong>
-            <span>Deadline</span>
-            <span>Conference</span>
-          </div>
-          <div className={styles.toolFiles}>
-            <small>Files</small>
-            <strong>Papers</strong>
-            <span>Results v3</span>
-            <span>draft_final_2</span>
-          </div>
-          <div className={styles.toolRefs}>
-            <small>References</small>
-            <strong>Literature review</strong>
-            <span>Citation PDFs</span>
-          </div>
-          <div className={styles.toolTasks}>
-            <small>Tasks</small>
-            <strong>Write draft</strong>
-            <span>Run analysis</span>
-          </div>
-          <span className={styles.scatterFragmentOne}>PDF</span>
-          <span className={styles.scatterFragmentTwo}>CSV</span>
-          <span className={styles.scatterFragmentThree}>DOC</span>
-        </div>
-
-        <svg className={styles.scatterLines} viewBox="0 0 1000 540" preserveAspectRatio="none">
-          <title>Knowledge connections converging into a Nexosophy workspace</title>
-          <path d="M140 125 C340 100 365 255 500 270" />
-          <path d="M180 275 C330 250 390 270 500 270" />
-          <path d="M160 420 C315 390 390 300 500 270" />
-          <path d="M330 90 C410 135 440 220 500 270" />
-          <path d="M320 445 C405 390 455 300 500 270" />
-          <path d="M500 270 C585 270 615 270 680 270" />
-        </svg>
-
-        <div className={styles.convergenceOrb}>
-          <Mark />
-        </div>
-
-        <div className={styles.scatterNew}>
-          <WorkspaceVisual compact />
-        </div>
-      </div>
     </div>
   );
 }
@@ -529,43 +466,23 @@ export default function HomePage() {
         </section>
 
         <section className={styles.scatterSection} id="product-story" data-motion-scene>
-          <header className={styles.sectionHeader}>
-            <p className={styles.eyebrow}>One connected workspace</p>
-            <h2>
-              From scattered tools to a <em>connected</em> workspace.
-            </h2>
-            <p>
-              Important work should not live across unrelated tabs, inboxes and storage silos.
-              Nexosophy keeps the material and the context together.
-            </p>
+          <header className={`${styles.sectionHeader} ${styles.contextSectionHeader}`}>
+            <div className={styles.contextTitle}>
+              <p className={styles.eyebrow}>Context, not containers</p>
+              <h2>
+                Your work stops living in tabs. It starts <em>thinking together.</em>
+              </h2>
+            </div>
+            <aside className={styles.contextThesis}>
+              <span>One relationship layer</span>
+              <p>
+                Notes, papers, data, tasks and people keep the reason they belong together — so
+                Nexosophy can surface meaning without rebuilding context every time.
+              </p>
+            </aside>
           </header>
-          <div className={styles.scatterLabels}>
-            <div>
-              <small>The old way</small>
-              <strong>Important work, everywhere.</strong>
-              <p>Files, notes, tasks and references drift apart.</p>
-            </div>
-            <div>
-              <small>The Nexosophy way</small>
-              <strong>Everything in context.</strong>
-              <p>One identity, one workspace and one relationship layer.</p>
-            </div>
-          </div>
-          <ScatterVisual />
-          <div className={styles.capabilityRail}>
-            {[
-              "Files",
-              "Notes",
-              "Tasks",
-              "Calendar",
-              "References",
-              "Experiments",
-              "Analytics",
-              "Collaboration",
-            ].map((item) => (
-              <span key={item}>{item}</span>
-            ))}
-          </div>
+
+          <ConnectedWorkspaceDemo />
         </section>
 
         <section className={styles.workflowSection} id="workflow" data-motion-scene>
