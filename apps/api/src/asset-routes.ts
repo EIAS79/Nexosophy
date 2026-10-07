@@ -1,6 +1,7 @@
 import type { AuthVerifier } from "@nexosophy/auth";
 import {
   assetParamsSchema,
+  assetVariantParamsSchema,
   completeUploadRequestSchema,
   initiateUploadRequestSchema,
   recordUploadPartRequestSchema,
@@ -12,6 +13,7 @@ import {
   attachMultipartUploadId,
   beginUploadCompletion,
   getAsset,
+  getAssetVariantStorageKey,
   getUploadSession,
   initiateAssetUpload,
   listAssetVariants,
@@ -420,6 +422,47 @@ export async function registerAssetRoutes(
         key: asset.objectKey,
         expiresInSeconds,
       });
+      return {
+        ...signed,
+        expiresAt: new Date(Date.now() + expiresInSeconds * 1000).toISOString(),
+      };
+    },
+  );
+
+  app.post(
+    "/v1/workspaces/:workspaceId/assets/:assetId/variants/:variantKind/download-url",
+    async (request, reply) => {
+      if (!storage) return storageUnavailable(reply, request.id);
+      const { workspaceId, assetId, variantKind } = assetVariantParamsSchema.parse(request.params);
+      const principal = await requireWorkspacePrincipal(request, reply, verifier);
+      if (!principal) return;
+      if (
+        !(await authorizeWorkspace(pool, principal, workspaceId, "content.read", request, reply))
+      ) {
+        return;
+      }
+      const asset = await getAsset(pool, workspaceId, assetId);
+      if (!asset || asset.trustState !== "trusted") {
+        return sendWorkspaceError(
+          reply,
+          request.id,
+          404,
+          "ASSET_NOT_AVAILABLE",
+          "Asset is not available.",
+        );
+      }
+      const key = await getAssetVariantStorageKey(pool, workspaceId, assetId, variantKind);
+      if (!key) {
+        return sendWorkspaceError(
+          reply,
+          request.id,
+          404,
+          "ASSET_VARIANT_NOT_AVAILABLE",
+          "The requested preview is not available.",
+        );
+      }
+      const expiresInSeconds = 5 * 60;
+      const signed = await storage.createDownloadUrl({ key, expiresInSeconds });
       return {
         ...signed,
         expiresAt: new Date(Date.now() + expiresInSeconds * 1000).toISOString(),
