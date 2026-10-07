@@ -139,6 +139,32 @@ function toUpload(row: UploadRow): UploadSessionRecord {
 
 const ACTIVE_UPLOADS = ["initiated", "uploading", "completing", "scanning", "processing"] as const;
 
+function allowedUploadMime(mimeType: string): boolean {
+  const normalized = mimeType.trim().toLowerCase();
+  if (
+    normalized.startsWith("image/") ||
+    normalized.startsWith("audio/") ||
+    normalized.startsWith("video/") ||
+    normalized.startsWith("text/")
+  ) {
+    return true;
+  }
+  return new Set([
+    "application/pdf",
+    "application/json",
+    "application/zip",
+    "application/msword",
+    "application/vnd.ms-excel",
+    "application/vnd.ms-powerpoint",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "application/vnd.oasis.opendocument.text",
+    "application/vnd.oasis.opendocument.spreadsheet",
+    "application/vnd.oasis.opendocument.presentation",
+  ]).has(normalized);
+}
+
 export async function initiateAssetUpload(
   pool: Pool,
   input: {
@@ -152,6 +178,10 @@ export async function initiateAssetUpload(
     requestId?: string | undefined;
   },
 ): Promise<{ asset: AssetRecord; session: UploadSessionRecord }> {
+  if (!allowedUploadMime(input.mimeType)) {
+    throw new Error("UPLOAD_MIME_NOT_ALLOWED");
+  }
+
   return withWorkspaceTransaction(pool, async (client) => {
     await client.query("select pg_advisory_xact_lock(hashtextextended($1, 0))", [
       "uploads:" + input.workspaceId,
@@ -941,23 +971,116 @@ export async function failAssetJob(
   error: Error,
   retryable: boolean,
 ): Promise<void> {
-  await pool.query(
-    `update "asset_processing_jobs"
-     set "status" = case
-           when $2::boolean and "attempts" < "max_attempts" then 'queued'::asset_job_status
-           else 'failed'::asset_job_status
-         end,
-         "run_after" = case
-           when $2::boolean then now() + make_interval(secs => least(300, 5 * power(2, "attempts")::int))
-           else "run_after"
-         end,
-         "last_error" = left($3, 1000),
-         "locked_at" = null,
-         "locked_by" = null,
-         "updated_at" = now()
-     where "id" = $1`,
-    [jobId, retryable, error.message],
-  );
+  await withWorkspaceTransaction(pool, async (client) => {
+    const current = await client.query<{
+      workspace_id: string;
+      asset_id: string;
+      job_type: AssetProcessingJob["jobType"];
+      attempts: number;
+      max_attempts: number;
+    }>(
+      `select "workspace_id", "asset_id", "job_type", "attempts", "max_attempts"
+       from "asset_processing_jobs"
+       where "id" = $1
+       for update`,
+      [jobId],
+    );
+    const job = current.rows[0];
+    if (!job) return;
+
+    const willRetry = retryable && job.attempts < job.max_attempts;
+    await client.query(
+      `update "asset_processing_jobs"
+       set "status" = case
+             when $2::boolean then 'queued'::asset_job_status
+             else 'failed'::asset_job_status
+           end,
+           "run_after" = case
+             when $2::boolean then now() + make_interval(secs => least(300, 5 * power(2, "attempts")::int))
+             else "run_after"
+           end,
+           "last_error" = left($3, 1000),
+           "locked_at" = null,
+           "locked_by" = null,
+           "updated_at" = now()
+       where "id" = $1`,
+      [jobId, willRetry, error.message],
+    );
+
+    if (willRetry) return;
+
+    if (job.job_type === "scan") {
+      await client.query(
+        `update "asset_scans"
+         set "status" = 'error', "result_code" = 'scanner_failure',
+             "completed_at" = now(),
+             "metadata" = "metadata" || $3::jsonb
+         where "workspace_id" = $1 and "asset_id" = $2 and "status" = 'pending'`,
+        [
+          job.workspace_id,
+          job.asset_id,
+          JSON.stringify({ error: error.message.slice(0, 500) }),
+        ],
+      );
+      const asset = await client.query<{ node_id: string | null }>(
+        `update "assets"
+         set "trust_state" = 'quarantined', "updated_at" = now()
+         where "workspace_id" = $1 and "id" = $2
+         returning "node_id"`,
+        [job.workspace_id, job.asset_id],
+      );
+      await client.query(
+        `update "upload_sessions"
+         set "status" = 'failed', "last_error" = left($3, 1000), "updated_at" = now()
+         where "workspace_id" = $1 and "asset_id" = $2`,
+        [job.workspace_id, job.asset_id, error.message],
+      );
+      const nodeId = asset.rows[0]?.node_id;
+      if (nodeId) {
+        await client.query(
+          `update "content_nodes"
+           set "metadata" = "metadata" || $3::jsonb,
+               "updated_at" = now(), "version" = "version" + 1
+           where "workspace_id" = $1 and "id" = $2`,
+          [
+            job.workspace_id,
+            nodeId,
+            JSON.stringify({
+              uploadStatus: "quarantined",
+              assetTrustState: "quarantined",
+            }),
+          ],
+        );
+      }
+      return;
+    }
+
+    if (job.job_type !== "cleanup") {
+      await client.query(
+        `update "asset_variants"
+         set "status" = 'failed', "error_message" = left($4, 1000), "updated_at" = now()
+         where "workspace_id" = $1 and "asset_id" = $2
+           and "kind" = $3::asset_variant_kind`,
+        [job.workspace_id, job.asset_id, job.job_type, error.message],
+      );
+      const remaining = await client.query<{ count: string }>(
+        `select count(*)::text as "count"
+         from "asset_processing_jobs"
+         where "asset_id" = $1 and "job_type" <> 'scan'
+           and "status" in ('queued','running')`,
+        [job.asset_id],
+      );
+      if (Number(remaining.rows[0]?.count ?? 0) === 0) {
+        await client.query(
+          `update "upload_sessions"
+           set "status" = 'complete', "updated_at" = now()
+           where "workspace_id" = $1 and "asset_id" = $2
+             and "status" = 'processing'`,
+          [job.workspace_id, job.asset_id],
+        );
+      }
+    }
+  });
 }
 
 export async function listExpiredMultipartUploads(
