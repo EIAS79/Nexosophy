@@ -570,7 +570,7 @@ export async function resolveContentPath(
     .split("/")
     .map((segment) => segment.trim())
     .filter(Boolean);
-  if (segments.length === 0 || segments.length > 128) return null;
+  if (segments.length === 0) return null;
 
   let parentId: string | null = null;
   let current: ContentNode | null = null;
