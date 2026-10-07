@@ -88,6 +88,9 @@ export const assetParamsSchema = z.object({
   workspaceId: uuidSchema,
   assetId: uuidSchema,
 });
+export const assetVariantParamsSchema = assetParamsSchema.extend({
+  variantKind: assetVariantKindSchema,
+});
 
 export const recordUploadPartRequestSchema = z.object({
   etag: z.string().trim().min(1).max(512),
