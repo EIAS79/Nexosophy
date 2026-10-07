@@ -50,6 +50,11 @@ function sendAssetError(
       code: "UPLOAD_QUOTA_EXCEEDED",
       message: "This upload exceeds the workspace storage quota.",
     },
+    UPLOAD_MIME_NOT_ALLOWED: {
+      status: 415,
+      code: "UPLOAD_MIME_NOT_ALLOWED",
+      message: "This file type is not allowed by the upload policy.",
+    },
     UPLOAD_SESSION_UNAVAILABLE: {
       status: 404,
       code: "UPLOAD_SESSION_UNAVAILABLE",
