@@ -39,7 +39,10 @@ const storage = storageEnv
     })
   : null;
 const contentPool = createDatabasePool(env.DATABASE_URL, {
-  max: Math.min(Math.max(env.WORKER_CONCURRENCY + 2, 4), 12),
+  max: Math.min(
+    env.DB_POOL_MAX,
+    Math.min(Math.max(env.WORKER_CONCURRENCY + 2, 4), 12),
+  ),
 });
 const workerId = `${process.env.HOSTNAME ?? "worker"}:${process.pid}`;
 let stopping = false;
