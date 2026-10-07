@@ -424,9 +424,17 @@ export default function HomePage() {
 
       <main id="main-content" className={styles.main}>
         <section className={styles.hero} data-motion-scene>
-          <div className={styles.heroBackdrop} aria-hidden="true">
-            <div className={styles.heroHumanBackdrop} />
-          </div>
+          <div
+            className={styles.heroBackdrop}
+            aria-hidden="true"
+            style={{
+              backgroundImage: 'linear-gradient(180deg, rgba(2,10,22,.08), rgba(2,8,18,.44)), url("/home/hero-background.webp")',
+              backgroundPosition: "center 58%",
+              backgroundSize: "cover",
+              backgroundRepeat: "no-repeat",
+              opacity: 1,
+            }}
+          />
 
           <div className={styles.heroStage}>
           <div className={styles.heroCopy}>
