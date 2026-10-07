@@ -57,30 +57,14 @@ export function RichDocumentEditor({
   initialDocument: DocumentRecord;
 }) {
   const storageKey = `nexosophy:document-draft:${workspaceId}:${node.id}`;
-  const [body, setBody] = useState<RichDocumentBody>(() => {
-    if (typeof window === "undefined") return initialDocument.body;
-    try {
-      const raw = window.localStorage.getItem(storageKey);
-      if (!raw) return initialDocument.body;
-      const parsed = JSON.parse(raw) as {
-        revision?: number;
-        body?: RichDocumentBody;
-      };
-      if (
-        parsed.body?.type === "doc" &&
-        Array.isArray(parsed.body.blocks) &&
-        (parsed.revision ?? 0) >= initialDocument.revision
-      ) {
-        return parsed.body;
-      }
-    } catch {
-      // Ignore corrupt recovery state.
-    }
-    return initialDocument.body;
-  });
+  const [body, setBody] = useState<RichDocumentBody>(initialDocument.body);
   const [revision, setRevision] = useState(initialDocument.revision);
   const [nodeVersion, setNodeVersion] = useState(node.version);
   const [title, setTitle] = useState(node.name);
+  const [acknowledgedTitle, setAcknowledgedTitle] = useState(node.name);
+  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(
+    initialDocument.body.blocks[0]?.id ?? null,
+  );
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [message, setMessage] = useState("");
   const [insertOpen, setInsertOpen] = useState(false);
@@ -90,6 +74,28 @@ export function RichDocumentEditor({
   const saveTimer = useRef<number | null>(null);
   const saving = useRef(false);
   const pendingSave = useRef(false);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(storageKey);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as {
+        revision?: number;
+        body?: RichDocumentBody;
+      };
+      if (
+        parsed.body?.type === "doc" &&
+        Array.isArray(parsed.body.blocks) &&
+        (parsed.revision ?? 0) >= initialDocument.revision
+      ) {
+        setBody(parsed.body);
+        setSaveState(navigator.onLine ? "dirty" : "offline");
+        setMessage("Recovered a local draft that was not yet acknowledged by the server.");
+      }
+    } catch {
+      window.localStorage.removeItem(storageKey);
+    }
+  }, [initialDocument.revision, storageKey]);
 
   const blockCount = body.blocks.length;
   const characterCount = useMemo(
@@ -277,7 +283,7 @@ export function RichDocumentEditor({
 
   async function saveTitle() {
     const normalized = title.trim();
-    if (!normalized || normalized === node.name) return;
+    if (!normalized || normalized === acknowledgedTitle) return;
     setMessage("Saving title…");
     const response = await fetch(`/api/content/${workspaceId}`, {
       method: "POST",
@@ -296,6 +302,7 @@ export function RichDocumentEditor({
     }
     const updated = (await response.json()) as ContentNode;
     setTitle(updated.name);
+    setAcknowledgedTitle(updated.name);
     setNodeVersion(updated.version);
     setMessage("Title saved.");
   }
@@ -427,7 +434,12 @@ export function RichDocumentEditor({
           </button>
         ) : null}
         {body.blocks.map((block, index) => (
-          <article className={styles.block} data-kind={block.type} key={block.id}>
+          <article
+            className={styles.block}
+            data-kind={block.type}
+            data-selected={selectedBlockId === block.id ? "true" : "false"}
+            key={block.id}
+          >
             <div className={styles.blockTools}>
               <label>
                 <span className={styles.srOnly}>Block type</span>
@@ -470,6 +482,7 @@ export function RichDocumentEditor({
                     ? "Code"
                     : "Write something…"
               }
+              onFocus={() => setSelectedBlockId(block.id)}
               onChange={(event) => updateBlock(block.id, event.currentTarget.value)}
             />
           </article>
