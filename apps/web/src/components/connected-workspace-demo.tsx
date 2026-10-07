@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
 
 import styles from "./connected-workspace-demo.module.css";
@@ -85,7 +86,7 @@ export function ConnectedWorkspaceDemo() {
                 type="button"
                 className={styles.sourceCard}
                 data-active={active}
-                style={{ "--source-index": index } as React.CSSProperties}
+                style={{ "--source-index": index } as CSSProperties}
                 onClick={() => toggleSource(source.id)}
                 aria-pressed={active}
               >
