@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { RedisClientType } from "redis";
 
@@ -28,12 +30,11 @@ function classify(request: FastifyRequest): EndpointClass {
 }
 
 function clientKey(request: FastifyRequest): string {
-  const auth = request.headers.authorization;
-  const tokenHint =
-    typeof auth === "string" && auth.length > 16
-      ? auth.slice(-16).replace(/[^a-zA-Z0-9]/g, "")
-      : "anonymous";
-  return request.ip + ":" + tokenHint;
+  const auth = request.headers.authorization ?? "anonymous";
+  return createHash("sha256")
+    .update(request.ip + "\n" + auth)
+    .digest("hex")
+    .slice(0, 32);
 }
 
 async function ensureRedis(redis: RedisClientType): Promise<void> {
