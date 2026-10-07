@@ -3,13 +3,15 @@ import { randomUUID } from "node:crypto";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import type { AuthVerifier, IdentityProvider, IdentityStorePort } from "@nexosophy/auth";
-import type { ApiEnv } from "@nexosophy/config";
+import { parseOptionalStorageEnv, type ApiEnv } from "@nexosophy/config";
 import { healthResponseSchema } from "@nexosophy/contracts";
 import { createDatabasePool } from "@nexosophy/db";
 import { createLoggerOptions } from "@nexosophy/observability";
+import { S3CompatibleStorageAdapter, type StorageAdapter } from "@nexosophy/storage";
 import Fastify, { type FastifyError, type FastifyInstance } from "fastify";
 import { createClient } from "redis";
 
+import { registerAssetRoutes } from "./asset-routes.js";
 import { createAuthRuntime } from "./auth-runtime.js";
 import { registerClerkWebhookRoute } from "./clerk-webhook.js";
 import { registerContentRoutes } from "./content-routes.js";
@@ -22,6 +24,7 @@ export type BuildAppOptions = {
   authVerifier?: AuthVerifier;
   identityProvider?: IdentityProvider;
   identityStore?: IdentityStorePort;
+  storageAdapter?: StorageAdapter | null;
 };
 
 export async function buildApp(
@@ -109,9 +112,25 @@ export async function buildApp(
         }
       : createAuthRuntime(env, pool);
 
+  const storageEnv = parseOptionalStorageEnv();
+  const storage =
+    options.storageAdapter !== undefined
+      ? options.storageAdapter
+      : storageEnv
+        ? new S3CompatibleStorageAdapter({
+            endpoint: storageEnv.S3_ENDPOINT,
+            region: storageEnv.S3_REGION,
+            bucket: storageEnv.S3_BUCKET,
+            accessKeyId: storageEnv.S3_ACCESS_KEY_ID,
+            secretAccessKey: storageEnv.S3_SECRET_ACCESS_KEY,
+            sessionToken: storageEnv.S3_SESSION_TOKEN,
+          })
+        : null;
+
   await registerIdentityRoutes(app, pool, runtime.verifier);
   await registerWorkspaceRoutes(app, pool, runtime.verifier);
   await registerContentRoutes(app, pool, runtime.verifier);
+  await registerAssetRoutes(app, pool, storage, runtime.verifier);
 
   if (runtime.provider && runtime.identityStore) {
     await registerClerkWebhookRoute(app, pool, runtime.provider, runtime.identityStore);
