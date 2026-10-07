@@ -1310,3 +1310,56 @@
     animation: none;
   }
 }
+
+
+/* Reference composition correction: hero surfaces frame, never cover, the message */
+.workspace {
+  display: none;
+}
+
+.notesCard {
+  top: 3%;
+  left: 14%;
+}
+
+.insightCard {
+  top: 3%;
+  right: 12%;
+}
+
+.graphCard {
+  top: 25%;
+  left: 3%;
+}
+
+.referenceCard {
+  bottom: 9%;
+  left: 13%;
+}
+
+.relatedBar {
+  right: 5%;
+  bottom: 8%;
+}
+
+@media (max-width: 1180px) {
+  .notesCard { left: 7%; }
+  .insightCard { right: 6%; }
+  .graphCard { left: 1%; }
+  .referenceCard { left: 6%; }
+}
+
+@media (max-width: 900px) {
+  .notesCard { left: 2%; }
+  .insightCard { right: 2%; }
+  .graphCard { top: 34%; left: 0; }
+  .referenceCard { left: 2%; }
+}
+
+@media (max-width: 760px) {
+  .graphCard,
+  .referenceCard,
+  .relatedBar {
+    display: none;
+  }
+}
