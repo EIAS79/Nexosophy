@@ -302,7 +302,7 @@ try {
      limit 50`,
     [syntheticWorkspace.id],
   );
-  assert(plan.rows[0]?.plan);
+  assert(plan.rows[0] && Object.values(plan.rows[0]).length > 0);
 
   const largeRoot = await createContentNode(pool, {
     workspaceId: workspace.id,
