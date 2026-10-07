@@ -1013,3 +1013,99 @@ export async function markExpiredUpload(
     }
   });
 }
+
+
+export async function requestAssetDeletion(
+  pool: Pool,
+  input: {
+    workspaceId: string;
+    assetId: string;
+    actorUserId: string;
+    requestId?: string | undefined;
+  },
+): Promise<void> {
+  await withWorkspaceTransaction(pool, async (client) => {
+    const asset = await client.query<{ node_id: string | null }>(
+      `update "assets"
+       set "trust_state" = 'deleted', "deleted_at" = coalesce("deleted_at", now()),
+           "updated_by_user_id" = $3, "updated_at" = now()
+       where "workspace_id" = $1 and "id" = $2 and "trust_state" <> 'deleted'
+       returning "node_id"`,
+      [input.workspaceId, input.assetId, input.actorUserId],
+    );
+    if (!asset.rows[0]) return;
+    await client.query(
+      `insert into "asset_processing_jobs" ("workspace_id", "asset_id", "job_type")
+       values ($1, $2, 'cleanup')
+       on conflict ("asset_id", "job_type")
+       do update set "status" = 'queued', "run_after" = now(), "updated_at" = now()`,
+      [input.workspaceId, input.assetId],
+    );
+    const nodeId = asset.rows[0].node_id;
+    if (nodeId) {
+      await client.query(
+        `update "content_nodes"
+         set "trashed_at" = coalesce("trashed_at", now()),
+             "trashed_by_user_id" = $3,
+             "updated_at" = now(),
+             "version" = "version" + 1
+         where "workspace_id" = $1 and "id" = $2`,
+        [input.workspaceId, nodeId, input.actorUserId],
+      );
+    }
+    await appendWorkspaceAudit(client, {
+      workspaceId: input.workspaceId,
+      actorUserId: input.actorUserId,
+      action: "asset.deletion_requested",
+      targetType: "asset",
+      targetId: input.assetId,
+      requestId: input.requestId,
+    });
+  });
+}
+
+export async function getAssetStorageKeys(
+  pool: Pool,
+  workspaceId: string,
+  assetId: string,
+): Promise<{ source: string; variants: string[] } | null> {
+  const asset = await pool.query<{ object_key: string }>(
+    `select "object_key" from "assets"
+     where "workspace_id" = $1 and "id" = $2
+     limit 1`,
+    [workspaceId, assetId],
+  );
+  const source = asset.rows[0]?.object_key;
+  if (!source) return null;
+  const variants = await pool.query<{ object_key: string | null }>(
+    `select "object_key" from "asset_variants"
+     where "workspace_id" = $1 and "asset_id" = $2 and "object_key" is not null`,
+    [workspaceId, assetId],
+  );
+  return {
+    source,
+    variants: variants.rows.flatMap((row) => (row.object_key ? [row.object_key] : [])),
+  };
+}
+
+export async function completeAssetCleanup(
+  pool: Pool,
+  jobId: string,
+  workspaceId: string,
+  assetId: string,
+): Promise<void> {
+  await withWorkspaceTransaction(pool, async (client) => {
+    await client.query(
+      `delete from "asset_variants"
+       where "workspace_id" = $1 and "asset_id" = $2`,
+      [workspaceId, assetId],
+    );
+    await client.query(
+      `update "asset_processing_jobs"
+       set "status" = 'succeeded', "locked_at" = null, "locked_by" = null,
+           "last_error" = null, "updated_at" = now()
+       where "id" = $1`,
+      [jobId],
+    );
+  });
+}
