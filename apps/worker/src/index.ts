@@ -384,7 +384,11 @@ health.get("/health", async () => ({
 
 health.get("/ready", async (_request, reply) => {
   try {
-    await Promise.all([worker.waitUntilReady(), contentPool.query("select 1")]);
+    await Promise.all([
+      worker.waitUntilReady(),
+      systemQueue.waitUntilReady(),
+      contentPool.query("select 1"),
+    ]);
     return {
       service: "worker",
       status: "ok",
@@ -405,9 +409,9 @@ async function shutdown(signal: string) {
   logger.info({ signal }, "Shutting down worker");
   stopping = true;
   await health.close();
+  await Promise.all([contentLoop, assetLoop, outboxLoop]);
   await worker.close();
   await systemQueue.close();
-  await Promise.all([contentLoop, assetLoop, outboxLoop]);
   await contentPool.end();
   process.exit(0);
 }
