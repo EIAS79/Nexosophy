@@ -5664,3 +5664,11 @@
   .hero h1{font-size:clamp(2.75rem,14vw,4rem)}
   .hero .lede{max-width:92vw}
 }
+
+/* Lock the reference composition: central copy, orbit UI around it. */
+.hero{grid-template-columns:1fr!important;grid-template-rows:1fr!important}
+.heroCopy{position:absolute!important;top:22%;left:50%;width:min(650px,48vw)!important;margin:0!important;transform:translateX(-50%);grid-column:auto!important;grid-row:auto!important}
+@media(max-width:1180px){.heroCopy{top:23%;width:min(600px,54vw)!important}}
+@media(max-width:900px){.heroCopy{top:24%;width:min(560px,64vw)!important}}
+@media(max-width:760px){.heroCopy{top:15%;width:min(540px,92vw)!important}}
+@media(max-width:500px){.heroCopy{top:14%}}
