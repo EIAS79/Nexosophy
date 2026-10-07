@@ -101,19 +101,51 @@ export async function getDurableJob(
   return result.rows[0] ? toJob(result.rows[0]) : null;
 }
 
+type JobCursor = { createdAt: string; id: string };
+
+function decodeJobCursor(cursor?: string): JobCursor | null {
+  if (!cursor) return null;
+  try {
+    const parsed = JSON.parse(Buffer.from(cursor, "base64url").toString("utf8")) as JobCursor;
+    if (!parsed.createdAt || !parsed.id) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function encodeJobCursor(job: DurableJobRecord): string {
+  return Buffer.from(
+    JSON.stringify({ createdAt: job.createdAt.toISOString(), id: job.id }),
+    "utf8",
+  ).toString("base64url");
+}
+
 export async function listWorkspaceJobs(
   pool: Pool,
   workspaceId: string,
-  limit = 25,
-): Promise<DurableJobRecord[]> {
+  options: { limit?: number; cursor?: string | undefined } = {},
+): Promise<{ items: DurableJobRecord[]; nextCursor: string | null }> {
+  const limit = Math.min(Math.max(options.limit ?? 25, 1), 100);
+  const cursor = decodeJobCursor(options.cursor);
   const result = await pool.query<JobRow>(
     `select * from "durable_jobs"
      where "workspace_id" = $1
+       and (
+         $2::timestamptz is null
+         or ("created_at", "id") < ($2::timestamptz, $3::uuid)
+       )
      order by "created_at" desc, "id" desc
-     limit $2`,
-    [workspaceId, limit],
+     limit $4`,
+    [workspaceId, cursor?.createdAt ?? null, cursor?.id ?? null, limit + 1],
   );
-  return result.rows.map(toJob);
+  const mapped = result.rows.map(toJob);
+  const hasMore = mapped.length > limit;
+  const items = hasMore ? mapped.slice(0, limit) : mapped;
+  return {
+    items,
+    nextCursor: hasMore && items.length > 0 ? encodeJobCursor(items[items.length - 1]!) : null,
+  };
 }
 
 export async function claimNextDurableJob(
