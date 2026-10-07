@@ -1,348 +1,69 @@
 "use client";
 
-import { useMemo, useState } from "react";
-
+import { useState } from "react";
 import styles from "./hero-dashboard.module.css";
 
-type View = "brief" | "connections" | "tasks";
-
-const notes = [
-  "Research questions for next phase",
-  "Ideas on evaluation framework",
-  "Potential collaboration with MIT",
-] as const;
-
-const references = [
-  ["Bender et al. (2023)", "On the Dangers of Stochastic Parrots"],
-  ["Nature (2024)", "AI in Science: Opportunities and Limits"],
-  ["Azoulay, P. (2022)", "The Labor of AI in Research"],
-] as const;
-
-const tasks = [
-  "Summarize key findings from 5 papers",
-  "Compare methodologies",
-  "Draft discussion section",
-] as const;
+const taskLabels = ["Summarize key findings from 5 papers", "Compare methodologies", "Draft discussion section", "Prepare presentation"];
 
 export function HeroDashboard() {
-  const [view, setView] = useState<View>("brief");
-  const [activeReference, setActiveReference] = useState(0);
-  const [doneTasks, setDoneTasks] = useState<number[]>([0]);
-  const [insightOpen, setInsightOpen] = useState(false);
+  const [done, setDone] = useState<number[]>([0]);
+  const [active, setActive] = useState("document");
 
-  const progress = useMemo(() => Math.round((doneTasks.length / tasks.length) * 100), [doneTasks]);
-
-  function toggleTask(index: number) {
-    setDoneTasks((current) =>
-      current.includes(index) ? current.filter((item) => item !== index) : [...current, index],
-    );
-  }
+  const toggle = (index: number) =>
+    setDone((current) => current.includes(index) ? current.filter((item) => item !== index) : [...current, index]);
 
   return (
-    <div className={styles.orbitStage}>
-      <svg
-        className={styles.orbitLines}
-        viewBox="0 0 920 650"
-        preserveAspectRatio="none"
-        aria-hidden="true"
-      >
-        <path d="M205 178 C330 102 510 92 652 145" />
-        <path d="M675 145 C760 194 797 266 785 340" />
-        <path d="M792 355 C770 474 659 540 542 545" />
-        <path d="M530 548 C406 558 281 510 225 423" />
+    <div className={styles.scene} data-active={active}>
+      <svg className={styles.orbits} viewBox="0 0 1600 820" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M120 265 C380 75 655 135 800 390 C965 685 1240 670 1510 415" />
+        <path d="M80 520 C340 690 595 645 800 390 C1035 95 1290 120 1540 285" />
+        <path d="M250 120 C510 305 630 375 800 390 C1010 410 1170 300 1380 105" />
+        <circle cx="338" cy="175" r="7" /><circle cx="595" cy="265" r="8" /><circle cx="1038" cy="250" r="7" />
+        <circle cx="1280" cy="580" r="8" /><circle cx="1450" cy="342" r="6" />
       </svg>
 
-      <article className={styles.notesCard}>
-        <div className={styles.cardEyebrow}>
-          <span className={styles.cardIcon}>▤</span>
-          <strong>Notes</strong>
-          <button type="button" aria-label="Add note">
-            ＋
-          </button>
-        </div>
-        <div className={styles.notesList}>
-          {notes.map((note, index) => (
-            <button key={note} type="button" onClick={() => setView("brief")}>
-              <span>{index + 1}</span>
-              <span>{note}</span>
-              <small>{index === 0 ? "Today" : index === 1 ? "Yesterday" : "Oct 14"}</small>
-            </button>
-          ))}
-        </div>
-      </article>
+      <div className={styles.planet} aria-hidden="true"><span /></div>
 
-      <article className={styles.insightCard} data-open={insightOpen}>
-        <div className={styles.cardEyebrow}>
-          <span className={styles.insightOrb}>✦</span>
-          <strong>AI Insight</strong>
-          <span className={styles.beta}>Beta</span>
-        </div>
-        <p className={styles.insightTitle}>Emerging connection detected</p>
-        <p className={styles.insightCopy}>
-          Your notes on human–AI collaboration connect strongly with recent work on cognitive
-          augmentation.
-        </p>
-        <button
-          type="button"
-          className={styles.insightButton}
-          onClick={() => {
-            setInsightOpen((value) => !value);
-            setView("connections");
-          }}
-        >
-          {insightOpen ? "Connection opened" : "Explore connection"} <span>→</span>
-        </button>
-      </article>
+      <button className={styles.document} data-panel="document" type="button" onClick={() => setActive("document")}>
+        <span className={styles.panelHead}><b>▤</b><strong>Document</strong><i>● ● ● +3</i></span>
+        <em>The future of human–AI<br />collaboration in science</em>
+        <small>Human–AI collaboration is reshaping how we discover, learn and create...</small>
+      </button>
 
-      <article className={styles.graphCard}>
-        <div className={styles.cardEyebrow}>
-          <span className={styles.cardIcon}>⌘</span>
-          <strong>Knowledge Graph</strong>
-          <span className={styles.cardAction}>↗</span>
-        </div>
-        <div className={styles.graphVisual}>
-          <svg viewBox="0 0 300 170" role="img" aria-label="Connected research knowledge graph">
-            <title>Connected research knowledge graph</title>
-            <path d="M150 82 72 48M150 82 224 42M150 82 248 108M150 82 89 130M150 82 146 22" />
-            <circle cx="150" cy="82" r="21" />
-            <circle cx="72" cy="48" r="7" />
-            <circle cx="224" cy="42" r="7" />
-            <circle cx="248" cy="108" r="7" />
-            <circle cx="89" cy="130" r="7" />
-            <circle cx="146" cy="22" r="7" />
+      <button className={styles.graph} data-panel="graph" type="button" onClick={() => setActive("graph")}>
+        <span className={styles.panelHead}><b>⌘</b><strong>Graph</strong><i>↗</i></span>
+        <div className={styles.graphBody}>
+          <svg viewBox="0 0 250 135" aria-hidden="true">
+            <path d="M125 68 34 35M125 68 74 112M125 68 205 30M125 68 220 98M125 68 125 16" />
+            <circle cx="34" cy="35" r="6"/><circle cx="74" cy="112" r="6"/><circle cx="205" cy="30" r="6"/><circle cx="220" cy="98" r="6"/><circle cx="125" cy="16" r="6"/>
           </svg>
-          <button
-            type="button"
-            className={styles.graphCenter}
-            onClick={() => setView("connections")}
-          >
-            Human–AI
-            <span>Collaboration</span>
-          </button>
-          <span className={styles.graphLabelResearch}>Research</span>
-          <span className={styles.graphLabelCreativity}>Creativity</span>
-          <span className={styles.graphLabelEducation}>Education</span>
-          <span className={styles.graphLabelMethods}>Methods</span>
+          <span>Human–AI<br/>Collaboration</span>
         </div>
-      </article>
+      </button>
 
-      <section className={styles.workspace} aria-label="Interactive Nexosophy product preview">
-        <header className={styles.workspaceHeader}>
-          <a className={styles.workspaceBrand} href="/" aria-label="Nexosophy home">
-            <span>N</span>
-            <strong>Nexosophy</strong>
-          </a>
+      <button className={styles.ai} data-panel="ai" type="button" onClick={() => setActive("ai")}>
+        <span className={styles.panelHead}><b>N</b><strong>Nexa AI</strong><i>● Online</i></span>
+        <small>Ask, explore, write, and make connections across all your knowledge.</small>
+        <span className={styles.chips}><i>Summarize this paper</i><i>Find related research</i><i>Compare viewpoints</i></span>
+        <span className={styles.prompt}>Ask anything about your knowledge... <b>↗</b></span>
+      </button>
 
-          <label className={styles.workspaceSearch}>
-            <span aria-hidden="true">⌕</span>
-            <input aria-label="Search workspace" placeholder="Search your knowledge..." />
-            <kbd>⌘ K</kbd>
-          </label>
-
-          <div className={styles.workspaceAvatars} aria-hidden="true">
-            <span>M</span>
-            <span>D</span>
-            <span>+3</span>
-          </div>
-        </header>
-
-        <div className={styles.workspaceBody}>
-          <aside className={styles.sidebar}>
-            <nav aria-label="Workspace navigation">
-              <button type="button">
-                <span>⌂</span>Home
-              </button>
-              <button type="button">
-                <span>▣</span>Inbox <b>3</b>
-              </button>
-            </nav>
-            <p>Workspaces</p>
-            <button type="button" className={styles.workspaceActive}>
-              <span>▤</span>Literature Review
-            </button>
-            <button type="button">
-              <span>◫</span>Experiments
-            </button>
-            <button type="button">
-              <span>⌁</span>Analysis
-            </button>
-            <button type="button">
-              <span>✎</span>Papers & Writing
-            </button>
-            <div className={styles.sidebarRule} />
-            <button type="button">
-              <span>☆</span>Starred
-            </button>
-            <button type="button">
-              <span>◷</span>Recent
-            </button>
-          </aside>
-
-          <main className={styles.canvas}>
-            <div className={styles.canvasTop}>
-              <div>
-                <small>Literature Review</small>
-                <span>/</span>
-                <strong>
-                  {view === "brief" ? "Document" : view === "connections" ? "Connections" : "Tasks"}
-                </strong>
-              </div>
-              <nav aria-label="Preview views">
-                <button
-                  type="button"
-                  data-active={view === "brief"}
-                  onClick={() => setView("brief")}
-                >
-                  Document
-                </button>
-                <button
-                  type="button"
-                  data-active={view === "connections"}
-                  onClick={() => setView("connections")}
-                >
-                  Connections
-                </button>
-                <button
-                  type="button"
-                  data-active={view === "tasks"}
-                  onClick={() => setView("tasks")}
-                >
-                  Tasks
-                </button>
-              </nav>
-            </div>
-
-            {view === "brief" ? (
-              <article className={styles.documentView}>
-                <div className={styles.documentMeta}>
-                  <span>Article</span>
-                  <span>● In progress</span>
-                  <small>Edited 2h ago</small>
-                </div>
-                <h3>The future of human–AI collaboration in science</h3>
-                <p>
-                  Human–AI collaboration is reshaping how we discover, learn and create. This review
-                  explores current progress, key challenges and emerging opportunities across
-                  research.
-                </p>
-                <blockquote>
-                  AI amplifies human intellect not by replacing it, but by expanding the space of
-                  what we can explore together.
-                </blockquote>
-                <h4>1. Introduction</h4>
-                <p className={styles.documentBody}>
-                  The integration of artificial intelligence into the research process is creating
-                  new possibilities for human creativity, productivity, and discovery.
-                </p>
-              </article>
-            ) : null}
-
-            {view === "connections" ? (
-              <div className={styles.connectionView}>
-                <div className={styles.connectionCore}>
-                  <strong>
-                    Human–AI
-                    <br />
-                    Collaboration
-                  </strong>
-                  <span>12 sources</span>
-                </div>
-                {["Methods", "Cognition", "Creativity", "Education", "Ethics", "Datasets"].map(
-                  (label, index) => (
-                    <button key={label} type="button" data-index={index}>
-                      <span>{label}</span>
-                      <small>{index % 2 === 0 ? "Strong link" : "Related"}</small>
-                    </button>
-                  ),
-                )}
-              </div>
-            ) : null}
-
-            {view === "tasks" ? (
-              <div className={styles.taskView}>
-                <div className={styles.taskProgress}>
-                  <div>
-                    <span>Research plan</span>
-                    <strong>
-                      {doneTasks.length}/{tasks.length} complete
-                    </strong>
-                  </div>
-                  <b>{progress}%</b>
-                </div>
-                <div className={styles.progressTrack}>
-                  <span style={{ width: `${progress}%` }} />
-                </div>
-                {tasks.map((task, index) => (
-                  <label key={task} className={styles.taskRow}>
-                    <input
-                      type="checkbox"
-                      checked={doneTasks.includes(index)}
-                      onChange={() => toggleTask(index)}
-                    />
-                    <span>{task}</span>
-                  </label>
-                ))}
-              </div>
-            ) : null}
-          </main>
-        </div>
+      <section className={styles.tasks} data-panel="tasks" onPointerEnter={() => setActive("tasks")}>
+        <span className={styles.panelHead}><b>✓</b><strong>Tasks</strong><i>{done.length}/4</i></span>
+        <div>{taskLabels.map((label,index) => <label key={label}><input type="checkbox" checked={done.includes(index)} onChange={() => toggle(index)} /><span>{label}</span></label>)}</div>
       </section>
 
-      <article className={styles.referenceCard}>
-        <div className={styles.cardEyebrow}>
-          <span className={styles.cardIcon}>▤</span>
-          <strong>References</strong>
-          <span className={styles.countBadge}>12</span>
-        </div>
-        <div className={styles.referenceList}>
-          {references.map(([author, title], index) => (
-            <button
-              key={author}
-              type="button"
-              data-active={activeReference === index}
-              onClick={() => {
-                setActiveReference(index);
-                setView("brief");
-              }}
-            >
-              <span className={styles.referenceIndex}>{index + 1}</span>
-              <span>
-                <strong>{author}</strong>
-                <small>{title}</small>
-              </span>
-            </button>
-          ))}
-        </div>
-      </article>
+      <button className={styles.references} data-panel="references" type="button" onClick={() => setActive("references")}>
+        <span className={styles.panelHead}><b>▤</b><strong>References</strong><i>12</i></span>
+        <span>Bender et al. (2023)<small>On the Dangers of Stochastic Parrots</small></span>
+        <span>Nature (2024)<small>AI in Science: Opportunities and Challenges</small></span>
+        <span>Azoulay, P. (2022)<small>The Labor of AI in Research</small></span>
+      </button>
 
-      <article className={styles.relatedBar}>
-        <div className={styles.relatedTitle}>
-          <span>⌘</span>
-          <strong>Related content</strong>
-        </div>
-        <div className={styles.relatedItems}>
-          <button type="button" onClick={() => setView("brief")}>
-            <span>▤</span>
-            <strong>Similar papers</strong>
-            <small>12 results</small>
-          </button>
-          <button type="button" onClick={() => setView("brief")}>
-            <span>◫</span>
-            <strong>Related notes</strong>
-            <small>8 notes</small>
-          </button>
-          <button type="button" onClick={() => setView("connections")}>
-            <span>◉</span>
-            <strong>Related people</strong>
-            <small>4 researchers</small>
-          </button>
-          <button type="button" onClick={() => setView("connections")}>
-            <span>⌁</span>
-            <strong>Related topics</strong>
-            <small>6 topics</small>
-          </button>
-        </div>
-      </article>
+      <button className={styles.timeline} data-panel="timeline" type="button" onClick={() => setActive("timeline")}>
+        <span className={styles.panelHead}><b>◷</b><strong>Timeline</strong><i>Week</i></span>
+        <span>Oct 16 <b>Literature review</b></span><span>Oct 18 <b>Experiment results</b></span><span>Oct 22 <b>Draft paper</b></span><span>Oct 28 <b>Team sync</b></span>
+      </button>
     </div>
   );
 }
