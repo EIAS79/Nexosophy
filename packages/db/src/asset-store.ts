@@ -797,6 +797,7 @@ export async function completeAssetScan(
     scanner: string;
     scannerVersion?: string | undefined;
     resultCode?: string | undefined;
+    checksumSha256?: string | undefined;
     metadata?: Record<string, unknown> | undefined;
   },
 ): Promise<void> {
@@ -812,7 +813,33 @@ export async function completeAssetScan(
     const scanId = scan.rows[0]?.id;
     if (!scanId) throw new Error("ASSET_SCAN_NOT_FOUND");
 
-    const trustedState = input.clean ? "trusted" : "quarantined";
+    const currentAsset = await client.query<{
+      checksum_sha256: string | null;
+    }>(
+      `select "checksum_sha256"
+       from "assets"
+       where "workspace_id" = $1 and "id" = $2
+       for update`,
+      [input.workspaceId, input.assetId],
+    );
+    const expectedChecksum = currentAsset.rows[0]?.checksum_sha256?.toLowerCase() ?? null;
+    const scannedChecksum = input.checksumSha256?.toLowerCase() ?? null;
+    const checksumValid = expectedChecksum
+      ? scannedChecksum !== null && scannedChecksum === expectedChecksum
+      : true;
+    const detectedMimeAllowed = allowedUploadMime(input.detectedMime);
+    const effectiveClean = input.clean && checksumValid && detectedMimeAllowed;
+    const trustedState = effectiveClean ? "trusted" : "quarantined";
+    const policyResultCode = !input.clean
+      ? (input.resultCode ?? "malware_or_policy_rejected")
+      : !detectedMimeAllowed
+        ? "detected_mime_not_allowed"
+        : !checksumValid
+          ? scannedChecksum
+            ? "checksum_mismatch"
+            : "checksum_missing"
+          : (input.resultCode ?? "clean");
+
     await client.query(
       `update "asset_scans"
        set "scanner" = $3, "scanner_version" = $4,
@@ -825,18 +852,25 @@ export async function completeAssetScan(
         scanId,
         input.scanner,
         input.scannerVersion ?? null,
-        input.clean ? "clean" : "infected",
-        input.resultCode ?? null,
-        JSON.stringify(input.metadata ?? {}),
+        effectiveClean ? "clean" : "infected",
+        policyResultCode,
+        JSON.stringify({
+          ...(input.metadata ?? {}),
+          checksumSha256: scannedChecksum,
+          checksumVerified: checksumValid,
+          detectedMimeAllowed,
+        }),
       ],
     );
     const asset = await client.query<{ node_id: string | null }>(
       `update "assets"
-       set "detected_mime" = $3, "trust_state" = $4::asset_trust_state,
+       set "detected_mime" = $3,
+           "checksum_sha256" = coalesce("checksum_sha256", $5),
+           "trust_state" = $4::asset_trust_state,
            "updated_at" = now()
        where "workspace_id" = $1 and "id" = $2
        returning "node_id"`,
-      [input.workspaceId, input.assetId, input.detectedMime, trustedState],
+      [input.workspaceId, input.assetId, input.detectedMime, trustedState, scannedChecksum],
     );
     await client.query(
       `update "asset_processing_jobs"
@@ -846,7 +880,7 @@ export async function completeAssetScan(
       [input.jobId],
     );
 
-    if (input.clean) {
+    if (effectiveClean) {
       const kinds = derivativeKinds(input.detectedMime);
       for (const kind of kinds) {
         await client.query(
@@ -890,7 +924,7 @@ export async function completeAssetScan(
           input.workspaceId,
           nodeId,
           JSON.stringify({
-            uploadStatus: input.clean ? "available" : "quarantined",
+            uploadStatus: effectiveClean ? "available" : "quarantined",
             assetTrustState: trustedState,
           }),
         ],
@@ -900,7 +934,7 @@ export async function completeAssetScan(
       `update "upload_sessions"
        set "status" = $3::upload_session_status, "updated_at" = now()
        where "workspace_id" = $1 and "asset_id" = $2`,
-      [input.workspaceId, input.assetId, input.clean ? "processing" : "failed"],
+      [input.workspaceId, input.assetId, effectiveClean ? "processing" : "failed"],
     );
   });
 }
