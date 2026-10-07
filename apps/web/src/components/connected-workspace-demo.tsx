@@ -108,7 +108,7 @@ export function ConnectedWorkspaceDemo() {
       </section>
 
       <div className={styles.weave} aria-hidden="true">
-        <svg className={styles.weaveLines} viewBox="0 0 440 620" preserveAspectRatio="none">
+        <svg className={styles.weaveLines} viewBox="0 0 440 620" preserveAspectRatio="none">\n          <title>Knowledge sources flowing into connected context</title>
           {sources.map((source, index) => {
             const y = 74 + index * 88;
             const active = activeSources.includes(source.id);
