@@ -29,3 +29,5 @@ export * from "./storage.js";
 export * from "./editor.js";
 
 export * from "./history.js";
+
+export * from "./collaboration.js";
