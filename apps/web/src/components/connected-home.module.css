@@ -15,7 +15,10 @@
   inset: 0;
   pointer-events: none;
   z-index: -1;
-  background: radial-gradient(ellipse at 78% 12%, #3b465c30, transparent 58%), radial-gradient(ellipse at 18% 65%, #4d456228, transparent 60%), linear-gradient(145deg, #171d29, #0e1119 55%, #171a26);
+  background:
+    radial-gradient(ellipse at 78% 12%, #3b465c30, transparent 58%),
+    radial-gradient(ellipse at 18% 65%, #4d456228, transparent 60%),
+    linear-gradient(145deg, #171d29, #0e1119 55%, #171a26);
 }
 .home a {
   color: inherit;
@@ -27,7 +30,9 @@
   cursor: pointer;
   touch-action: manipulation;
 }
-.home button:focus-visible, .home a:focus-visible, .home summary:focus-visible {
+.home button:focus-visible,
+.home a:focus-visible,
+.home summary:focus-visible {
   outline: 2px solid #b5c3dd;
   outline-offset: 6px;
 }
@@ -151,7 +156,9 @@
   border-radius: 5px;
   padding: 15px 19px;
   font-size: 12px;
-  transition: transform 180ms ease, background 180ms ease;
+  transition:
+    transform 180ms ease,
+    background 180ms ease;
 }
 .home a.primary {
   color: #1e2736;
@@ -256,7 +263,9 @@
   font-size: 9px;
   margin: 0 0 25px;
 }
-.storyCopy h2, .sectionHeading h2, .questions h2 {
+.storyCopy h2,
+.sectionHeading h2,
+.questions h2 {
   font-size: clamp(38px, 4.2vw, 65px);
   line-height: 1.12;
   font-weight: 400;
@@ -278,7 +287,8 @@
   min-width: 0;
   height: 430px;
 }
-.ring, .innerRing {
+.ring,
+.innerRing {
   position: absolute;
   border: 1px solid #a3b5d326;
   border-radius: 50%;
@@ -310,13 +320,17 @@
 }
 .core strong {
   display: block;
-  font: italic 36px Georgia, serif;
+  font:
+    italic 36px Georgia,
+    serif;
   color: #c1cbdf;
   margin: 12px 0 18px;
   animation: appear 300ms ease both;
 }
 .core i {
-  font: 25px Georgia, serif;
+  font:
+    25px Georgia,
+    serif;
   color: #899bbb;
 }
 .node {
@@ -330,7 +344,10 @@
   gap: 14px;
   font-size: 11px;
   box-shadow: 0 8px 25px #00000015;
-  transition: background 180ms ease, transform 180ms ease, border-color 180ms ease;
+  transition:
+    background 180ms ease,
+    transform 180ms ease,
+    border-color 180ms ease;
 }
 .node > span {
   color: #7a8da9;
@@ -348,7 +365,8 @@
   left: 6%;
   top: 304px;
 }
-.node:hover, .node[aria-pressed="true"] {
+.node:hover,
+.node[aria-pressed="true"] {
   background: #283247;
   border-color: #a5b5d36b;
   transform: translateY(-3px);
@@ -380,7 +398,9 @@
   text-align: left;
   font-size: 13px;
   color: #7c8aa0;
-  transition: color 200ms ease, border-color 200ms ease;
+  transition:
+    color 200ms ease,
+    border-color 200ms ease;
 }
 .chapterNav button > span:first-child {
   font-size: 9px;
@@ -437,7 +457,8 @@
 .pathNav button > span:last-child {
   margin-left: auto;
 }
-.pathNav button[aria-pressed="true"], .pathNav button:hover {
+.pathNav button[aria-pressed="true"],
+.pathNav button:hover {
   color: #d0daeb;
 }
 .pathContent {
@@ -461,7 +482,9 @@
   padding-right: 25px;
 }
 .pathContent h3 {
-  font: 400 34px/1.2 Georgia, serif;
+  font:
+    400 34px / 1.2 Georgia,
+    serif;
   color: #c2cde0;
   margin: 25px 0 18px;
   max-width: 400px;
@@ -559,7 +582,8 @@
   align-items: center;
   gap: 20px;
 }
-.footer p, .footer > a:last-child {
+.footer p,
+.footer > a:last-child {
   color: #79889f;
   font-size: 10px;
 }
@@ -750,7 +774,8 @@
     text-align: left;
     margin-bottom: 40px;
   }
-  .sectionHeading h2, .questions h2 {
+  .sectionHeading h2,
+  .questions h2 {
     font-size: 40px;
   }
   .pathLayout {
@@ -816,10 +841,14 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .home .storyCopy, .home .core strong, .home .pathContent {
+  .home .storyCopy,
+  .home .core strong,
+  .home .pathContent {
     animation: none;
   }
-  .home button, .home a, .home summary span {
+  .home button,
+  .home a,
+  .home summary span {
     transition: none;
   }
 }
