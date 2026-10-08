@@ -15,6 +15,7 @@ import { installApiPlatform } from "./api-platform.js";
 import { registerAssetRoutes } from "./asset-routes.js";
 import { createAuthRuntime } from "./auth-runtime.js";
 import { registerClerkWebhookRoute } from "./clerk-webhook.js";
+import { registerCollaborationRoutes } from "./collaboration-routes.js";
 import { registerContentRoutes } from "./content-routes.js";
 import { registerEditorRoutes } from "./editor-routes.js";
 import { registerHistoryRoutes } from "./history-routes.js";
@@ -135,6 +136,7 @@ export async function buildApp(
   await registerIdentityRoutes(app, pool, runtime.verifier);
   await registerWorkspaceRoutes(app, pool, runtime.verifier);
   await registerContentRoutes(app, pool, runtime.verifier);
+  await registerCollaborationRoutes(app, pool, runtime.verifier);
   await registerAssetRoutes(app, pool, storage, runtime.verifier);
   await registerEditorRoutes(app, pool, runtime.verifier);
   await registerHistoryRoutes(app, pool, runtime.verifier);
