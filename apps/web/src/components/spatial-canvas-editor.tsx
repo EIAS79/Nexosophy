@@ -32,7 +32,11 @@ type Tool =
   | "sticky"
   | "connector"
   | "frame"
-  | "asset";
+  | "image"
+  | "file"
+  | "audio"
+  | "link"
+  | "embed";
 
 type CanvasElement = Omit<
   SpatialElement,
@@ -53,7 +57,11 @@ const TOOL_LABELS: Array<[Tool, string]> = [
   ["sticky", "Sticky"],
   ["connector", "Connector"],
   ["frame", "Frame"],
-  ["asset", "Asset"],
+  ["image", "Image"],
+  ["file", "File"],
+  ["audio", "Audio"],
+  ["link", "Link"],
+  ["embed", "Embed"],
 ];
 
 function elementFromRecord(element: SpatialElement): CanvasElement {
@@ -194,7 +202,7 @@ export function SpatialCanvasEditor({
   initialElements: SpatialElement[];
 }) {
   const room = useRealtimeRoom();
-  const [document, setDocument] = useState(initialDocument);
+  const [spatialDocument, setSpatialDocument] = useState(initialDocument);
   const [elements, setElements] = useState<Record<string, CanvasElement>>(() =>
     Object.fromEntries(initialElements.map((element) => [element.id, elementFromRecord(element)])),
   );
@@ -252,7 +260,7 @@ export function SpatialCanvasEditor({
       });
     }
     if (settings) {
-      setDocument((current) => ({
+      setSpatialDocument((current) => ({
         ...current,
         pageMode:
           settings.pageMode === "fixed" || settings.pageMode === "vertical"
@@ -328,13 +336,13 @@ export function SpatialCanvasEditor({
 
   function publishSettings(patch: Partial<SpatialDocument>) {
     const next = {
-      ...document.settings,
-      pageMode: patch.pageMode ?? document.pageMode,
-      backgroundKind: patch.backgroundKind ?? document.backgroundKind,
-      paperSize: patch.paperSize ?? document.paperSize,
-      orientation: patch.orientation ?? document.orientation,
+      ...spatialDocument.settings,
+      pageMode: patch.pageMode ?? spatialDocument.pageMode,
+      backgroundKind: patch.backgroundKind ?? spatialDocument.backgroundKind,
+      paperSize: patch.paperSize ?? spatialDocument.paperSize,
+      orientation: patch.orientation ?? spatialDocument.orientation,
     };
-    setDocument((current) => ({
+    setSpatialDocument((current) => ({
       ...current,
       pageMode: (next.pageMode as SpatialDocument["pageMode"]) ?? current.pageMode,
       backgroundKind:
@@ -380,6 +388,51 @@ export function SpatialCanvasEditor({
     setSelected([element.id]);
     return element;
   }
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const svg = svgRef.current;
+      if (!svg) return;
+      const rect = svg.getBoundingClientRect();
+      const minX = (-viewport.x) / viewport.zoom - 300;
+      const minY = (-viewport.y) / viewport.zoom - 300;
+      const maxX = (rect.width - viewport.x) / viewport.zoom + 300;
+      const maxY = (rect.height - viewport.y) / viewport.zoom + 300;
+
+      void (async () => {
+        let cursor: string | null = null;
+        let pages = 0;
+        do {
+          const query = new URLSearchParams({
+            minX: String(minX),
+            minY: String(minY),
+            maxX: String(maxX),
+            maxY: String(maxY),
+            limit: "500",
+          });
+          if (cursor) query.set("cursor", cursor);
+          const response = await fetch(
+            `/api/spatial/${workspaceId}/${node.id}?${query.toString()}`,
+            { cache: "no-store" },
+          );
+          if (!response.ok) break;
+          const payload = (await response.json()) as {
+            elements: SpatialElement[];
+            nextCursor: string | null;
+          };
+          setElements((current) => ({
+            ...current,
+            ...Object.fromEntries(
+              payload.elements.map((element) => [element.id, elementFromRecord(element)]),
+            ),
+          }));
+          cursor = payload.nextCursor;
+          pages += 1;
+        } while (cursor && pages < 6);
+      })();
+    }, 220);
+    return () => window.clearTimeout(timer);
+  }, [node.id, viewport.x, viewport.y, viewport.zoom, workspaceId]);
 
   function pointerDown(event: ReactPointerEvent<SVGSVGElement>) {
     activePointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
@@ -454,10 +507,39 @@ export function SpatialCanvasEditor({
       createElement("frame", point.x, point.y, { label: "Frame" }, 500, 360);
       return;
     }
-    if (tool === "asset") {
-      const assetId = window.prompt("Paste an existing asset ID from Files");
+    if (tool === "image" || tool === "file" || tool === "audio") {
+      const assetId = window.prompt("Paste an existing trusted asset ID from Files");
       if (assetId) {
-        createElement("file_attachment", point.x, point.y, { assetId }, 260, 100);
+        createElement(
+          tool === "image" ? "image" : tool === "audio" ? "audio_anchor" : "file_attachment",
+          point.x,
+          point.y,
+          {
+            assetId,
+            ...(tool === "audio" ? { offsetMs: 0 } : {}),
+          },
+          tool === "image" ? 320 : 260,
+          tool === "image" ? 220 : 100,
+        );
+      }
+      return;
+    }
+    if (tool === "link" || tool === "embed") {
+      const url = window.prompt(tool === "link" ? "Paste a URL" : "Paste an embeddable URL");
+      if (url) {
+        try {
+          const normalized = new URL(url).toString();
+          createElement(
+            tool === "link" ? "link_card" : "embed",
+            point.x,
+            point.y,
+            { url: normalized },
+            320,
+            tool === "link" ? 120 : 220,
+          );
+        } catch {
+          setStatus("That URL is invalid.");
+        }
       }
       return;
     }
@@ -725,7 +807,7 @@ export function SpatialCanvasEditor({
       body: JSON.stringify({
         action: "export",
         format: format === "svg" ? "svg" : "print",
-        scope: document.pageMode === "fixed" ? "fixed-page" : "content",
+        scope: spatialDocument.pageMode === "fixed" ? "fixed-page" : "content",
       }),
     }).catch(() => undefined);
 
@@ -741,7 +823,7 @@ export function SpatialCanvasEditor({
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${minX - 20} ${minY - 20} ${maxX - minX + 40} ${maxY - minY + 40}">${sortedElements.map(elementToSvg).join("")}</svg>`;
     const blob = new Blob([svg], { type: "image/svg+xml" });
     const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
+    const anchor = window.document.createElement("a");
     anchor.href = url;
     anchor.download = (node.name || "canvas") + ".svg";
     anchor.click();
@@ -759,7 +841,7 @@ export function SpatialCanvasEditor({
   }, [sortedElements]);
 
   return (
-    <section className={styles.editor} data-mode={document.pageMode}>
+    <section className={styles.editor} data-mode={spatialDocument.pageMode}>
       <header className={styles.toolbar}>
         <div className={styles.tools} role="toolbar" aria-label="Canvas tools">
           {TOOL_LABELS.map(([id, label]) => (
@@ -777,7 +859,7 @@ export function SpatialCanvasEditor({
           <label>
             Mode
             <select
-              value={document.pageMode}
+              value={spatialDocument.pageMode}
               onChange={(event) =>
                 publishSettings({ pageMode: event.currentTarget.value as SpatialDocument["pageMode"] })
               }
@@ -790,7 +872,7 @@ export function SpatialCanvasEditor({
           <label>
             Background
             <select
-              value={document.backgroundKind}
+              value={spatialDocument.backgroundKind}
               onChange={(event) =>
                 publishSettings({
                   backgroundKind: event.currentTarget.value as SpatialDocument["backgroundKind"],
@@ -822,8 +904,8 @@ export function SpatialCanvasEditor({
         <svg
           ref={svgRef}
           className={styles.stage}
-          data-background={document.backgroundKind}
-          data-page-mode={document.pageMode}
+          data-background={spatialDocument.backgroundKind}
+          data-page-mode={spatialDocument.pageMode}
           role="application"
           aria-label={node.kind === "whiteboard" ? "Collaborative whiteboard" : "Spatial note canvas"}
           onPointerDown={pointerDown}
@@ -833,13 +915,13 @@ export function SpatialCanvasEditor({
           onWheel={wheel}
         >
           <g transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.zoom})`}>
-            {document.pageMode !== "infinite" ? (
+            {spatialDocument.pageMode !== "infinite" ? (
               <rect
                 className={styles.paper}
                 x={0}
                 y={0}
-                width={document.orientation === "landscape" ? 1123 : 794}
-                height={document.pageMode === "vertical" ? 4000 : document.orientation === "landscape" ? 794 : 1123}
+                width={spatialDocument.orientation === "landscape" ? 1123 : 794}
+                height={spatialDocument.pageMode === "vertical" ? 4000 : spatialDocument.orientation === "landscape" ? 794 : 1123}
                 rx={4}
               />
             ) : null}
@@ -904,7 +986,9 @@ export function SpatialCanvasEditor({
                                 element.type === "audio_anchor" ||
                                 element.type === "image"
                               ? "#f1f5f9"
-                              : String(element.payload.fill ?? "#dbeafe")
+                              : element.type === "link_card" || element.type === "embed"
+                                ? "#ecfeff"
+                                : String(element.payload.fill ?? "#dbeafe")
                     }
                     stroke={isSelected ? "#2563eb" : "#64748b"}
                     strokeWidth={isSelected ? 3 : 1.5}
@@ -922,9 +1006,14 @@ export function SpatialCanvasEditor({
                       </div>
                     </foreignObject>
                   ) : null}
-                  {element.type === "file_attachment" ? (
+                  {["file_attachment", "image", "audio_anchor"].includes(element.type) ? (
                     <text x={element.x + 12} y={element.y + 28} className={styles.svgLabel}>
-                      Asset {String(element.payload.assetId ?? "").slice(0, 12)}
+                      {element.type === "image" ? "Image" : element.type === "audio_anchor" ? "Audio" : "File"} · Asset {String(element.payload.assetId ?? "").slice(0, 12)}
+                    </text>
+                  ) : null}
+                  {["link_card", "embed"].includes(element.type) ? (
+                    <text x={element.x + 12} y={element.y + 28} className={styles.svgLabel}>
+                      {String(element.payload.url ?? "").slice(0, 42)}
                     </text>
                   ) : null}
                   {element.type === "frame" ? (
