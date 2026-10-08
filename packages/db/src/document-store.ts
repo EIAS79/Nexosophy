@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 
 import type { Pool, PoolClient } from "pg";
 
+import { maybeCreateDocumentCheckpoint } from "./history-store.js";
 import { appendWorkspaceAudit, withWorkspaceTransaction } from "./workspace-store-common.js";
 
 export type RichDocumentBody = {
@@ -261,6 +262,15 @@ export async function saveDocument(
         "The document changed before this save was applied.",
       );
     }
+
+    await maybeCreateDocumentCheckpoint(client, {
+      workspaceId: input.workspaceId,
+      nodeId: input.nodeId,
+      sourceRevision: current.revision,
+      schemaVersion: current.schemaVersion,
+      body: current.body,
+      actorUserId: input.actorUserId,
+    });
 
     const updated = await client.query<DocumentRow>(
       `update "documents"
