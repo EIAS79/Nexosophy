@@ -207,8 +207,15 @@ export async function maybeCreateSpatialCheckpoint(
     actorUserId: string;
   },
 ): Promise<void> {
-  const spatial = await snapshotSpatialDocument(client, input.workspaceId, input.nodeId);
-  if (!spatial) return;
+  const current = await client.query<{ version: number }>(
+    `select "version"
+     from "spatial_documents"
+     where "workspace_id" = $1 and "node_id" = $2
+     limit 1`,
+    [input.workspaceId, input.nodeId],
+  );
+  const version = current.rows[0]?.version;
+  if (!version) return;
 
   const latest = await client.query<{ source_revision: number; created_at: Date }>(
     `select "source_revision", "created_at"
@@ -222,9 +229,11 @@ export async function maybeCreateSpatialCheckpoint(
   const oldEnough =
     !previous || Date.now() - previous.created_at.getTime() >= 2 * 60 * 1000;
   const enoughRevisions =
-    !previous || spatial.version - previous.source_revision >= 20;
+    !previous || version - previous.source_revision >= 20;
   if (!oldEnough && !enoughRevisions) return;
 
+  const spatial = await snapshotSpatialDocument(client, input.workspaceId, input.nodeId);
+  if (!spatial) return;
   await client.query(
     `insert into "document_versions"
        ("workspace_id", "node_id", "source_revision", "schema_version", "body",
