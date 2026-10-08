@@ -29,6 +29,10 @@ export const workerEnvSchema = dataEnvSchema.extend({
 export const realtimeEnvSchema = dataEnvSchema.extend({
   REALTIME_HOST: z.string().min(1).default("0.0.0.0"),
   REALTIME_PORT: z.coerce.number().int().min(1).max(65535).default(4100),
+  REALTIME_TOKEN_SECRET: z.string().min(32),
+  REALTIME_PUBLIC_URL: z.string().url(),
+  REALTIME_MAX_ROOM_CONNECTIONS: z.coerce.number().int().min(2).max(5000).default(200),
+  REALTIME_MAX_MESSAGE_BYTES: z.coerce.number().int().min(1024).max(4 * 1024 * 1024).default(262144),
 });
 
 export type BaseEnv = z.infer<typeof baseEnvSchema>;
@@ -127,4 +131,17 @@ export function parseMediaServicesEnv(
   env: NodeJS.ProcessEnv = process.env,
 ): MediaServicesEnv {
   return mediaServicesEnvSchema.parse(env);
+}
+
+
+export function parseRealtimeTokenSecret(
+  env: NodeJS.ProcessEnv = process.env,
+): string {
+  return z.string().min(32).parse(env.REALTIME_TOKEN_SECRET);
+}
+
+export function parseRealtimePublicUrl(
+  env: NodeJS.ProcessEnv = process.env,
+): string {
+  return z.string().url().parse(env.REALTIME_PUBLIC_URL);
 }
