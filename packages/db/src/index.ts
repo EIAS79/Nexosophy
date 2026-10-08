@@ -42,3 +42,9 @@ export * from "./collaboration-store.js";
 export * from "./spatial-store.js";
 
 export * from "./search-store.js";
+
+export * from "./recurrence.js";
+
+export * from "./productivity-store.js";
+
+export * from "./notification-store.js";

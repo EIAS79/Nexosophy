@@ -1,6 +1,7 @@
-import { parseMediaServicesEnv, parseOptionalStorageEnv, parseWorkerEnv } from "@nexosophy/config";
+import { parseMediaServicesEnv, parseNotificationDeliveryEnv, parseOptionalStorageEnv, parseWorkerEnv } from "@nexosophy/config";
 import {
   claimDeletionJob,
+  claimNotificationDelivery,
   claimNextDurableJob,
   claimNextAssetJob,
   claimNextContentOperation,
@@ -9,6 +10,7 @@ import {
   completeAssetScan,
   completeAssetVariant,
   completeDeletionJob,
+  completeNotificationDelivery,
   completeDurableJob,
   ContentStoreError,
   createDatabasePool,
@@ -16,6 +18,7 @@ import {
   failAssetJob,
   failContentOperation,
   failDeletionJob,
+  failNotificationDelivery,
   failDurableJob,
   failOutboxEvent,
   getAsset,
@@ -25,8 +28,10 @@ import {
   listExpiredMultipartUploads,
   markExpiredUpload,
   markOutboxPublished,
+  fanoutOutboxNotification,
   processContentOperationBatch,
   processDeletionBatch,
+  processDueReminderBatch,
   reconcileSearchIndexBatch,
   reindexWorkspaceSearchBatch,
   updateDurableJobProgress,
@@ -41,6 +46,7 @@ const logger = createLogger("nexosophy-worker", env.LOG_LEVEL);
 const redisUrl = new URL(env.REDIS_URL);
 const storageEnv = parseOptionalStorageEnv();
 const mediaServices = parseMediaServicesEnv();
+const notificationDelivery = parseNotificationDeliveryEnv();
 const storage = storageEnv
   ? new S3CompatibleStorageAdapter({
       endpoint: storageEnv.S3_ENDPOINT,
@@ -102,6 +108,17 @@ const worker = new Worker(
           maxAttempts: 8,
         });
       }
+    }
+    if (data.workspaceId && data.outboxEventId) {
+      await fanoutOutboxNotification(contentPool, job.name, {
+        workspaceId: data.workspaceId,
+        aggregateType: data.aggregateType,
+        aggregateId: data.aggregateId,
+        payload: {
+          ...(data.payload ?? {}),
+          outboxEventId: data.outboxEventId,
+        },
+      });
     }
     return { ok: true };
   },
@@ -196,9 +213,11 @@ async function postJson<T>(url: string, payload: unknown): Promise<T> {
       signal: controller.signal,
     });
     if (!response.ok) {
-      throw new Error("Media service returned status " + response.status + ".");
+      throw new Error("Remote service returned status " + response.status + ".");
     }
-    return (await response.json()) as T;
+    if (response.status === 204) return undefined as T;
+    const text = await response.text();
+    return text ? (JSON.parse(text) as T) : (undefined as T);
   } finally {
     clearTimeout(timer);
   }
@@ -560,11 +579,81 @@ async function runSearchLoop(): Promise<void> {
   }
 }
 
+
+async function runReminderSchedulerLoop(): Promise<void> {
+  while (!stopping) {
+    try {
+      const processed = await processDueReminderBatch(contentPool, 100);
+      if (processed > 0) {
+        logger.info({ processed }, "Reminder occurrences delivered to notification inbox");
+      }
+      await delay(processed > 0 ? 50 : 500);
+    } catch (error) {
+      logger.error({ err: error }, "Reminder scheduler loop failed");
+      await delay(750);
+    }
+  }
+}
+
+async function deliverNotification(
+  delivery: NonNullable<Awaited<ReturnType<typeof claimNotificationDelivery>>>,
+): Promise<void> {
+  const endpoint =
+    delivery.channel === "email"
+      ? notificationDelivery.NOTIFICATION_EMAIL_URL
+      : notificationDelivery.NOTIFICATION_PUSH_URL;
+  if (!endpoint) {
+    await completeNotificationDelivery(
+      contentPool,
+      delivery.id,
+      "suppressed",
+      "provider_not_configured",
+    );
+    return;
+  }
+
+  await postJson(endpoint, {
+    notificationId: delivery.notificationId,
+    workspaceId: delivery.workspaceId,
+    userId: delivery.userId,
+    category: delivery.category,
+    title: delivery.title,
+    body: delivery.body,
+    actionUrl: delivery.actionUrl,
+  });
+  await completeNotificationDelivery(contentPool, delivery.id, "delivered");
+}
+
+async function runNotificationDeliveryLoop(): Promise<void> {
+  while (!stopping) {
+    const delivery = await claimNotificationDelivery(contentPool, workerId);
+    if (!delivery) {
+      await delay(500);
+      continue;
+    }
+    try {
+      await deliverNotification(delivery);
+    } catch (error) {
+      await failNotificationDelivery(
+        contentPool,
+        delivery,
+        error instanceof Error ? error : new Error("Unknown notification delivery failure."),
+      );
+      logger.warn(
+        { err: error, deliveryId: delivery.id, channel: delivery.channel },
+        "Notification delivery failed",
+      );
+    }
+  }
+}
+
 const contentLoop = runContentOperationLoop();
 const assetLoop = runAssetOperationLoop();
 const outboxLoop = runOutboxPublisherLoop();
 const deletionLoop = runDeletionLoop();
 const searchLoop = runSearchLoop();
+const reminderLoop = runReminderSchedulerLoop();
+const notificationLoop = runNotificationDeliveryLoop();
 const health = Fastify({ loggerInstance: logger });
 
 health.get("/health", async () => ({
@@ -600,7 +689,15 @@ async function shutdown(signal: string) {
   logger.info({ signal }, "Shutting down worker");
   stopping = true;
   await health.close();
-  await Promise.all([contentLoop, assetLoop, outboxLoop, deletionLoop, searchLoop]);
+  await Promise.all([
+    contentLoop,
+    assetLoop,
+    outboxLoop,
+    deletionLoop,
+    searchLoop,
+    reminderLoop,
+    notificationLoop,
+  ]);
   await worker.close();
   await systemQueue.close();
   await contentPool.end();
@@ -624,6 +721,8 @@ logger.info(
     retentionSweeper: true,
     permanentDeletion: true,
     searchIndexing: true,
+    reminderScheduler: true,
+    notificationDelivery: true,
     storageConfigured: Boolean(storage),
   },
   "Worker started",

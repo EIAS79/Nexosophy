@@ -145,3 +145,17 @@ export function parseRealtimePublicUrl(
 ): string {
   return z.string().url().parse(env.REALTIME_PUBLIC_URL);
 }
+
+
+export const notificationDeliveryEnvSchema = z.object({
+  NOTIFICATION_EMAIL_URL: z.string().url().optional(),
+  NOTIFICATION_PUSH_URL: z.string().url().optional(),
+});
+
+export type NotificationDeliveryEnv = z.infer<typeof notificationDeliveryEnvSchema>;
+
+export function parseNotificationDeliveryEnv(
+  env: NodeJS.ProcessEnv = process.env,
+): NotificationDeliveryEnv {
+  return notificationDeliveryEnvSchema.parse(env);
+}
