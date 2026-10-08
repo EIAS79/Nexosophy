@@ -3,6 +3,7 @@ import { createHash, randomUUID } from "node:crypto";
 import type { Pool, PoolClient } from "pg";
 
 import { createContentNode, getContentNode } from "./content-store-core.js";
+import { maybeCreateSpatialCheckpoint } from "./history-store.js";
 import { appendWorkspaceAudit, withWorkspaceTransaction } from "./workspace-store-common.js";
 
 export type SpatialPageMode = "infinite" | "vertical" | "fixed";
@@ -319,6 +320,11 @@ export async function updateSpatialDocument(
 ): Promise<SpatialDocumentRecord> {
   return withWorkspaceTransaction(pool, async (client) => {
     await ensureSpatialDocumentWithClient(client, input);
+    await maybeCreateSpatialCheckpoint(client, {
+      workspaceId: input.workspaceId,
+      nodeId: input.nodeId,
+      actorUserId: input.actorUserId,
+    });
     const result = await client.query<SpatialDocumentRow>(
       `update "spatial_documents"
        set "page_mode" = coalesce($4::spatial_page_mode, "page_mode"),
@@ -401,6 +407,11 @@ async function applySpatialBatchWithClient(
   },
 ): Promise<{ elements: SpatialElementRecord[]; deletedIds: string[] }> {
   await ensureSpatialDocumentWithClient(client, input);
+  await maybeCreateSpatialCheckpoint(client, {
+    workspaceId: input.workspaceId,
+    nodeId: input.nodeId,
+    actorUserId: input.actorUserId,
+  });
 
   const returned: SpatialElementRecord[] = [];
   for (const element of input.upserts) {
@@ -591,6 +602,11 @@ export async function materializeSpatialRegisters(
     nodeId: input.nodeId,
     actorUserId: input.actorUserId,
     pageMode: nodeKind === "whiteboard" ? "infinite" : "infinite",
+  });
+  await maybeCreateSpatialCheckpoint(client, {
+    workspaceId: input.workspaceId,
+    nodeId: input.nodeId,
+    actorUserId: input.actorUserId,
   });
 
   for (const register of applicable) {
