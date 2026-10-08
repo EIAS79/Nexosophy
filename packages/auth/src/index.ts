@@ -237,3 +237,5 @@ export {
 } from "./clerk.js";
 
 export * from "./workspace-policy.js";
+
+export * from "./realtime-token.js";
