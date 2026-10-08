@@ -25,7 +25,7 @@ type VersionRow = {
   label: string | null;
   created_by_user_id: string;
   created_at: Date;
-  body?: RichDocumentBody;
+  body?: unknown;
 };
 
 function toVersion(row: VersionRow): DocumentVersionRecord {
@@ -104,6 +104,143 @@ export async function maybeCreateDocumentCheckpoint(
   );
 }
 
+type SpatialHistoryBody = {
+  type: "spatial";
+  document: {
+    pageMode: string;
+    backgroundKind: string;
+    paperSize: string;
+    orientation: string;
+    settings: Record<string, unknown>;
+  };
+  elements: Array<{
+    id: string;
+    type: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    rotation: number;
+    zRank: number;
+    groupId: string | null;
+    locked: boolean;
+    payload: Record<string, unknown>;
+  }>;
+};
+
+async function snapshotSpatialDocument(
+  client: PoolClient,
+  workspaceId: string,
+  nodeId: string,
+): Promise<{ version: number; body: SpatialHistoryBody } | null> {
+  const document = await client.query<{
+    page_mode: string;
+    background_kind: string;
+    paper_size: string;
+    orientation: string;
+    settings: Record<string, unknown>;
+    version: number;
+  }>(
+    `select "page_mode", "background_kind", "paper_size", "orientation", "settings", "version"
+     from "spatial_documents"
+     where "workspace_id" = $1 and "node_id" = $2
+     for update`,
+    [workspaceId, nodeId],
+  );
+  const row = document.rows[0];
+  if (!row) return null;
+
+  const elements = await client.query<{
+    id: string;
+    type: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    rotation: number;
+    z_rank: string | number;
+    group_id: string | null;
+    locked: boolean;
+    payload: Record<string, unknown>;
+  }>(
+    `select "id", "type"::text as "type", "x", "y", "width", "height",
+            "rotation", "z_rank", "group_id", "locked", "payload"
+     from "spatial_elements"
+     where "workspace_id" = $1 and "node_id" = $2
+     order by "z_rank", "id"`,
+    [workspaceId, nodeId],
+  );
+
+  return {
+    version: row.version,
+    body: {
+      type: "spatial",
+      document: {
+        pageMode: row.page_mode,
+        backgroundKind: row.background_kind,
+        paperSize: row.paper_size,
+        orientation: row.orientation,
+        settings: row.settings ?? {},
+      },
+      elements: elements.rows.map((element) => ({
+        id: element.id,
+        type: element.type,
+        x: Number(element.x),
+        y: Number(element.y),
+        width: Number(element.width),
+        height: Number(element.height),
+        rotation: Number(element.rotation),
+        zRank: Number(element.z_rank),
+        groupId: element.group_id,
+        locked: element.locked,
+        payload: element.payload ?? {},
+      })),
+    },
+  };
+}
+
+export async function maybeCreateSpatialCheckpoint(
+  client: PoolClient,
+  input: {
+    workspaceId: string;
+    nodeId: string;
+    actorUserId: string;
+  },
+): Promise<void> {
+  const spatial = await snapshotSpatialDocument(client, input.workspaceId, input.nodeId);
+  if (!spatial) return;
+
+  const latest = await client.query<{ source_revision: number; created_at: Date }>(
+    `select "source_revision", "created_at"
+     from "document_versions"
+     where "workspace_id" = $1 and "node_id" = $2 and "reason" = 'checkpoint'
+     order by "created_at" desc, "id" desc
+     limit 1`,
+    [input.workspaceId, input.nodeId],
+  );
+  const previous = latest.rows[0];
+  const oldEnough =
+    !previous || Date.now() - previous.created_at.getTime() >= 2 * 60 * 1000;
+  const enoughRevisions =
+    !previous || spatial.version - previous.source_revision >= 20;
+  if (!oldEnough && !enoughRevisions) return;
+
+  await client.query(
+    `insert into "document_versions"
+       ("workspace_id", "node_id", "source_revision", "schema_version", "body",
+        "reason", "created_by_user_id")
+     values ($1, $2, $3, 1, $4::jsonb, 'checkpoint', $5)
+     on conflict do nothing`,
+    [
+      input.workspaceId,
+      input.nodeId,
+      spatial.version,
+      JSON.stringify(spatial.body),
+      input.actorUserId,
+    ],
+  );
+}
+
 export async function createManualDocumentCheckpoint(
   pool: Pool,
   input: {
@@ -127,7 +264,21 @@ export async function createManualDocumentCheckpoint(
       [input.workspaceId, input.nodeId],
     );
     const row = document.rows[0];
-    if (!row) throw new Error("DOCUMENT_NOT_FOUND");
+    let sourceRevision: number;
+    let schemaVersion: number;
+    let body: unknown;
+
+    if (row) {
+      sourceRevision = row.revision;
+      schemaVersion = row.schema_version;
+      body = row.body;
+    } else {
+      const spatial = await snapshotSpatialDocument(client, input.workspaceId, input.nodeId);
+      if (!spatial) throw new Error("DOCUMENT_NOT_FOUND");
+      sourceRevision = spatial.version;
+      schemaVersion = 1;
+      body = spatial.body;
+    }
 
     const created = await client.query<VersionRow>(
       `insert into "document_versions"
@@ -139,9 +290,9 @@ export async function createManualDocumentCheckpoint(
       [
         input.workspaceId,
         input.nodeId,
-        row.revision,
-        row.schema_version,
-        JSON.stringify(row.body),
+        sourceRevision,
+        schemaVersion,
+        JSON.stringify(body),
         input.label ?? null,
         input.actorUserId,
       ],
@@ -155,7 +306,7 @@ export async function createManualDocumentCheckpoint(
       targetType: "node",
       targetId: input.nodeId,
       requestId: input.requestId,
-      metadata: { versionId: version.id, revision: row.revision, label: input.label ?? null },
+      metadata: { versionId: version.id, revision: sourceRevision, label: input.label ?? null },
     });
     return toVersion(version);
   });
@@ -206,11 +357,11 @@ export async function restoreDocumentVersion(
   },
 ): Promise<{
   revision: number;
-  body: RichDocumentBody;
+  body: unknown;
   restoredFromVersionId: string;
 }> {
   return withWorkspaceTransaction(pool, async (client) => {
-    const version = await client.query<VersionRow & { body: RichDocumentBody }>(
+    const version = await client.query<VersionRow & { body: unknown }>(
       `select "id", "workspace_id", "node_id", "source_revision", "schema_version",
               "body", "reason", "label", "created_by_user_id", "created_at"
        from "document_versions"
@@ -221,6 +372,140 @@ export async function restoreDocumentVersion(
     const historical = version.rows[0];
     if (!historical) throw new Error("DOCUMENT_VERSION_NOT_FOUND");
 
+    const spatialBody =
+      historical.body &&
+      typeof historical.body === "object" &&
+      (historical.body as { type?: unknown }).type === "spatial"
+        ? (historical.body as SpatialHistoryBody)
+        : null;
+
+    if (spatialBody) {
+      const current = await snapshotSpatialDocument(client, input.workspaceId, input.nodeId);
+      if (!current) throw new Error("DOCUMENT_NOT_FOUND");
+
+      await client.query(
+        `insert into "document_versions"
+           ("workspace_id", "node_id", "source_revision", "schema_version", "body",
+            "reason", "label", "created_by_user_id")
+         values ($1, $2, $3, 1, $4::jsonb, 'manual', 'Before restore', $5)`,
+        [
+          input.workspaceId,
+          input.nodeId,
+          current.version,
+          JSON.stringify(current.body),
+          input.actorUserId,
+        ],
+      );
+
+      const updated = await client.query<{ version: number }>(
+        `update "spatial_documents"
+         set "page_mode" = $3::spatial_page_mode,
+             "background_kind" = $4::spatial_background_kind,
+             "paper_size" = $5,
+             "orientation" = $6,
+             "settings" = $7::jsonb,
+             "version" = "version" + 1,
+             "updated_by_user_id" = $8,
+             "updated_at" = now()
+         where "workspace_id" = $1 and "node_id" = $2
+         returning "version"`,
+        [
+          input.workspaceId,
+          input.nodeId,
+          spatialBody.document.pageMode,
+          spatialBody.document.backgroundKind,
+          spatialBody.document.paperSize,
+          spatialBody.document.orientation,
+          JSON.stringify(spatialBody.document.settings ?? {}),
+          input.actorUserId,
+        ],
+      );
+      const restoredRevision = updated.rows[0]?.version;
+      if (!restoredRevision) throw new Error("Spatial restore failed.");
+
+      await client.query(
+        `delete from "spatial_elements"
+         where "workspace_id" = $1 and "node_id" = $2`,
+        [input.workspaceId, input.nodeId],
+      );
+      for (const element of spatialBody.elements) {
+        await client.query(
+          `insert into "spatial_elements"
+             ("id", "workspace_id", "node_id", "type", "x", "y", "width", "height",
+              "rotation", "z_rank", "group_id", "locked", "payload",
+              "created_by_user_id", "updated_by_user_id")
+           values ($1, $2, $3, $4::spatial_element_type, $5, $6, $7, $8, $9, $10,
+                   $11, $12, $13::jsonb, $14, $14)`,
+          [
+            element.id,
+            input.workspaceId,
+            input.nodeId,
+            element.type,
+            element.x,
+            element.y,
+            element.width,
+            element.height,
+            element.rotation,
+            element.zRank,
+            element.groupId,
+            element.locked,
+            JSON.stringify(element.payload ?? {}),
+            input.actorUserId,
+          ],
+        );
+      }
+
+      await client.query(
+        `insert into "document_versions"
+           ("workspace_id", "node_id", "source_revision", "schema_version", "body",
+            "reason", "label", "created_by_user_id")
+         values ($1, $2, $3, 1, $4::jsonb, 'restore', $5, $6)`,
+        [
+          input.workspaceId,
+          input.nodeId,
+          restoredRevision,
+          JSON.stringify(spatialBody),
+          "Restored version " + historical.id,
+          input.actorUserId,
+        ],
+      );
+      await client.query(
+        `insert into "outbox_events"
+           ("workspace_id", "aggregate_type", "aggregate_id", "event_type", "payload")
+         values ($1, 'spatial_document', $2, 'document.version_restored', $3::jsonb)`,
+        [
+          input.workspaceId,
+          input.nodeId,
+          JSON.stringify({
+            nodeId: input.nodeId,
+            revision: restoredRevision,
+            versionId: input.versionId,
+            actorUserId: input.actorUserId,
+          }),
+        ],
+      );
+      await appendWorkspaceAudit(client, {
+        workspaceId: input.workspaceId,
+        actorUserId: input.actorUserId,
+        action: "document.version_restored",
+        targetType: "node",
+        targetId: input.nodeId,
+        requestId: input.requestId,
+        metadata: {
+          versionId: input.versionId,
+          revision: restoredRevision,
+          sourceRevision: historical.source_revision,
+          documentType: "spatial",
+        },
+      });
+      return {
+        revision: restoredRevision,
+        body: spatialBody,
+        restoredFromVersionId: input.versionId,
+      };
+    }
+
+    const richBody = historical.body as RichDocumentBody;
     const current = await client.query<{
       revision: number;
       schema_version: number;
@@ -262,7 +547,7 @@ export async function restoreDocumentVersion(
       [
         input.workspaceId,
         input.nodeId,
-        JSON.stringify(historical.body),
+        JSON.stringify(richBody),
         historical.schema_version,
         input.actorUserId,
       ],
@@ -280,7 +565,7 @@ export async function restoreDocumentVersion(
         input.nodeId,
         restored.revision,
         historical.schema_version,
-        JSON.stringify(historical.body),
+        JSON.stringify(richBody),
         "Restored version " + historical.id,
         input.actorUserId,
       ],
@@ -311,6 +596,7 @@ export async function restoreDocumentVersion(
         versionId: input.versionId,
         revision: restored.revision,
         sourceRevision: historical.source_revision,
+        documentType: "rich",
       },
     });
     return {
