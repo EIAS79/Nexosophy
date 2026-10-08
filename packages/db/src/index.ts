@@ -34,3 +34,5 @@ export function createDatabase(pool: Pool) {
 export type NexosophyDatabase = ReturnType<typeof createDatabase>;
 export * from "./document-store.js";
 export * from "./job-store.js";
+
+export * from "./history-store.js";
