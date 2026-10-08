@@ -283,14 +283,29 @@ export async function getSpatialSnapshot(
   input: {
     workspaceId: string;
     nodeId: string;
-    actorUserId: string;
+    actorUserId?: string | undefined;
     pageMode?: SpatialPageMode | undefined;
   },
 ): Promise<{
   document: SpatialDocumentRecord;
   elements: SpatialElementRecord[];
 }> {
-  const document = await getOrCreateSpatialDocument(pool, input);
+  await assertSpatialNode(pool, input.workspaceId, input.nodeId);
+  const existing = await getSpatialDocument(pool, input.workspaceId, input.nodeId);
+  const now = new Date();
+  const document: SpatialDocumentRecord =
+    existing ?? {
+      workspaceId: input.workspaceId,
+      nodeId: input.nodeId,
+      pageMode: input.pageMode ?? "infinite",
+      backgroundKind: "plain",
+      paperSize: "A4",
+      orientation: "portrait",
+      settings: { snap: true, backgroundSpacing: 24 },
+      version: 1,
+      createdAt: now,
+      updatedAt: now,
+    };
   const result = await pool.query<SpatialElementRow>(
     `select "id", "workspace_id", "node_id", "type", "x", "y", "width", "height",
             "rotation", "z_rank", "group_id", "locked", "payload", "version",
