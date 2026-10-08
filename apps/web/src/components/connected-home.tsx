@@ -288,7 +288,7 @@ export function ConnectedHome() {
                             else if (event.key === "End") target = views.length - 1;
                             else return;
                             event.preventDefault();
-                            setView(views[target]);
+                            setView(views[target] ?? "Document");
                             document.getElementById(`workspace-tab-${target}`)?.focus();
                           }}
                         >{tab}</button>
