@@ -43,6 +43,12 @@ export function CollaborationPanel({
   }, [nodeId, workspaceId]);
 
   useEffect(() => {
+    if (room.status === "connected") {
+      room.sendPresence({ selection: {} });
+    }
+  }, [room.status, room.sendPresence]);
+
+  useEffect(() => {
     void loadComments();
     const name = "nexosophy:comments-refresh:" + nodeId;
     const handler = () => void loadComments();
