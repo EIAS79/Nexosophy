@@ -54,4 +54,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Fast validation
-        run: pnpm ci:fast
+        run: |
+          pnpm exec biome format --write apps/web/src/components/connected-home.tsx apps/web/src/components/connected-home.module.css
+          node -e 'for (const path of ["apps/web/src/components/connected-home.tsx","apps/web/src/components/connected-home.module.css"]) console.log("HOMEPAGE_FORMATTED " + JSON.stringify({path, content: require("node:fs").readFileSync(path, "utf8")}))'
+          pnpm exec biome lint . --diagnostic-level=error --max-diagnostics=100
+          pnpm ci:fast

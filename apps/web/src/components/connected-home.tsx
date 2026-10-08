@@ -7,44 +7,44 @@ import s from "./connected-home.module.css";
 const chapters = [
   {
     name: "Discover",
-    label: "A HOME FOR CONNECTED THINKING",
-    title: "Good ideas deserve",
-    accent: "a bigger picture.",
-    body: "Your notes, sources and next steps. One connected place to turn what you know into something that matters.",
+    label: "THE ATLAS OF YOUR IDEAS",
+    title: "Think beyond",
+    accent: "the page.",
+    body: "A note becomes a question. A source sparks a connection. Give your thinking somewhere to go.",
   },
   {
     name: "Gather",
     label: "01 / BRING YOUR WORLD TOGETHER",
-    title: "Start anywhere.",
-    accent: "Keep everything close.",
+    title: "Collect the sparks.",
+    accent: "Keep the context.",
     body: "A paper that sparked a question. A note you almost forgot. Make room for the whole story, with the pieces that matter within reach.",
   },
   {
     name: "Connect",
     label: "02 / FIND THE THREAD",
-    title: "Less searching.",
-    accent: "More understanding.",
+    title: "Find the unlikely",
+    accent: "connection.",
     body: "Follow an idea back to its source, forward to a question, or across to a related note. Context stays close to your thinking.",
   },
   {
     name: "Develop",
     label: "03 / GIVE YOUR THINKING SHAPE",
-    title: "From a small thought",
-    accent: "to your next chapter.",
+    title: "Make room",
+    accent: "for what’s next.",
     body: "Bring your writing and next actions together. Keep the evidence beside the work, from an early question to a considered draft.",
   },
   {
     name: "Together",
     label: "04 / MAKE SPACE FOR OTHER MINDS",
-    title: "Different perspectives.",
-    accent: "One shared context.",
+    title: "Open your world",
+    accent: "to other minds.",
     body: "The vision: feedback, decisions and sources in the same place. A clearer path from working alone to thinking together.",
   },
   {
     name: "Begin",
     label: "YOUR NEXT CONNECTION STARTS HERE",
-    title: "Bring your curiosity.",
-    accent: "See where it leads.",
+    title: "Your next idea",
+    accent: "starts here.",
     body: "For the things you’re learning, the questions you’re asking, and the work you haven’t imagined yet.",
   },
 ];
@@ -103,7 +103,7 @@ export function ConnectedHome() {
     const track = runway.current;
     if (!element || !track) return;
     const fallback = window.matchMedia(
-      "(prefers-reduced-motion: reduce), (max-width: 760px) and (max-height: 820px)",
+      "(prefers-reduced-motion: reduce), (max-width: 760px), (max-height: 800px)",
     );
     let frame = 0;
     let start = 0;
@@ -218,7 +218,7 @@ export function ConnectedHome() {
           </button>
           <Link href="/sign-in">Sign in</Link>
           <Link className={s.headerCta} href="/sign-up">
-            Find your starting point ↗
+            Open your workspace ↗
           </Link>
         </nav>
       </header>
@@ -260,17 +260,41 @@ export function ConnectedHome() {
                   )}
                   <p className={s.note}>
                     {index === 0
-                      ? "A little less scattered. A lot more possible."
+                      ? "LESS FRICTION. MORE POSSIBILITY."
                       : `0${index} / One idea, more possibilities.`}
                   </p>
                 </section>
               ))}
             </div>
 
-            <div className={s.preview}>
+            <div className={s.atlas}>
+              <div className={s.orbits} aria-hidden="true">
+                <span /><span /><span />
+              </div>
+              <span className={s.atlasNumber} aria-hidden="true">0{chapter + 1}</span>
+              <button
+                className={s.floatingSource}
+                type="button"
+                onClick={() => { setSource(0); setView("Connections"); }}
+              >
+                <span className={s.cardIcon}>↗</span>
+                <small>01 / A STARTING POINT</small>
+                <strong>{project.files[0]}</strong>
+                <span>Follow the connection ↗</span>
+              </button>
+              <button
+                className={s.floatingQuestion}
+                type="button"
+                onClick={() => { setSource(2); setContext(true); }}
+              >
+                <small>WHAT IF?</small>
+                <strong>{project.question}</strong>
+                <span>Leave room for discovery ↗</span>
+              </button>
+              <div className={s.preview}>
               <div className={s.previewLabel}>
                 <span>
-                  <i /> A WORKSPACE, TAKING SHAPE
+                  <i /> FIELD NOTES / INTERACTIVE EDITION
                 </span>
                 <button type="button" onClick={() => dialog.current?.showModal()}>
                   About this preview ↗
@@ -518,6 +542,8 @@ export function ConnectedHome() {
                   </button>
                 ))}
               </nav>
+            </div>
+
             </div>
 
             <nav className={s.chapterNav} aria-label="The Nexosophy story">
