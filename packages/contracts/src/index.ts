@@ -27,3 +27,5 @@ export * from "./workspace.js";
 export * from "./content.js";
 export * from "./storage.js";
 export * from "./editor.js";
+
+export * from "./history.js";
