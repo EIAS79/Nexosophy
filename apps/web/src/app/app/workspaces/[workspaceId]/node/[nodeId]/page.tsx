@@ -1,6 +1,7 @@
 import type { ContentNode, DocumentRecord } from "@nexosophy/contracts";
 
 import { AssetViewer } from "../../../../../../components/asset-viewer";
+import { DocumentHistoryPanel } from "../../../../../../components/document-history-panel";
 import { RichDocumentEditor } from "../../../../../../components/rich-document-editor";
 import { nexosophyApi } from "../../../../../../lib/api-server";
 import { resolveEditorPlugin } from "../../../../../../lib/editor-registry";
@@ -66,7 +67,10 @@ export default async function WorkspaceNodePage({
       {assetId ? (
         <AssetViewer workspaceId={workspaceId} assetId={assetId} />
       ) : document ? (
-        <RichDocumentEditor workspaceId={workspaceId} node={node} initialDocument={document} />
+        <>
+          <RichDocumentEditor workspaceId={workspaceId} node={node} initialDocument={document} />
+          <DocumentHistoryPanel workspaceId={workspaceId} nodeId={node.id} />
+        </>
       ) : (
       <div className="content-node-placeholder">
         <div>
