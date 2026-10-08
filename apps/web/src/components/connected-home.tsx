@@ -103,7 +103,7 @@ export function ConnectedHome() {
     const track = runway.current;
     if (!element || !track) return;
     const fallback = window.matchMedia(
-      "(prefers-reduced-motion: reduce), (max-width: 760px), (max-height: 800px)",
+      "(prefers-reduced-motion: reduce), (max-width: 760px), (max-height: 680px)",
     );
     let frame = 0;
     let start = 0;
@@ -269,13 +269,20 @@ export function ConnectedHome() {
 
             <div className={s.atlas}>
               <div className={s.orbits} aria-hidden="true">
-                <span /><span /><span />
+                <span />
+                <span />
+                <span />
               </div>
-              <span className={s.atlasNumber} aria-hidden="true">0{chapter + 1}</span>
+              <span className={s.atlasNumber} aria-hidden="true">
+                0{chapter + 1}
+              </span>
               <button
                 className={s.floatingSource}
                 type="button"
-                onClick={() => { setSource(0); setView("Connections"); }}
+                onClick={() => {
+                  setSource(0);
+                  setView("Connections");
+                }}
               >
                 <span className={s.cardIcon}>↗</span>
                 <small>01 / A STARTING POINT</small>
@@ -285,265 +292,267 @@ export function ConnectedHome() {
               <button
                 className={s.floatingQuestion}
                 type="button"
-                onClick={() => { setSource(2); setContext(true); }}
+                onClick={() => {
+                  setSource(2);
+                  setContext(true);
+                }}
               >
                 <small>WHAT IF?</small>
                 <strong>{project.question}</strong>
                 <span>Leave room for discovery ↗</span>
               </button>
               <div className={s.preview}>
-              <div className={s.previewLabel}>
-                <span>
-                  <i /> FIELD NOTES / INTERACTIVE EDITION
-                </span>
-                <button type="button" onClick={() => dialog.current?.showModal()}>
-                  About this preview ↗
-                </button>
-              </div>
-              <div className={s.workspace}>
-                <div className={s.windowBar}>
-                  <span className={s.windowMark}>n.</span>
-                  <span>{project.project}</span>
-                  <span className={s.previewBadge}>Interactive concept</span>
-                  <button
-                    type="button"
-                    onClick={() => setContext(!context)}
-                    aria-expanded={context}
-                    aria-controls="source-context"
-                  >
-                    Context +
+                <div className={s.previewLabel}>
+                  <span>
+                    <i /> FIELD NOTES / INTERACTIVE EDITION
+                  </span>
+                  <button type="button" onClick={() => dialog.current?.showModal()}>
+                    About this preview ↗
                   </button>
                 </div>
-                <div className={s.workspaceBody}>
-                  <aside className={s.sidebar} aria-label="Example sources">
-                    <p>YOUR SPACE</p>
-                    <strong>{journey}</strong>
-                    <p className={s.sourceLabel}>
-                      SOURCES <span>03</span>
-                    </p>
-                    {project.files.map((file, index) => (
-                      <button
-                        key={file}
-                        type="button"
-                        aria-pressed={source === index}
-                        onClick={() => {
-                          setSource(index);
-                          setView("Document");
-                        }}
-                      >
-                        <span aria-hidden="true">
-                          {index === 0 ? "▤" : index === 1 ? "◌" : "↗"}
-                        </span>
-                        {file}
-                      </button>
-                    ))}
-                    <div className={s.sidebarNote}>
-                      Room for the
-                      <br />
-                      bigger picture.
-                    </div>
-                  </aside>
-                  <div className={s.editor}>
-                    <div className={s.tabs} role="tablist" aria-label="Workspace view">
-                      {views.map((tab, index) => (
+                <div className={s.workspace}>
+                  <div className={s.windowBar}>
+                    <span className={s.windowMark}>n.</span>
+                    <span>{project.project}</span>
+                    <span className={s.previewBadge}>Interactive concept</span>
+                    <button
+                      type="button"
+                      onClick={() => setContext(!context)}
+                      aria-expanded={context}
+                      aria-controls="source-context"
+                    >
+                      Context +
+                    </button>
+                  </div>
+                  <div className={s.workspaceBody}>
+                    <aside className={s.sidebar} aria-label="Example sources">
+                      <p>YOUR SPACE</p>
+                      <strong>{journey}</strong>
+                      <p className={s.sourceLabel}>
+                        SOURCES <span>03</span>
+                      </p>
+                      {project.files.map((file, index) => (
                         <button
-                          key={tab}
+                          key={file}
                           type="button"
-                          role="tab"
-                          id={`workspace-tab-${index}`}
-                          aria-selected={view === tab}
-                          aria-controls="workspace-view"
-                          tabIndex={view === tab ? 0 : -1}
-                          onClick={() => setView(tab)}
-                          onKeyDown={(event) => {
-                            let target = index;
-                            if (event.key === "ArrowRight") target = (index + 1) % views.length;
-                            else if (event.key === "ArrowLeft")
-                              target = (index + views.length - 1) % views.length;
-                            else if (event.key === "Home") target = 0;
-                            else if (event.key === "End") target = views.length - 1;
-                            else return;
-                            event.preventDefault();
-                            setView(views[target] ?? "Document");
-                            document.getElementById(`workspace-tab-${target}`)?.focus();
+                          aria-pressed={source === index}
+                          onClick={() => {
+                            setSource(index);
+                            setView("Document");
                           }}
                         >
-                          {tab}
+                          <span aria-hidden="true">
+                            {index === 0 ? "▤" : index === 1 ? "◌" : "↗"}
+                          </span>
+                          {file}
                         </button>
                       ))}
-                    </div>
-                    <div
-                      id="workspace-view"
-                      role="tabpanel"
-                      aria-labelledby={`workspace-tab-${views.indexOf(view)}`}
-                      className={s.panel}
-                    >
-                      <div key={`${view}-${journey}-${source}`} className={s.panelContent}>
-                        <p className={s.documentLabel}>
-                          {view === "Document" ? "WORKING NOTE / 01" : "FOLLOW THE IDEA"}
-                        </p>
-                        <h3>
-                          {view === "Document"
-                            ? source === 0
-                              ? project.note
-                              : project.files[source]
-                            : view === "Connections"
-                              ? "Nothing in isolation."
-                              : "A little further forward."}
-                        </h3>
-                        {view === "Document" && (
-                          <>
-                            <p className={s.question}>{project.question}</p>
-                            <p>
-                              Start with what you notice. Collect the evidence, leave space for
-                              questions, and let the next connection emerge.
-                            </p>
-                            <button
-                              className={s.excerpt}
-                              type="button"
-                              onClick={() => setContext(true)}
-                            >
-                              What if the most useful insight is the connection between things we
-                              already know?
-                              <span>Explore the source ↗</span>
-                            </button>
-                            <div className={s.related}>
-                              <span>CONNECTED TO</span>
-                              <button type="button" onClick={() => setView("Connections")}>
-                                3 sources ↗
-                              </button>
-                              <button type="button" onClick={() => setView("Next steps")}>
-                                1 next step ↗
-                              </button>
-                            </div>
-                            {chapter === 4 && (
-                              <p className={s.review}>
-                                “Could we look at this from another perspective?”{" "}
-                                <small>A glimpse of the collaboration vision.</small>
+                      <div className={s.sidebarNote}>
+                        Room for the
+                        <br />
+                        bigger picture.
+                      </div>
+                    </aside>
+                    <div className={s.editor}>
+                      <div className={s.tabs} role="tablist" aria-label="Workspace view">
+                        {views.map((tab, index) => (
+                          <button
+                            key={tab}
+                            type="button"
+                            role="tab"
+                            id={`workspace-tab-${index}`}
+                            aria-selected={view === tab}
+                            aria-controls="workspace-view"
+                            tabIndex={view === tab ? 0 : -1}
+                            onClick={() => setView(tab)}
+                            onKeyDown={(event) => {
+                              let target = index;
+                              if (event.key === "ArrowRight") target = (index + 1) % views.length;
+                              else if (event.key === "ArrowLeft")
+                                target = (index + views.length - 1) % views.length;
+                              else if (event.key === "Home") target = 0;
+                              else if (event.key === "End") target = views.length - 1;
+                              else return;
+                              event.preventDefault();
+                              setView(views[target] ?? "Document");
+                              document.getElementById(`workspace-tab-${target}`)?.focus();
+                            }}
+                          >
+                            {tab}
+                          </button>
+                        ))}
+                      </div>
+                      <div
+                        id="workspace-view"
+                        role="tabpanel"
+                        aria-labelledby={`workspace-tab-${views.indexOf(view)}`}
+                        className={s.panel}
+                      >
+                        <div key={`${view}-${journey}-${source}`} className={s.panelContent}>
+                          <p className={s.documentLabel}>
+                            {view === "Document" ? "WORKING NOTE / 01" : "FOLLOW THE IDEA"}
+                          </p>
+                          <h3>
+                            {view === "Document"
+                              ? source === 0
+                                ? project.note
+                                : project.files[source]
+                              : view === "Connections"
+                                ? "Nothing in isolation."
+                                : "A little further forward."}
+                          </h3>
+                          {view === "Document" && (
+                            <>
+                              <p className={s.question}>{project.question}</p>
+                              <p>
+                                Start with what you notice. Collect the evidence, leave space for
+                                questions, and let the next connection emerge.
                               </p>
-                            )}
-                          </>
-                        )}
-                        {view === "Connections" && (
-                          <>
-                            <p>
-                              Three starting points. A clearer picture. Open a source to follow the
-                              thread.
-                            </p>
-                            <div className={s.connections}>
-                              {project.files.map((file, index) => (
-                                <button
-                                  key={file}
-                                  type="button"
-                                  onClick={() => {
-                                    setSource(index);
-                                    setContext(true);
-                                  }}
-                                >
-                                  <span className={s.connectionNumber}>0{index + 1}</span>
-                                  <span>
-                                    <small>
-                                      {
-                                        [
-                                          "INFORMS THIS NOTE",
-                                          "ADDS AN OBSERVATION",
-                                          "OPENS A QUESTION",
-                                        ][index]
-                                      }
-                                    </small>
-                                    {file}
-                                  </span>
-                                  <span aria-hidden="true">↗</span>
+                              <button
+                                className={s.excerpt}
+                                type="button"
+                                onClick={() => setContext(true)}
+                              >
+                                What if the most useful insight is the connection between things we
+                                already know?
+                                <span>Explore the source ↗</span>
+                              </button>
+                              <div className={s.related}>
+                                <span>CONNECTED TO</span>
+                                <button type="button" onClick={() => setView("Connections")}>
+                                  3 sources ↗
                                 </button>
-                              ))}
-                            </div>
-                          </>
-                        )}
-                        {view === "Next steps" && (
-                          <>
-                            <p>Keep the next action close to the thinking that inspired it.</p>
-                            <label className={s.task} data-completed={completed}>
-                              <input
-                                type="checkbox"
-                                checked={completed}
-                                onChange={(event) => setCompleted(event.target.checked)}
-                              />
-                              <span>{project.task}</span>
-                            </label>
-                            <p className={s.taskStatus} role="status">
-                              {completed
-                                ? "A little progress. A little more clarity. ✓"
-                                : "One thoughtful next step is enough to start."}
-                            </p>
-                            <button
-                              className={s.backButton}
-                              type="button"
-                              onClick={() => setView("Document")}
-                            >
-                              ← Return to the working note
-                            </button>
-                          </>
-                        )}
+                                <button type="button" onClick={() => setView("Next steps")}>
+                                  1 next step ↗
+                                </button>
+                              </div>
+                              {chapter === 4 && (
+                                <p className={s.review}>
+                                  “Could we look at this from another perspective?”{" "}
+                                  <small>A glimpse of the collaboration vision.</small>
+                                </p>
+                              )}
+                            </>
+                          )}
+                          {view === "Connections" && (
+                            <>
+                              <p>
+                                Three starting points. A clearer picture. Open a source to follow
+                                the thread.
+                              </p>
+                              <div className={s.connections}>
+                                {project.files.map((file, index) => (
+                                  <button
+                                    key={file}
+                                    type="button"
+                                    onClick={() => {
+                                      setSource(index);
+                                      setContext(true);
+                                    }}
+                                  >
+                                    <span className={s.connectionNumber}>0{index + 1}</span>
+                                    <span>
+                                      <small>
+                                        {
+                                          [
+                                            "INFORMS THIS NOTE",
+                                            "ADDS AN OBSERVATION",
+                                            "OPENS A QUESTION",
+                                          ][index]
+                                        }
+                                      </small>
+                                      {file}
+                                    </span>
+                                    <span aria-hidden="true">↗</span>
+                                  </button>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                          {view === "Next steps" && (
+                            <>
+                              <p>Keep the next action close to the thinking that inspired it.</p>
+                              <label className={s.task} data-completed={completed}>
+                                <input
+                                  type="checkbox"
+                                  checked={completed}
+                                  onChange={(event) => setCompleted(event.target.checked)}
+                                />
+                                <span>{project.task}</span>
+                              </label>
+                              <p className={s.taskStatus} role="status">
+                                {completed
+                                  ? "A little progress. A little more clarity. ✓"
+                                  : "One thoughtful next step is enough to start."}
+                              </p>
+                              <button
+                                className={s.backButton}
+                                type="button"
+                                onClick={() => setView("Document")}
+                              >
+                                ← Return to the working note
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-                {context && (
-                  <aside id="source-context" className={s.context} aria-label="Source context">
-                    <div>
-                      <span>KEEP THE CONTEXT</span>
+                  {context && (
+                    <aside id="source-context" className={s.context} aria-label="Source context">
+                      <div>
+                        <span>KEEP THE CONTEXT</span>
+                        <button
+                          type="button"
+                          onClick={() => setContext(false)}
+                          aria-label="Close source context"
+                        >
+                          ×
+                        </button>
+                      </div>
+                      <p className={s.documentLabel}>SOURCE / 0{source + 1}</p>
+                      <h3>{project.files[source]}</h3>
+                      <p>
+                        An idea becomes more useful when you can see where it came from, what it
+                        supports, and which questions it opens.
+                      </p>
+                      <blockquote>Leave a trail your future self can follow.</blockquote>
                       <button
+                        className={s.backButton}
                         type="button"
-                        onClick={() => setContext(false)}
-                        aria-label="Close source context"
+                        onClick={() => {
+                          setContext(false);
+                          setView("Connections");
+                        }}
                       >
-                        ×
+                        See all connections ↗
                       </button>
-                    </div>
-                    <p className={s.documentLabel}>SOURCE / 0{source + 1}</p>
-                    <h3>{project.files[source]}</h3>
-                    <p>
-                      An idea becomes more useful when you can see where it came from, what it
-                      supports, and which questions it opens.
-                    </p>
-                    <blockquote>Leave a trail your future self can follow.</blockquote>
+                    </aside>
+                  )}
+                  <div className={s.workspaceFooter}>
+                    <span>YOUR THINKING, IN CONTEXT</span>
+                    <span>Example workspace · changes stay in this preview</span>
+                  </div>
+                </div>
+                <nav className={s.journeys} aria-label="Try an example workspace">
+                  <span>MAKE IT YOURS</span>
+                  {(Object.keys(journeys) as Journey[]).map((item) => (
                     <button
-                      className={s.backButton}
+                      key={item}
                       type="button"
+                      aria-pressed={journey === item}
                       onClick={() => {
+                        setJourney(item);
+                        setSource(0);
+                        setCompleted(false);
                         setContext(false);
-                        setView("Connections");
                       }}
                     >
-                      See all connections ↗
+                      {item}
                     </button>
-                  </aside>
-                )}
-                <div className={s.workspaceFooter}>
-                  <span>YOUR THINKING, IN CONTEXT</span>
-                  <span>Example workspace · changes stay in this preview</span>
-                </div>
+                  ))}
+                </nav>
               </div>
-              <nav className={s.journeys} aria-label="Try an example workspace">
-                <span>MAKE IT YOURS</span>
-                {(Object.keys(journeys) as Journey[]).map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    aria-pressed={journey === item}
-                    onClick={() => {
-                      setJourney(item);
-                      setSource(0);
-                      setCompleted(false);
-                      setContext(false);
-                    }}
-                  >
-                    {item}
-                  </button>
-                ))}
-              </nav>
-            </div>
-
             </div>
 
             <nav className={s.chapterNav} aria-label="The Nexosophy story">

@@ -1062,7 +1062,7 @@
 .home[data-motion="reduced"] .chapterNav {
   display: none;
 }
-@media (prefers-reduced-motion: reduce), (max-width: 760px), (max-height: 800px) {
+@media (prefers-reduced-motion: reduce), (max-width: 760px), (max-height: 680px) {
   .home .runway {
     height: auto;
   }
@@ -1152,7 +1152,8 @@
   font-family: monospace;
   font-size: 10px;
 }
-.copy h1, .copy h2 {
+.copy h1,
+.copy h2 {
   grid-column: 1;
   grid-row: 2 / 5;
   font-size: clamp(55px, 5.5vw, 90px);
@@ -1206,7 +1207,9 @@
 }
 .workspace {
   border-radius: 6px;
-  box-shadow: 0 20px 60px #2538660d, 0 3px 10px #25386608;
+  box-shadow:
+    0 20px 60px #2538660d,
+    0 3px 10px #25386608;
 }
 .workspaceBody {
   min-height: 320px;
@@ -1266,11 +1269,14 @@
   left: -1%;
   bottom: 2%;
   color: #254ee810;
-  font: 200px/1 Georgia, serif;
+  font:
+    200px / 1 Georgia,
+    serif;
   letter-spacing: -15px;
   z-index: -1;
 }
-.floatingSource, .floatingQuestion {
+.floatingSource,
+.floatingQuestion {
   position: absolute;
   display: flex;
   flex-direction: column;
@@ -1283,7 +1289,9 @@
   box-shadow: 0 10px 25px #263b6010;
   border-radius: 3px;
   z-index: 3;
-  transition: transform 200ms ease, box-shadow 200ms ease;
+  transition:
+    transform 200ms ease,
+    box-shadow 200ms ease;
 }
 .floatingSource {
   left: 0;
@@ -1298,11 +1306,13 @@
   border-color: #dfce84;
   transform: rotate(6deg);
 }
-.floatingSource:hover, .floatingQuestion:hover {
+.floatingSource:hover,
+.floatingQuestion:hover {
   transform: rotate(0) translateY(-5px);
   box-shadow: 0 15px 35px #263b601a;
 }
-.floatingSource small, .floatingQuestion small {
+.floatingSource small,
+.floatingQuestion small {
   font: 8px monospace;
   letter-spacing: 1px;
   color: #68768b;
@@ -1314,10 +1324,13 @@
   font-weight: 500;
 }
 .floatingQuestion strong {
-  font: italic 21px/1.2 Georgia, serif;
+  font:
+    italic 21px / 1.2 Georgia,
+    serif;
   color: #53472d;
 }
-.floatingSource > span:last-child, .floatingQuestion > span:last-child {
+.floatingSource > span:last-child,
+.floatingQuestion > span:last-child {
   font-size: 8px;
   color: #697688;
 }
@@ -1362,13 +1375,15 @@
   margin: 60px 0 20px;
 }
 @media (min-width: 761px) and (max-width: 1100px) {
-  .copy h1, .copy h2 {
+  .copy h1,
+  .copy h2 {
     font-size: 62px;
   }
   .preview {
     width: 72%;
   }
-  .floatingSource, .floatingQuestion {
+  .floatingSource,
+  .floatingQuestion {
     width: 18%;
     padding: 14px;
   }
@@ -1392,7 +1407,8 @@
   .headerNav {
     background: #f5f3ed;
   }
-  .scene, .home[data-motion="reduced"] .scene {
+  .scene,
+  .home[data-motion="reduced"] .scene {
     display: block;
     padding: 110px 6% 35px;
   }
@@ -1400,7 +1416,8 @@
     display: block;
     margin-bottom: 75px;
   }
-  .copy h1, .copy h2 {
+  .copy h1,
+  .copy h2 {
     font-size: clamp(48px, 10vw, 72px);
     letter-spacing: -2.5px;
     margin-bottom: 22px;
@@ -1471,12 +1488,74 @@
     margin-top: 0;
   }
 }
-@media (prefers-reduced-motion: reduce), (max-height: 800px) {
+@media (prefers-reduced-motion: reduce), (max-height: 680px) {
   .scene {
     display: block;
     height: auto;
   }
-  .floatingSource, .floatingQuestion {
+  .floatingSource,
+  .floatingQuestion {
     transition: none;
+  }
+}
+
+@media (min-width: 761px) and (min-height: 681px) and (max-height: 900px) {
+  .scene {
+    padding-top: 94px;
+    padding-bottom: 65px;
+    gap: 18px;
+    min-height: 0;
+  }
+  .copy h1,
+  .copy h2 {
+    font-size: clamp(48px, 4.5vw, 66px);
+    letter-spacing: -2px;
+  }
+  .copy em {
+    letter-spacing: -2px;
+  }
+  .copy .eyebrow {
+    margin-bottom: 10px;
+  }
+  .description {
+    font-size: 12px;
+    margin-bottom: 10px;
+  }
+  .primary {
+    padding: 8px 14px;
+    font-size: 11px;
+  }
+  .note {
+    display: none;
+  }
+  .workspaceBody {
+    min-height: 270px;
+  }
+  .panel {
+    min-height: 230px;
+    padding: 14px 22px;
+  }
+  .panel h3 {
+    font-size: 23px;
+    margin-bottom: 10px;
+  }
+  .panel p:not(.documentLabel) {
+    font-size: 10px;
+    line-height: 1.6;
+  }
+  .excerpt {
+    padding: 9px 12px;
+    margin: 12px 0;
+    font-size: 12px;
+  }
+  .documentLabel {
+    margin-bottom: 10px;
+  }
+  .sidebarNote {
+    display: none;
+  }
+  .chapterNav {
+    bottom: 10px;
+    padding-top: 10px;
   }
 }
