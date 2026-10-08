@@ -21,6 +21,7 @@ import { registerEditorRoutes } from "./editor-routes.js";
 import { registerHistoryRoutes } from "./history-routes.js";
 import { registerIdentityRoutes } from "./identity-routes.js";
 import { registerJobRoutes } from "./job-routes.js";
+import { registerSpatialRoutes } from "./spatial-routes.js";
 import { registerWorkspaceRoutes } from "./workspace-routes.js";
 
 const serviceVersion = process.env.npm_package_version ?? "0.0.0";
@@ -141,6 +142,7 @@ export async function buildApp(
   await registerEditorRoutes(app, pool, runtime.verifier);
   await registerHistoryRoutes(app, pool, runtime.verifier);
   await registerJobRoutes(app, pool, runtime.verifier);
+  await registerSpatialRoutes(app, pool, runtime.verifier);
 
   if (runtime.provider && runtime.identityStore) {
     await registerClerkWebhookRoute(app, pool, runtime.provider, runtime.identityStore);
