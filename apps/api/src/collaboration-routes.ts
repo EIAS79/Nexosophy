@@ -93,9 +93,7 @@ export async function registerCollaborationRoutes(
           "/v1/rooms/" +
           encodeURIComponent(workspaceId) +
           "/" +
-          encodeURIComponent(nodeId) +
-          "?token=" +
-          encodeURIComponent(token),
+          encodeURIComponent(nodeId),
         expiresAt: new Date(exp * 1000).toISOString(),
         permissionVersion: authorization.permissionVersion,
         capabilities,
