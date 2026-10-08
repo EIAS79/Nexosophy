@@ -18,6 +18,10 @@ export default async function WorkspaceFilesPage({
 
   return (
     <>
+      <div className="workspace-subnav" aria-label="Workspace content utilities">
+        <a href={`/app/workspaces/${workspaceId}/trash`}>Trash</a>
+        <a href={`/app/workspaces/${workspaceId}/settings/audit`}>Audit log</a>
+      </div>
       <UploadManager workspaceId={workspaceId} />
       <ContentExplorer
       workspaceId={workspaceId}
