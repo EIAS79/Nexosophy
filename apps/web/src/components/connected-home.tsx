@@ -103,7 +103,7 @@ export function ConnectedHome() {
     const track = runway.current;
     if (!element || !track) return;
     const fallback = window.matchMedia(
-      "(prefers-reduced-motion: reduce), (max-width: 760px) and (max-height: 740px)",
+      "(prefers-reduced-motion: reduce), (max-width: 760px) and (max-height: 820px)",
     );
     let frame = 0;
     let start = 0;
@@ -117,7 +117,7 @@ export function ConnectedHome() {
       element.style.setProperty("--progress", String(progress));
       for (let index = 0; index < chapters.length; index++) {
         const delta = position - index;
-        const opacity = Math.max(0, 1 - Math.max(0, Math.abs(delta) - 0.12) / 0.36);
+        const opacity = Math.max(0, 1 - Math.max(0, Math.abs(delta) - 0.12) / 0.38);
         element.style.setProperty(`--copy-${index}`, String(opacity));
         element.style.setProperty(
           `--shift-${index}`,
@@ -181,10 +181,15 @@ export function ConnectedHome() {
       <noscript>
         <style>{`.${s.runway}{height:auto}.${s.scene}{position:relative;height:auto;min-height:0;padding-top:120px}.${s.copyStack}{display:block}.${s.copy}{opacity:1;transform:none;position:relative;margin-bottom:64px}.${s.chapterNav}{display:none}`}</style>
       </noscript>
-      <a className={s.skip} href="#chapter-0">Skip to content</a>
+      <a className={s.skip} href="#chapter-0">
+        Skip to content
+      </a>
       <header className={s.header}>
         <Link href="/" className={s.brand} aria-label="Nexosophy home">
-          <span className={s.mark} aria-hidden="true">n.</span> nexosophy
+          <span className={s.mark} aria-hidden="true">
+            n.
+          </span>{" "}
+          nexosophy
         </Link>
         <button
           type="button"
@@ -196,11 +201,25 @@ export function ConnectedHome() {
           {menu ? "Close" : "Menu"}
         </button>
         <nav id="home-navigation" className={s.headerNav} data-open={menu} aria-label="Main">
-          <button type="button" onClick={() => goTo(1)}>The workspace</button>
-          <button type="button" onClick={() => goTo(4)}>Who it’s for</button>
-          <a href="#questions" onClick={() => setMenu(false)}>Questions</a>
+          <button type="button" onClick={() => goTo(1)}>
+            The workspace
+          </button>
+          <button type="button" onClick={() => goTo(4)}>
+            Who it’s for
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setMenu(false);
+              document.getElementById("questions")?.scrollIntoView();
+            }}
+          >
+            Questions
+          </button>
           <Link href="/sign-in">Sign in</Link>
-          <Link className={s.headerCta} href="/sign-up">Find your starting point ↗</Link>
+          <Link className={s.headerCta} href="/sign-up">
+            Find your starting point ↗
+          </Link>
         </nav>
       </header>
 
@@ -219,20 +238,30 @@ export function ConnectedHome() {
                 >
                   <p className={s.eyebrow}>{item.label}</p>
                   {index === 0 ? (
-                    <h1>{item.title}<em>{item.accent}</em></h1>
+                    <h1>
+                      {item.title}
+                      <em>{item.accent}</em>
+                    </h1>
                   ) : (
-                    <h2>{item.title}<em>{item.accent}</em></h2>
+                    <h2>
+                      {item.title}
+                      <em>{item.accent}</em>
+                    </h2>
                   )}
                   <p className={s.description}>{item.body}</p>
                   {index === 5 ? (
-                    <Link className={s.primary} href="/sign-up">Start with an idea <span>↗</span></Link>
+                    <Link className={s.primary} href="/sign-up">
+                      Start with an idea <span>↗</span>
+                    </Link>
                   ) : (
                     <button className={s.primary} type="button" onClick={() => goTo(index + 1)}>
                       {index === 0 ? "Explore the workspace" : "Follow the thread"} <span>↓</span>
                     </button>
                   )}
                   <p className={s.note}>
-                    {index === 0 ? "A little less scattered. A lot more possible." : `0${index} / One idea, more possibilities.`}
+                    {index === 0
+                      ? "A little less scattered. A lot more possible."
+                      : `0${index} / One idea, more possibilities.`}
                   </p>
                 </section>
               ))}
@@ -240,33 +269,55 @@ export function ConnectedHome() {
 
             <div className={s.preview}>
               <div className={s.previewLabel}>
-                <span><i /> A WORKSPACE, TAKING SHAPE</span>
-                <button type="button" onClick={() => dialog.current?.showModal()}>About this preview ↗</button>
+                <span>
+                  <i /> A WORKSPACE, TAKING SHAPE
+                </span>
+                <button type="button" onClick={() => dialog.current?.showModal()}>
+                  About this preview ↗
+                </button>
               </div>
               <div className={s.workspace}>
                 <div className={s.windowBar}>
                   <span className={s.windowMark}>n.</span>
                   <span>{project.project}</span>
                   <span className={s.previewBadge}>Interactive concept</span>
-                  <button type="button" onClick={() => setContext(!context)} aria-expanded={context} aria-controls="source-context">Context +</button>
+                  <button
+                    type="button"
+                    onClick={() => setContext(!context)}
+                    aria-expanded={context}
+                    aria-controls="source-context"
+                  >
+                    Context +
+                  </button>
                 </div>
                 <div className={s.workspaceBody}>
                   <aside className={s.sidebar} aria-label="Example sources">
                     <p>YOUR SPACE</p>
                     <strong>{journey}</strong>
-                    <p className={s.sourceLabel}>SOURCES <span>03</span></p>
+                    <p className={s.sourceLabel}>
+                      SOURCES <span>03</span>
+                    </p>
                     {project.files.map((file, index) => (
                       <button
                         key={file}
                         type="button"
                         aria-pressed={source === index}
-                        onClick={() => { setSource(index); setView("Document"); }}
+                        onClick={() => {
+                          setSource(index);
+                          setView("Document");
+                        }}
                       >
-                        <span aria-hidden="true">{index === 0 ? "▤" : index === 1 ? "◌" : "↗"}</span>
+                        <span aria-hidden="true">
+                          {index === 0 ? "▤" : index === 1 ? "◌" : "↗"}
+                        </span>
                         {file}
                       </button>
                     ))}
-                    <div className={s.sidebarNote}>Room for the<br />bigger picture.</div>
+                    <div className={s.sidebarNote}>
+                      Room for the
+                      <br />
+                      bigger picture.
+                    </div>
                   </aside>
                   <div className={s.editor}>
                     <div className={s.tabs} role="tablist" aria-label="Workspace view">
@@ -283,7 +334,8 @@ export function ConnectedHome() {
                           onKeyDown={(event) => {
                             let target = index;
                             if (event.key === "ArrowRight") target = (index + 1) % views.length;
-                            else if (event.key === "ArrowLeft") target = (index + views.length - 1) % views.length;
+                            else if (event.key === "ArrowLeft")
+                              target = (index + views.length - 1) % views.length;
                             else if (event.key === "Home") target = 0;
                             else if (event.key === "End") target = views.length - 1;
                             else return;
@@ -291,43 +343,92 @@ export function ConnectedHome() {
                             setView(views[target] ?? "Document");
                             document.getElementById(`workspace-tab-${target}`)?.focus();
                           }}
-                        >{tab}</button>
+                        >
+                          {tab}
+                        </button>
                       ))}
                     </div>
                     <div
                       id="workspace-view"
                       role="tabpanel"
                       aria-labelledby={`workspace-tab-${views.indexOf(view)}`}
-                      tabIndex={0}
                       className={s.panel}
                     >
                       <div key={`${view}-${journey}-${source}`} className={s.panelContent}>
-                        <p className={s.documentLabel}>{view === "Document" ? "WORKING NOTE / 01" : "FOLLOW THE IDEA"}</p>
-                        <h3>{view === "Document" ? (source === 0 ? project.note : project.files[source]) : view === "Connections" ? "Nothing in isolation." : "A little further forward."}</h3>
+                        <p className={s.documentLabel}>
+                          {view === "Document" ? "WORKING NOTE / 01" : "FOLLOW THE IDEA"}
+                        </p>
+                        <h3>
+                          {view === "Document"
+                            ? source === 0
+                              ? project.note
+                              : project.files[source]
+                            : view === "Connections"
+                              ? "Nothing in isolation."
+                              : "A little further forward."}
+                        </h3>
                         {view === "Document" && (
                           <>
                             <p className={s.question}>{project.question}</p>
-                            <p>Start with what you notice. Collect the evidence, leave space for questions, and let the next connection emerge.</p>
-                            <button className={s.excerpt} type="button" onClick={() => setContext(true)}>
-                              What if the most useful insight is the connection between things we already know?
+                            <p>
+                              Start with what you notice. Collect the evidence, leave space for
+                              questions, and let the next connection emerge.
+                            </p>
+                            <button
+                              className={s.excerpt}
+                              type="button"
+                              onClick={() => setContext(true)}
+                            >
+                              What if the most useful insight is the connection between things we
+                              already know?
                               <span>Explore the source ↗</span>
                             </button>
                             <div className={s.related}>
                               <span>CONNECTED TO</span>
-                              <button type="button" onClick={() => setView("Connections")}>3 sources ↗</button>
-                              <button type="button" onClick={() => setView("Next steps")}>1 next step ↗</button>
+                              <button type="button" onClick={() => setView("Connections")}>
+                                3 sources ↗
+                              </button>
+                              <button type="button" onClick={() => setView("Next steps")}>
+                                1 next step ↗
+                              </button>
                             </div>
-                            {chapter === 4 && <p className={s.review}>“Could we look at this from another perspective?” <small>A glimpse of the collaboration vision.</small></p>}
+                            {chapter === 4 && (
+                              <p className={s.review}>
+                                “Could we look at this from another perspective?”{" "}
+                                <small>A glimpse of the collaboration vision.</small>
+                              </p>
+                            )}
                           </>
                         )}
                         {view === "Connections" && (
                           <>
-                            <p>Three starting points. A clearer picture. Open a source to follow the thread.</p>
+                            <p>
+                              Three starting points. A clearer picture. Open a source to follow the
+                              thread.
+                            </p>
                             <div className={s.connections}>
                               {project.files.map((file, index) => (
-                                <button key={file} type="button" onClick={() => { setSource(index); setContext(true); }}>
+                                <button
+                                  key={file}
+                                  type="button"
+                                  onClick={() => {
+                                    setSource(index);
+                                    setContext(true);
+                                  }}
+                                >
                                   <span className={s.connectionNumber}>0{index + 1}</span>
-                                  <span><small>{["INFORMS THIS NOTE", "ADDS AN OBSERVATION", "OPENS A QUESTION"][index]}</small>{file}</span>
+                                  <span>
+                                    <small>
+                                      {
+                                        [
+                                          "INFORMS THIS NOTE",
+                                          "ADDS AN OBSERVATION",
+                                          "OPENS A QUESTION",
+                                        ][index]
+                                      }
+                                    </small>
+                                    {file}
+                                  </span>
                                   <span aria-hidden="true">↗</span>
                                 </button>
                               ))}
@@ -338,11 +439,25 @@ export function ConnectedHome() {
                           <>
                             <p>Keep the next action close to the thinking that inspired it.</p>
                             <label className={s.task} data-completed={completed}>
-                              <input type="checkbox" checked={completed} onChange={(event) => setCompleted(event.target.checked)} />
+                              <input
+                                type="checkbox"
+                                checked={completed}
+                                onChange={(event) => setCompleted(event.target.checked)}
+                              />
                               <span>{project.task}</span>
                             </label>
-                            <p className={s.taskStatus} role="status">{completed ? "A little progress. A little more clarity. ✓" : "One thoughtful next step is enough to start."}</p>
-                            <button className={s.backButton} type="button" onClick={() => setView("Document")}>← Return to the working note</button>
+                            <p className={s.taskStatus} role="status">
+                              {completed
+                                ? "A little progress. A little more clarity. ✓"
+                                : "One thoughtful next step is enough to start."}
+                            </p>
+                            <button
+                              className={s.backButton}
+                              type="button"
+                              onClick={() => setView("Document")}
+                            >
+                              ← Return to the working note
+                            </button>
                           </>
                         )}
                       </div>
@@ -351,20 +466,56 @@ export function ConnectedHome() {
                 </div>
                 {context && (
                   <aside id="source-context" className={s.context} aria-label="Source context">
-                    <div><span>KEEP THE CONTEXT</span><button type="button" onClick={() => setContext(false)} aria-label="Close source context">×</button></div>
+                    <div>
+                      <span>KEEP THE CONTEXT</span>
+                      <button
+                        type="button"
+                        onClick={() => setContext(false)}
+                        aria-label="Close source context"
+                      >
+                        ×
+                      </button>
+                    </div>
                     <p className={s.documentLabel}>SOURCE / 0{source + 1}</p>
                     <h3>{project.files[source]}</h3>
-                    <p>An idea becomes more useful when you can see where it came from, what it supports, and which questions it opens.</p>
+                    <p>
+                      An idea becomes more useful when you can see where it came from, what it
+                      supports, and which questions it opens.
+                    </p>
                     <blockquote>Leave a trail your future self can follow.</blockquote>
-                    <button className={s.backButton} type="button" onClick={() => { setContext(false); setView("Connections"); }}>See all connections ↗</button>
+                    <button
+                      className={s.backButton}
+                      type="button"
+                      onClick={() => {
+                        setContext(false);
+                        setView("Connections");
+                      }}
+                    >
+                      See all connections ↗
+                    </button>
                   </aside>
                 )}
-                <div className={s.workspaceFooter}><span>YOUR THINKING, IN CONTEXT</span><span>Example workspace · changes stay in this preview</span></div>
+                <div className={s.workspaceFooter}>
+                  <span>YOUR THINKING, IN CONTEXT</span>
+                  <span>Example workspace · changes stay in this preview</span>
+                </div>
               </div>
               <nav className={s.journeys} aria-label="Try an example workspace">
                 <span>MAKE IT YOURS</span>
                 {(Object.keys(journeys) as Journey[]).map((item) => (
-                  <button key={item} type="button" aria-pressed={journey === item} onClick={() => { setJourney(item); setSource(0); setCompleted(false); setContext(false); }}>{item}</button>
+                  <button
+                    key={item}
+                    type="button"
+                    aria-pressed={journey === item}
+                    onClick={() => {
+                      setJourney(item);
+                      setSource(0);
+                      setCompleted(false);
+                      setContext(false);
+                    }}
+                  >
+                    {item}
+                  </button>
                 ))}
               </nav>
             </div>
@@ -372,38 +523,88 @@ export function ConnectedHome() {
             <nav className={s.chapterNav} aria-label="The Nexosophy story">
               <div className={s.progress} />
               <span className={s.scrollHint}>SCROLL TO EXPLORE ↓</span>
-              <div>{chapters.map((item, index) => (
-                <button key={item.name} type="button" aria-current={chapter === index ? "step" : undefined} onClick={() => goTo(index)}><span>0{index + 1}</span>{item.name}</button>
-              ))}</div>
+              <div>
+                {chapters.map((item, index) => (
+                  <button
+                    key={item.name}
+                    type="button"
+                    aria-current={chapter === index ? "step" : undefined}
+                    onClick={() => goTo(index)}
+                  >
+                    <span>0{index + 1}</span>
+                    {item.name}
+                  </button>
+                ))}
+              </div>
               <span className={s.counter}>0{chapter + 1} / 06</span>
             </nav>
           </div>
         </div>
 
         <section id="questions" className={s.questions}>
-          <div><p className={s.eyebrow}>A FEW THINGS TO KNOW</p><h2>Curiosity,<br /><em>welcomed.</em></h2><p>Good questions are always a good place to start.</p></div>
+          <div>
+            <p className={s.eyebrow}>A FEW THINGS TO KNOW</p>
+            <h2>
+              Curiosity,
+              <br />
+              <em>welcomed.</em>
+            </h2>
+            <p>Good questions are always a good place to start.</p>
+          </div>
           <div className={s.answers}>
             {[
-              ["What is Nexosophy?", "Nexosophy is a developing workspace for connected thinking: bringing notes, sources and work into a shared context. This homepage explores that direction."],
-              ["Is everything in this preview available?", "No. The interactive workspace is an illustrative concept. Connections, next steps and collaboration shown here represent the product vision, not a promise that every capability has shipped."],
-              ["Who is it for?", "Students, researchers, laboratory teams, reporters, and anyone turning scattered information into considered work. Try the example workspaces above to explore different starting points."],
-              ["Do I need AI to use it?", "The core idea is your thinking, with its context intact. AI assistance is an optional part of the product vision, not a requirement for making meaningful connections."],
+              [
+                "What is Nexosophy?",
+                "Nexosophy is a developing workspace for connected thinking: bringing notes, sources and work into a shared context. This homepage explores that direction.",
+              ],
+              [
+                "Is everything in this preview available?",
+                "No. The interactive workspace is an illustrative concept. Connections, next steps and collaboration shown here represent the product vision, not a promise that every capability has shipped.",
+              ],
+              [
+                "Who is it for?",
+                "Students, researchers, laboratory teams, reporters, and anyone turning scattered information into considered work. Try the example workspaces above to explore different starting points.",
+              ],
+              [
+                "Do I need AI to use it?",
+                "The core idea is your thinking, with its context intact. AI assistance is an optional part of the product vision, not a requirement for making meaningful connections.",
+              ],
             ].map(([question, answer]) => (
-              <details key={question}><summary>{question}<span aria-hidden="true">+</span></summary><p>{answer}</p></details>
+              <details key={question}>
+                <summary>
+                  {question}
+                  <span aria-hidden="true">+</span>
+                </summary>
+                <p>{answer}</p>
+              </details>
             ))}
           </div>
         </section>
       </main>
       <footer className={s.footer}>
-        <Link className={s.brand} href="/"><span className={s.mark} aria-hidden="true">n.</span> nexosophy</Link>
+        <Link className={s.brand} href="/">
+          <span className={s.mark} aria-hidden="true">
+            n.
+          </span>{" "}
+          nexosophy
+        </Link>
         <p>A place for your thinking to become something.</p>
-        <button type="button" onClick={() => goTo(0)}>Back to the beginning ↑</button>
+        <button type="button" onClick={() => goTo(0)}>
+          Back to the beginning ↑
+        </button>
       </footer>
       <dialog ref={dialog} className={s.dialog} aria-labelledby="preview-title">
-        <form method="dialog"><button type="submit" aria-label="Close preview information">×</button></form>
+        <form method="dialog">
+          <button type="submit" aria-label="Close preview information">
+            ×
+          </button>
+        </form>
         <p className={s.eyebrow}>AN INTERACTIVE CONCEPT</p>
         <h2 id="preview-title">A glimpse of what’s possible.</h2>
-        <p>Explore sources, switch perspectives and check off a next step. These examples demonstrate the direction of Nexosophy; they don’t represent a complete list of available features.</p>
+        <p>
+          Explore sources, switch perspectives and check off a next step. These examples demonstrate
+          the direction of Nexosophy; they don’t represent a complete list of available features.
+        </p>
         <p>Your interactions here stay in this preview and aren’t saved to an account.</p>
       </dialog>
     </div>
