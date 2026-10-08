@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 
 import type { Pool } from "pg";
 
+import { materializeSpatialRegisters } from "./spatial-store.js";
 import { appendWorkspaceAudit, withWorkspaceTransaction } from "./workspace-store-common.js";
 
 export type CrdtRegister = {
@@ -213,6 +214,13 @@ export async function appendCollaborationUpdate(
     );
     const row = inserted.rows[0];
     if (!row) throw new Error("CRDT_UPDATE_PERSIST_FAILED");
+
+    await materializeSpatialRegisters(client, {
+      workspaceId: input.workspaceId,
+      nodeId: input.nodeId,
+      actorUserId: input.actorUserId,
+      registers: input.registers,
+    });
 
     await client.query(
       `update "collaboration_rooms"
