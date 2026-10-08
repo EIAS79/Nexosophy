@@ -21,6 +21,7 @@ import { registerEditorRoutes } from "./editor-routes.js";
 import { registerHistoryRoutes } from "./history-routes.js";
 import { registerIdentityRoutes } from "./identity-routes.js";
 import { registerJobRoutes } from "./job-routes.js";
+import { registerSearchRoutes } from "./search-routes.js";
 import { registerSpatialRoutes } from "./spatial-routes.js";
 import { registerWorkspaceRoutes } from "./workspace-routes.js";
 
@@ -143,6 +144,7 @@ export async function buildApp(
   await registerHistoryRoutes(app, pool, runtime.verifier);
   await registerJobRoutes(app, pool, runtime.verifier);
   await registerSpatialRoutes(app, pool, runtime.verifier);
+  await registerSearchRoutes(app, pool, runtime.verifier);
 
   if (runtime.provider && runtime.identityStore) {
     await registerClerkWebhookRoute(app, pool, runtime.provider, runtime.identityStore);

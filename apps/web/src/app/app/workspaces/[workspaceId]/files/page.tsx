@@ -20,6 +20,8 @@ export default async function WorkspaceFilesPage({
     <>
       <div className="workspace-subnav" aria-label="Workspace content utilities">
         <a href={`/app/workspaces/${workspaceId}/notes`}>Notes</a>
+        <a href={`/app/workspaces/${workspaceId}/search`}>Search</a>
+        <a href={`/app/workspaces/${workspaceId}/graph`}>Graph</a>
         <a href={`/app/workspaces/${workspaceId}/trash`}>Trash</a>
         <a href={`/app/workspaces/${workspaceId}/settings/audit`}>Audit log</a>
       </div>

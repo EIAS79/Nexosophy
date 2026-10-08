@@ -1,6 +1,7 @@
 import { parseMediaServicesEnv, parseOptionalStorageEnv, parseWorkerEnv } from "@nexosophy/config";
 import {
   claimDeletionJob,
+  claimNextDurableJob,
   claimNextAssetJob,
   claimNextContentOperation,
   claimOutboxEvent,
@@ -8,20 +9,27 @@ import {
   completeAssetScan,
   completeAssetVariant,
   completeDeletionJob,
+  completeDurableJob,
   ContentStoreError,
   createDatabasePool,
+  enqueueDurableJob,
   failAssetJob,
   failContentOperation,
   failDeletionJob,
+  failDurableJob,
   failOutboxEvent,
   getAsset,
   getAssetStorageKeys,
+  indexSearchNode,
   enqueueExpiredTrash,
   listExpiredMultipartUploads,
   markExpiredUpload,
   markOutboxPublished,
   processContentOperationBatch,
   processDeletionBatch,
+  reconcileSearchIndexBatch,
+  reindexWorkspaceSearchBatch,
+  updateDurableJobProgress,
 } from "@nexosophy/db";
 import { createLogger } from "@nexosophy/observability";
 import { S3CompatibleStorageAdapter } from "@nexosophy/storage";
@@ -67,6 +75,34 @@ const worker = new Worker(
   "nexosophy-system",
   async (job) => {
     logger.info({ jobId: job.id, jobName: job.name }, "Processing system job");
+    const data = job.data as {
+      outboxEventId?: string;
+      workspaceId?: string | null;
+      aggregateType?: string;
+      aggregateId?: string;
+      payload?: Record<string, unknown>;
+    };
+    if (data.workspaceId && data.outboxEventId) {
+      const payloadNodeId =
+        typeof data.payload?.nodeId === "string" ? data.payload.nodeId : null;
+      const aggregateNodeId =
+        new Set(["content", "document", "spatial_document"]).has(
+          data.aggregateType ?? "",
+        ) && typeof data.aggregateId === "string"
+          ? data.aggregateId
+          : null;
+      const nodeId = payloadNodeId ?? aggregateNodeId;
+      if (nodeId) {
+        await enqueueDurableJob(contentPool, {
+          workspaceId: data.workspaceId,
+          queue: "search",
+          jobType: "index_node",
+          payload: { nodeId },
+          dedupeKey: "search-outbox-" + data.outboxEventId,
+          maxAttempts: 8,
+        });
+      }
+    }
     return { ok: true };
   },
   {
@@ -427,10 +463,108 @@ async function runDeletionLoop(): Promise<void> {
   }
 }
 
+
+let lastSearchReconcileAt = 0;
+
+async function runSearchLoop(): Promise<void> {
+  while (!stopping) {
+    try {
+      if (Date.now() - lastSearchReconcileAt > 15_000) {
+        lastSearchReconcileAt = Date.now();
+        const reconciled = await reconcileSearchIndexBatch(contentPool, 100);
+        if (reconciled.indexed > 0) {
+          logger.info(
+            { indexed: reconciled.indexed, workspaces: reconciled.workspaces.length },
+            "Search reconciliation indexed stale nodes",
+          );
+        }
+      }
+
+      const job = await claimNextDurableJob(contentPool, "search", workerId);
+      if (!job) {
+        await delay(500);
+        continue;
+      }
+
+      try {
+        if (job.jobType === "index_node") {
+          const nodeId = typeof job.payload.nodeId === "string" ? job.payload.nodeId : "";
+          if (!job.workspaceId || !nodeId) throw new Error("Invalid index_node payload.");
+          const outcome = await indexSearchNode(contentPool, job.workspaceId, nodeId);
+          await completeDurableJob(contentPool, job.id, { outcome, nodeId });
+          continue;
+        }
+
+        if (job.jobType === "reindex_workspace") {
+          if (!job.workspaceId) throw new Error("Workspace is required for reindex.");
+          await contentPool.query(
+            `insert into "search_index_state"
+               ("workspace_id", "last_backfill_started_at", "updated_at")
+             values ($1, now(), now())
+             on conflict ("workspace_id")
+             do update set "last_backfill_started_at" = now(),
+                           "last_error" = null, "updated_at" = now()`,
+            [job.workspaceId],
+          );
+          let cursor: string | undefined;
+          let processed = 0;
+          while (!stopping) {
+            const batch = await reindexWorkspaceSearchBatch(contentPool, {
+              workspaceId: job.workspaceId,
+              afterNodeId: cursor,
+              limit: 100,
+            });
+            processed += batch.processed;
+            await updateDurableJobProgress(contentPool, job.id, {
+              processed,
+              cursor: batch.nextCursor,
+            });
+            if (batch.done) break;
+            cursor = batch.nextCursor ?? undefined;
+            await delay(20);
+          }
+          await contentPool.query(
+            `update "search_index_state"
+             set "last_backfill_completed_at" = now(), "updated_at" = now()
+             where "workspace_id" = $1`,
+            [job.workspaceId],
+          );
+          await completeDurableJob(contentPool, job.id, { processed, completed: true });
+          continue;
+        }
+
+        throw new Error("Unknown search job type: " + job.jobType);
+      } catch (error) {
+        await failDurableJob(contentPool, job.id, {
+          code: "SEARCH_JOB_FAILED",
+          message: error instanceof Error ? error.message : "Unknown search job failure.",
+          retryable: true,
+        });
+        if (job.workspaceId) {
+          await contentPool.query(
+            `insert into "search_index_state" ("workspace_id", "last_error", "updated_at")
+             values ($1, $2, now())
+             on conflict ("workspace_id")
+             do update set "last_error" = excluded."last_error", "updated_at" = now()`,
+            [
+              job.workspaceId,
+              error instanceof Error ? error.message.slice(0, 1000) : "Unknown search failure.",
+            ],
+          );
+        }
+      }
+    } catch (error) {
+      logger.error({ err: error }, "Search indexing loop failed");
+      await delay(750);
+    }
+  }
+}
+
 const contentLoop = runContentOperationLoop();
 const assetLoop = runAssetOperationLoop();
 const outboxLoop = runOutboxPublisherLoop();
 const deletionLoop = runDeletionLoop();
+const searchLoop = runSearchLoop();
 const health = Fastify({ loggerInstance: logger });
 
 health.get("/health", async () => ({
@@ -466,7 +600,7 @@ async function shutdown(signal: string) {
   logger.info({ signal }, "Shutting down worker");
   stopping = true;
   await health.close();
-  await Promise.all([contentLoop, assetLoop, outboxLoop, deletionLoop]);
+  await Promise.all([contentLoop, assetLoop, outboxLoop, deletionLoop, searchLoop]);
   await worker.close();
   await systemQueue.close();
   await contentPool.end();
@@ -489,6 +623,7 @@ logger.info(
     outboxPublisher: true,
     retentionSweeper: true,
     permanentDeletion: true,
+    searchIndexing: true,
     storageConfigured: Boolean(storage),
   },
   "Worker started",

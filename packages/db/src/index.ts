@@ -40,3 +40,5 @@ export * from "./history-store.js";
 export * from "./collaboration-store.js";
 
 export * from "./spatial-store.js";
+
+export * from "./search-store.js";

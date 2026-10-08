@@ -1,4 +1,4 @@
-import { CommandPalette, Tree } from "@nexosophy/ui";
+import { Tree } from "@nexosophy/ui";
 import type { ReactNode } from "react";
 
 import { switchWorkspaceAction } from "../lib/workspace-actions";
@@ -6,6 +6,7 @@ import { switchWorkspaceAction } from "../lib/workspace-actions";
 import { appNavigation, mobileNavigation } from "../lib/navigation";
 import type { ShellWorkspace } from "../lib/shell-data";
 import { AppearanceControl } from "./appearance-control";
+import { WorkspaceCommandPalette } from "./workspace-command-palette";
 
 function WorkspacePane({ workspace, workspaces }: { workspace: ShellWorkspace; workspaces: readonly { id: string; name: string }[] }) {
   return (
@@ -88,7 +89,7 @@ export function AppShell({
           </nav>
 
           <div className="app-topbar__tools">
-            <CommandPalette commands={commands} />
+            <WorkspaceCommandPalette workspaceId={workspace.id} commands={commands} />
             <AppearanceControl />
           </div>
         </header>
