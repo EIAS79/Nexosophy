@@ -36,3 +36,5 @@ export * from "./document-store.js";
 export * from "./job-store.js";
 
 export * from "./history-store.js";
+
+export * from "./collaboration-store.js";
