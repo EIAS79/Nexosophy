@@ -17,6 +17,7 @@ import { createAuthRuntime } from "./auth-runtime.js";
 import { registerClerkWebhookRoute } from "./clerk-webhook.js";
 import { registerContentRoutes } from "./content-routes.js";
 import { registerEditorRoutes } from "./editor-routes.js";
+import { registerHistoryRoutes } from "./history-routes.js";
 import { registerIdentityRoutes } from "./identity-routes.js";
 import { registerJobRoutes } from "./job-routes.js";
 import { registerWorkspaceRoutes } from "./workspace-routes.js";
@@ -136,6 +137,7 @@ export async function buildApp(
   await registerContentRoutes(app, pool, runtime.verifier);
   await registerAssetRoutes(app, pool, storage, runtime.verifier);
   await registerEditorRoutes(app, pool, runtime.verifier);
+  await registerHistoryRoutes(app, pool, runtime.verifier);
   await registerJobRoutes(app, pool, runtime.verifier);
 
   if (runtime.provider && runtime.identityStore) {
