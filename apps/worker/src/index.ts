@@ -1,22 +1,27 @@
 import { parseMediaServicesEnv, parseOptionalStorageEnv, parseWorkerEnv } from "@nexosophy/config";
 import {
+  claimDeletionJob,
   claimNextAssetJob,
   claimNextContentOperation,
   claimOutboxEvent,
   completeAssetCleanup,
   completeAssetScan,
   completeAssetVariant,
+  completeDeletionJob,
   ContentStoreError,
   createDatabasePool,
   failAssetJob,
   failContentOperation,
+  failDeletionJob,
   failOutboxEvent,
   getAsset,
   getAssetStorageKeys,
+  enqueueExpiredTrash,
   listExpiredMultipartUploads,
   markExpiredUpload,
   markOutboxPublished,
   processContentOperationBatch,
+  processDeletionBatch,
 } from "@nexosophy/db";
 import { createLogger } from "@nexosophy/observability";
 import { S3CompatibleStorageAdapter } from "@nexosophy/storage";
@@ -371,9 +376,61 @@ async function runOutboxPublisherLoop(): Promise<void> {
   }
 }
 
+
+let lastRetentionSweepAt = 0;
+
+async function runDeletionLoop(): Promise<void> {
+  while (!stopping) {
+    try {
+      if (Date.now() - lastRetentionSweepAt > 60_000) {
+        lastRetentionSweepAt = Date.now();
+        const enqueued = await enqueueExpiredTrash(contentPool, 100);
+        if (enqueued > 0) {
+          logger.info({ enqueued }, "Retention sweeper queued expired trash");
+        }
+      }
+
+      const job = await claimDeletionJob(contentPool, workerId);
+      if (!job) {
+        await delay(500);
+        continue;
+      }
+
+      try {
+        let status: "running" | "succeeded" = "running";
+        while (!stopping && status === "running") {
+          status = await processDeletionBatch(contentPool, job, 200);
+        }
+        if (status === "succeeded") {
+          await completeDeletionJob(contentPool, job);
+          logger.info(
+            {
+              deletionJobId: job.id,
+              rootNodeId: job.rootNodeId,
+              totalNodes: job.totalNodes,
+            },
+            "Permanent deletion completed",
+          );
+        }
+      } catch (error) {
+        await failDeletionJob(
+          contentPool,
+          job,
+          error instanceof Error ? error : new Error("Unknown deletion failure."),
+        );
+        logger.error({ err: error, deletionJobId: job.id }, "Permanent deletion batch failed");
+      }
+    } catch (error) {
+      logger.error({ err: error }, "Deletion/retention loop failed");
+      await delay(750);
+    }
+  }
+}
+
 const contentLoop = runContentOperationLoop();
 const assetLoop = runAssetOperationLoop();
 const outboxLoop = runOutboxPublisherLoop();
+const deletionLoop = runDeletionLoop();
 const health = Fastify({ loggerInstance: logger });
 
 health.get("/health", async () => ({
@@ -409,7 +466,7 @@ async function shutdown(signal: string) {
   logger.info({ signal }, "Shutting down worker");
   stopping = true;
   await health.close();
-  await Promise.all([contentLoop, assetLoop, outboxLoop]);
+  await Promise.all([contentLoop, assetLoop, outboxLoop, deletionLoop]);
   await worker.close();
   await systemQueue.close();
   await contentPool.end();
@@ -430,6 +487,8 @@ logger.info(
     contentBatchSize: 200,
     assetProcessing: true,
     outboxPublisher: true,
+    retentionSweeper: true,
+    permanentDeletion: true,
     storageConfigured: Boolean(storage),
   },
   "Worker started",
