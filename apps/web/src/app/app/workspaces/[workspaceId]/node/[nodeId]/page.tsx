@@ -1,7 +1,9 @@
 import type { ContentNode, DocumentRecord } from "@nexosophy/contracts";
 
 import { AssetViewer } from "../../../../../../components/asset-viewer";
+import { CollaborationPanel } from "../../../../../../components/collaboration-panel";
 import { DocumentHistoryPanel } from "../../../../../../components/document-history-panel";
+import { RealtimeRoomProvider } from "../../../../../../components/realtime-room";
 import { RichDocumentEditor } from "../../../../../../components/rich-document-editor";
 import { nexosophyApi } from "../../../../../../lib/api-server";
 import { resolveEditorPlugin } from "../../../../../../lib/editor-registry";
@@ -64,15 +66,16 @@ export default async function WorkspaceNodePage({
         </a>
       </header>
 
-      {assetId ? (
-        <AssetViewer workspaceId={workspaceId} assetId={assetId} />
-      ) : document ? (
-        <>
-          <RichDocumentEditor workspaceId={workspaceId} node={node} initialDocument={document} />
-          <DocumentHistoryPanel workspaceId={workspaceId} nodeId={node.id} />
-        </>
-      ) : (
-      <div className="content-node-placeholder">
+      <RealtimeRoomProvider workspaceId={workspaceId} nodeId={node.id}>
+        {assetId ? (
+          <AssetViewer workspaceId={workspaceId} assetId={assetId} />
+        ) : document ? (
+          <>
+            <RichDocumentEditor workspaceId={workspaceId} node={node} initialDocument={document} />
+            <DocumentHistoryPanel workspaceId={workspaceId} nodeId={node.id} />
+          </>
+        ) : (
+        <div className="content-node-placeholder">
         <div>
           <p className="eyebrow">Universal node surface</p>
           <h2>{node.name}</h2>
@@ -99,8 +102,10 @@ export default async function WorkspaceNodePage({
             <dd>{node.hasChildren ? "Yes" : "No"}</dd>
           </div>
         </dl>
-      </div>
-      )}
+        </div>
+        )}
+        <CollaborationPanel workspaceId={workspaceId} nodeId={node.id} />
+      </RealtimeRoomProvider>
     </section>
   );
 }
