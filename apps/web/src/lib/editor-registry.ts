@@ -1,4 +1,4 @@
-import type { ContentNodeKind } from "@nexosophy/contracts";
+import type { ContentNode, ContentNodeKind } from "@nexosophy/contracts";
 
 export type EditorCapability =
   | "title"
@@ -12,7 +12,8 @@ export type EditorCapability =
   | "attachments"
   | "structured-data"
   | "canvas"
-  | "code-runtime";
+  | "code-runtime"
+  | "hierarchy";
 
 export type EditorPluginDescriptor = {
   id: string;
@@ -41,24 +42,47 @@ export const editorPlugins: readonly EditorPluginDescriptor[] = [
     availability: "active",
   },
   {
+    id: "spatial-note",
+    label: "Spatial note",
+    nodeKinds: ["note"],
+    capabilities: [
+      "title",
+      "history",
+      "comments-hook",
+      "export-hook",
+      "offline-recovery",
+      "attachments",
+      "canvas",
+    ],
+    availability: "active",
+  },
+  {
     id: "whiteboard",
     label: "Whiteboard",
     nodeKinds: ["whiteboard"],
-    capabilities: ["title", "history", "comments-hook", "export-hook", "canvas"],
-    availability: "future-phase",
+    capabilities: [
+      "title",
+      "history",
+      "comments-hook",
+      "export-hook",
+      "offline-recovery",
+      "attachments",
+      "canvas",
+    ],
+    availability: "active",
+  },
+  {
+    id: "notebook",
+    label: "Notebook",
+    nodeKinds: ["notebook"],
+    capabilities: ["title", "history", "comments-hook", "export-hook", "hierarchy"],
+    availability: "active",
   },
   {
     id: "structured-data",
     label: "Structured data",
     nodeKinds: ["dataset", "spreadsheet"],
     capabilities: ["title", "history", "export-hook", "structured-data"],
-    availability: "future-phase",
-  },
-  {
-    id: "notebook",
-    label: "Notebook",
-    nodeKinds: ["notebook"],
-    capabilities: ["title", "history", "export-hook", "code-runtime"],
     availability: "future-phase",
   },
   {
@@ -70,6 +94,27 @@ export const editorPlugins: readonly EditorPluginDescriptor[] = [
   },
 ];
 
-export function resolveEditorPlugin(kind: ContentNodeKind): EditorPluginDescriptor | null {
-  return editorPlugins.find((plugin) => plugin.nodeKinds.includes(kind)) ?? null;
+export function resolveEditorPlugin(
+  input: ContentNodeKind | Pick<ContentNode, "kind" | "metadata">,
+): EditorPluginDescriptor | null {
+  const kind = typeof input === "string" ? input : input.kind;
+  const metadata = typeof input === "string" ? {} : input.metadata;
+
+  if (kind === "note" && metadata.noteRole === "page") {
+    return editorPlugins.find((plugin) => plugin.id === "spatial-note") ?? null;
+  }
+  if (kind === "whiteboard") {
+    return editorPlugins.find((plugin) => plugin.id === "whiteboard") ?? null;
+  }
+  if (kind === "notebook") {
+    return editorPlugins.find((plugin) => plugin.id === "notebook") ?? null;
+  }
+  return (
+    editorPlugins.find(
+      (plugin) =>
+        plugin.availability === "active" &&
+        plugin.id !== "spatial-note" &&
+        plugin.nodeKinds.includes(kind),
+    ) ?? null
+  );
 }

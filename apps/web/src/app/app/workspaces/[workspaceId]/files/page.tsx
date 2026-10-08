@@ -19,14 +19,15 @@ export default async function WorkspaceFilesPage({
   return (
     <>
       <div className="workspace-subnav" aria-label="Workspace content utilities">
+        <a href={`/app/workspaces/${workspaceId}/notes`}>Notes</a>
         <a href={`/app/workspaces/${workspaceId}/trash`}>Trash</a>
         <a href={`/app/workspaces/${workspaceId}/settings/audit`}>Audit log</a>
       </div>
       <UploadManager workspaceId={workspaceId} />
       <ContentExplorer
-      workspaceId={workspaceId}
-      initialRoot={initialRoot}
-      favorites={favorites.items}
+        workspaceId={workspaceId}
+        initialRoot={initialRoot}
+        favorites={favorites.items}
         recent={recent.items}
       />
     </>
