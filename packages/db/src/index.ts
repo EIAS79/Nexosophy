@@ -48,3 +48,7 @@ export * from "./recurrence.js";
 export * from "./productivity-store.js";
 
 export * from "./notification-store.js";
+
+export * from "./portable-archive-store.js";
+
+export * from "./template-transfer-store.js";

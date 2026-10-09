@@ -41,6 +41,8 @@ import { S3CompatibleStorageAdapter } from "@nexosophy/storage";
 import { Queue, Worker } from "bullmq";
 import Fastify from "fastify";
 
+import { runTransferLoop } from "./transfer-worker.js";
+
 const env = parseWorkerEnv();
 const logger = createLogger("nexosophy-worker", env.LOG_LEVEL);
 const redisUrl = new URL(env.REDIS_URL);
@@ -654,6 +656,15 @@ const deletionLoop = runDeletionLoop();
 const searchLoop = runSearchLoop();
 const reminderLoop = runReminderSchedulerLoop();
 const notificationLoop = runNotificationDeliveryLoop();
+const transferLoop = runTransferLoop({
+  pool: contentPool,
+  storage,
+  workerId,
+  logger,
+  mediaProcessorUrl: mediaServices.MEDIA_PROCESSOR_URL,
+  stopping: () => stopping,
+  delay,
+});
 const health = Fastify({ loggerInstance: logger });
 
 health.get("/health", async () => ({
@@ -697,6 +708,7 @@ async function shutdown(signal: string) {
     searchLoop,
     reminderLoop,
     notificationLoop,
+    transferLoop,
   ]);
   await worker.close();
   await systemQueue.close();
@@ -723,6 +735,7 @@ logger.info(
     searchIndexing: true,
     reminderScheduler: true,
     notificationDelivery: true,
+    transferPipeline: true,
     storageConfigured: Boolean(storage),
   },
   "Worker started",

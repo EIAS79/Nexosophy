@@ -24,6 +24,7 @@ import { registerJobRoutes } from "./job-routes.js";
 import { registerProductivityRoutes } from "./productivity-routes.js";
 import { registerSearchRoutes } from "./search-routes.js";
 import { registerSpatialRoutes } from "./spatial-routes.js";
+import { registerTemplateTransferRoutes } from "./template-transfer-routes.js";
 import { registerWorkspaceRoutes } from "./workspace-routes.js";
 
 const serviceVersion = process.env.npm_package_version ?? "0.0.0";
@@ -147,6 +148,7 @@ export async function buildApp(
   await registerSpatialRoutes(app, pool, runtime.verifier);
   await registerSearchRoutes(app, pool, runtime.verifier);
   await registerProductivityRoutes(app, pool, runtime.verifier);
+  await registerTemplateTransferRoutes(app, pool, storage, runtime.verifier);
 
   if (runtime.provider && runtime.identityStore) {
     await registerClerkWebhookRoute(app, pool, runtime.provider, runtime.identityStore);
