@@ -7,6 +7,7 @@ import type {
 
 import { AssetViewer } from "../../../../../../components/asset-viewer";
 import { CollaborationPanel } from "../../../../../../components/collaboration-panel";
+import { CitationPanel } from "../../../../../../components/citation-panel";
 import { DocumentHistoryPanel } from "../../../../../../components/document-history-panel";
 import { KnowledgeConnectionsPanel } from "../../../../../../components/knowledge-connections-panel";
 import { NotebookManager } from "../../../../../../components/notebook-manager";
@@ -153,6 +154,9 @@ export default async function WorkspaceNodePage({
             </dl>
           </div>
         )}
+        {editorPlugin?.id === "rich-document" ? (
+          <CitationPanel workspaceId={workspaceId} nodeId={node.id} />
+        ) : null}
         <CollaborationPanel workspaceId={workspaceId} nodeId={node.id} />
         <KnowledgeConnectionsPanel workspaceId={workspaceId} nodeId={node.id} />
       </RealtimeRoomProvider>

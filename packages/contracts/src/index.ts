@@ -43,3 +43,5 @@ export * from "./templates-transfer.js";
 export * from "./structured-code.js";
 
 export * from "./academic.js";
+
+export * from "./research-references.js";

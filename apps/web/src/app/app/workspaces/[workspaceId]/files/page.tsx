@@ -26,6 +26,7 @@ export default async function WorkspaceFilesPage({
         <a href={`/app/workspaces/${workspaceId}/portability`}>Templates & transfer</a>
         <a href={`/app/workspaces/${workspaceId}/structured`}>Data & code</a>
         <a href={`/app/workspaces/${workspaceId}/academic`}>Courses & study</a>
+        <a href={`/app/workspaces/${workspaceId}/research`}>Research & references</a>
         <a href={`/app/workspaces/${workspaceId}/trash`}>Trash</a>
         <a href={`/app/workspaces/${workspaceId}/settings/audit`}>Audit log</a>
       </div>
