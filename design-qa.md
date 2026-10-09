@@ -45,3 +45,7 @@ Eight optimized WebP assets total approximately 836KB. Below-fold imagery is laz
 This is an adaptation of the art direction, not a pixel-perfect reconstruction. The overview is an interactive guided preview, not a recorded video. No claim is made that illustrated planned capabilities are already implemented services. Larger sections intentionally exceed a single viewport to retain readable content. No known blocking layout or interaction issue remained in the reviewed views.
 
 Final result: passed
+
+## Follow-up: contained workflow carousel
+
+The requested process line now sits in a single glass callout with a pale cyan left border. Cards advance horizontally every 4.5 seconds and reverse at the end. Autoplay pauses on hover/focus, stops on touch/manual navigation, and does no scrolling offscreen, in a hidden tab, with global motion paused, or with reduced motion enabled. Play/pause, swipe and arrow controls remain available at wide desktop sizes. Hover/focus lifts only the preview by 5px. Browser checks confirmed automatic scroll progression (668 → 1336px), pause state and manual advancement. Web typecheck and error-level lint passed; production build checked again. This replaces the earlier all-nine-at-once wide-desktop layout.

@@ -271,6 +271,10 @@ export function ConnectedHome() {
   const [menu, setMenu] = useState(false);
   const [motion, setMotion] = useState(true);
   const [step, setStep] = useState(0);
+  const [workflowPlaying, setWorkflowPlaying] = useState(true);
+  const [workflowHovered, setWorkflowHovered] = useState(false);
+  const [workflowFocused, setWorkflowFocused] = useState(false);
+  const workflowDirection = useRef(1);
   const [persona, setPersona] = useState<number | null>(null);
   const [tour, setTour] = useState(0);
   const [comparison, setComparison] = useState("Connected");
@@ -294,13 +298,52 @@ export function ConnectedHome() {
       observer.observe(scene);
     return () => observer.disconnect();
   }, []);
+  useEffect(() => {
+    const element = rail.current;
+    if (!element || !motion || !workflowPlaying || workflowHovered || workflowFocused) return;
+    const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let visible = false;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        visible = entry?.isIntersecting ?? false;
+      },
+      { threshold: 0.3 },
+    );
+    observer.observe(element);
+    const timer = window.setInterval(() => {
+      if (!visible || document.hidden || preference.matches) return;
+      const distance = (element.children[1] as HTMLElement | undefined)?.offsetLeft;
+      const first = (element.children[0] as HTMLElement | undefined)?.offsetLeft;
+      if (distance === undefined || first === undefined) return;
+      const end = element.scrollWidth - element.clientWidth;
+      if (end <= 0) return;
+      if (element.scrollLeft >= end - 2) workflowDirection.current = -1;
+      if (element.scrollLeft <= 2) workflowDirection.current = 1;
+      element.scrollTo({
+        left: Math.max(
+          0,
+          Math.min(end, element.scrollLeft + (distance - first) * workflowDirection.current),
+        ),
+        behavior: "smooth",
+      });
+    }, 4500);
+    return () => {
+      window.clearInterval(timer);
+      observer.disconnect();
+    };
+  }, [motion, workflowPlaying, workflowHovered, workflowFocused]);
   const goStep = (index: number) => {
+    setWorkflowPlaying(false);
     const next = Math.max(0, Math.min(8, index));
     setStep(next);
     const child = rail.current?.children[next] as HTMLElement | undefined;
     if (rail.current && child)
       rail.current.scrollTo({
-        left: child.offsetLeft - rail.current.offsetLeft,
+        left:
+          index === step - 1 &&
+          rail.current.scrollLeft + rail.current.clientWidth >= rail.current.scrollWidth - 2
+            ? rail.current.scrollLeft - child.getBoundingClientRect().width - 24
+            : child.offsetLeft - rail.current.offsetLeft,
         behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
           ? "instant"
           : "smooth",
@@ -617,83 +660,106 @@ export function ConnectedHome() {
               Nine stages. One context that travels with you.
             </p>
           </div>
-          <div className={s.workflowControls}>
-            <p>
-              Explore the product vision <span>{String(step + 1).padStart(2, "0")} / 09</span>
-            </p>
-            <div>
-              <button
-                type="button"
-                onClick={() => goStep(step - 1)}
-                disabled={step === 0}
-                aria-label="Previous workflow stage"
-              >
-                <ArrowLeft />
-              </button>
-              <button
-                type="button"
-                onClick={() => goStep(step + 1)}
-                disabled={step === 8}
-                aria-label="Next workflow stage"
-              >
-                <ArrowRight />
-              </button>
+          <div className={s.workflowBlock}>
+            <div className={s.workflowControls}>
+              <p>
+                Follow the process <span>{String(step + 1).padStart(2, "0")} / 09</span>
+              </p>
+              <div>
+                <button
+                  type="button"
+                  className={s.workflowPlay}
+                  aria-pressed={!workflowPlaying}
+                  onClick={() => setWorkflowPlaying(!workflowPlaying)}
+                >
+                  {workflowPlaying ? "Pause autoplay" : "Play carousel"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => goStep(step - 1)}
+                  disabled={step === 0}
+                  aria-label="Previous workflow stage"
+                >
+                  <ArrowLeft />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => goStep(step + 1)}
+                  disabled={step === 8}
+                  aria-label="Next workflow stage"
+                >
+                  <ArrowRight />
+                </button>
+              </div>
             </div>
+            <section
+              ref={rail}
+              className={s.workflowRail}
+              onPointerEnter={(event) => {
+                if (event.pointerType === "mouse") setWorkflowHovered(true);
+              }}
+              onPointerLeave={() => setWorkflowHovered(false)}
+              onPointerDown={() => setWorkflowPlaying(false)}
+              onWheel={() => setWorkflowPlaying(false)}
+              onFocusCapture={() => setWorkflowFocused(true)}
+              onBlurCapture={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget)) setWorkflowFocused(false);
+              }}
+              onScroll={() => {
+                const element = rail.current;
+                if (!element) return;
+                const children = [...element.children] as HTMLElement[];
+                const index = children.reduce(
+                  (best, child, i) =>
+                    Math.abs(child.offsetLeft - element.offsetLeft - element.scrollLeft) <
+                    Math.abs(
+                      (children[best]?.offsetLeft ?? 0) - element.offsetLeft - element.scrollLeft,
+                    )
+                      ? i
+                      : best,
+                  0,
+                );
+                setStep(
+                  element.scrollLeft + element.clientWidth >= element.scrollWidth - 2 ? 8 : index,
+                );
+              }}
+              // biome-ignore lint/a11y/noNoninteractiveTabindex: Scrollable timeline needs focus for arrow-key navigation.
+              tabIndex={0}
+              aria-label="Nine-stage workflow. Use arrow keys to explore."
+              onKeyDown={(e) => {
+                if (e.target !== e.currentTarget) return;
+                if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+                  e.preventDefault();
+                  goStep(step + (e.key === "ArrowRight" ? 1 : -1));
+                }
+              }}
+            >
+              {stages.map((stage, index) => {
+                const Icon = icons[stage.kind];
+                return (
+                  <article className={s.workflowStep} key={stage.name} data-active={step === index}>
+                    <button
+                      className={s.stageIcon}
+                      type="button"
+                      onClick={() => goStep(index)}
+                      aria-label={`Explore ${stage.name}`}
+                      aria-current={step === index ? "step" : undefined}
+                    >
+                      <Icon size={23} />
+                    </button>
+                    <h3>{stage.name}</h3>
+                    <p>{stage.text}</p>
+                    <div className={s.workflowMini}>
+                      <WorkflowPanel index={index} />
+                    </div>
+                  </article>
+                );
+              })}
+            </section>
+            <p className={s.workflowHint}>
+              Swipe or use the arrows to explore · Pauses while you interact
+            </p>
           </div>
-          <section
-            ref={rail}
-            className={s.workflowRail}
-            onScroll={() => {
-              const element = rail.current;
-              if (!element) return;
-              const children = [...element.children] as HTMLElement[];
-              const index = children.reduce(
-                (best, child, i) =>
-                  Math.abs(child.offsetLeft - element.offsetLeft - element.scrollLeft) <
-                  Math.abs(
-                    (children[best]?.offsetLeft ?? 0) - element.offsetLeft - element.scrollLeft,
-                  )
-                    ? i
-                    : best,
-                0,
-              );
-              setStep(
-                element.scrollLeft + element.clientWidth >= element.scrollWidth - 2 ? 8 : index,
-              );
-            }}
-            // biome-ignore lint/a11y/noNoninteractiveTabindex: Scrollable timeline needs focus for arrow-key navigation.
-            tabIndex={0}
-            aria-label="Nine-stage workflow. Use arrow keys to explore."
-            onKeyDown={(e) => {
-              if (e.target !== e.currentTarget) return;
-              if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
-                e.preventDefault();
-                goStep(step + (e.key === "ArrowRight" ? 1 : -1));
-              }
-            }}
-          >
-            {stages.map((stage, index) => {
-              const Icon = icons[stage.kind];
-              return (
-                <article className={s.workflowStep} key={stage.name} data-active={step === index}>
-                  <button
-                    className={s.stageIcon}
-                    type="button"
-                    onClick={() => goStep(index)}
-                    aria-label={`Explore ${stage.name}`}
-                    aria-current={step === index ? "step" : undefined}
-                  >
-                    <Icon size={23} />
-                  </button>
-                  <h3>{stage.name}</h3>
-                  <p>{stage.text}</p>
-                  <div className={s.workflowMini}>
-                    <WorkflowPanel index={index} />
-                  </div>
-                </article>
-              );
-            })}
-          </section>
           <div className={s.contextBanner}>
             <Mark />
             <div>
