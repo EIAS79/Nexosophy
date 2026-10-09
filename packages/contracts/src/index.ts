@@ -41,3 +41,5 @@ export * from "./productivity.js";
 export * from "./templates-transfer.js";
 
 export * from "./structured-code.js";
+
+export * from "./academic.js";

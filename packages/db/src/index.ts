@@ -56,3 +56,7 @@ export * from "./template-transfer-store.js";
 export * from "./formula-engine.js";
 
 export * from "./structured-code-store.js";
+
+export * from "./flashcard-scheduler.js";
+
+export * from "./academic-store.js";

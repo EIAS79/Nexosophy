@@ -1,0 +1,1 @@
+import{AcademicHub}from"../../../../../components/academic-hub";export default async function Page({params}:{params:Promise<{workspaceId:string}>}){const{workspaceId}=await params;return <AcademicHub workspaceId={workspaceId}/>;}
