@@ -1,1 +1,97 @@
-import{nexosophyApi}from"../../../../../../../lib/api-server";export default async function Page({params}:{params:Promise<{workspaceId:string;referenceId:string}>}){const{workspaceId,referenceId}=await params,r=await nexosophyApi<any>(`/v1/workspaces/${workspaceId}/references/${referenceId}`);return <section className="workspace-page"><header className="dashboard-head"><div><p className="eyebrow">{r.type}</p><h1>{r.title}</h1><p>{r.authors.map((a:any)=>a.literal??[a.family,a.given].filter(Boolean).join(", ")).join("; ")} {r.year?"· "+r.year:""}</p></div></header><div className="dashboard-grid"><section className="dashboard-card"><h2>Metadata</h2><p>{r.containerTitle??""}</p><p>{r.identifiers.map((x:any)=>x.type.toUpperCase()+": "+x.value).join(" · ")}</p>{r.url?<a href={r.url}>Source URL</a>:null}<p>{r.abstract??""}</p></section><section className="dashboard-card"><h2>Attachments</h2>{r.attachments.map((a:any)=><p key={a.asset_id}>{a.original_filename}</p>)}</section><section className="dashboard-card"><h2>Annotations</h2>{r.annotations.map((a:any)=><article key={a.id}><blockquote>{a.quote??""}</blockquote><p>{a.comment}</p><small>{a.page_locator??""}</small></article>)}</section></div></section>
+import { nexosophyApi } from "../../../../../../../lib/api-server";
+
+type ReferenceAuthor = {
+  literal?: string | null;
+  family?: string | null;
+  given?: string | null;
+};
+
+type ReferenceIdentifier = {
+  type: string;
+  value: string;
+};
+
+type ReferenceAttachment = {
+  asset_id: string;
+  original_filename: string;
+};
+
+type ReferenceAnnotation = {
+  id: string;
+  quote?: string | null;
+  comment: string;
+  page_locator?: string | null;
+};
+
+type ReferenceDetail = {
+  type: string;
+  title: string;
+  authors: ReferenceAuthor[];
+  year?: number | null;
+  containerTitle?: string | null;
+  identifiers: ReferenceIdentifier[];
+  url?: string | null;
+  abstract?: string | null;
+  attachments: ReferenceAttachment[];
+  annotations: ReferenceAnnotation[];
+};
+
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ workspaceId: string; referenceId: string }>;
+}) {
+  const { workspaceId, referenceId } = await params;
+  const reference = await nexosophyApi<ReferenceDetail>(
+    `/v1/workspaces/${workspaceId}/references/${referenceId}`,
+  );
+
+  return (
+    <section className="workspace-page">
+      <header className="dashboard-head">
+        <div>
+          <p className="eyebrow">{reference.type}</p>
+          <h1>{reference.title}</h1>
+          <p>
+            {reference.authors
+              .map(
+                (author) =>
+                  author.literal ?? [author.family, author.given].filter(Boolean).join(", "),
+              )
+              .join("; ")}{" "}
+            {reference.year ? `· ${reference.year}` : ""}
+          </p>
+        </div>
+      </header>
+      <div className="dashboard-grid">
+        <section className="dashboard-card">
+          <h2>Metadata</h2>
+          <p>{reference.containerTitle ?? ""}</p>
+          <p>
+            {reference.identifiers
+              .map((identifier) => `${identifier.type.toUpperCase()}: ${identifier.value}`)
+              .join(" · ")}
+          </p>
+          {reference.url ? <a href={reference.url}>Source URL</a> : null}
+          <p>{reference.abstract ?? ""}</p>
+        </section>
+        <section className="dashboard-card">
+          <h2>Attachments</h2>
+          {reference.attachments.map((attachment) => (
+            <p key={attachment.asset_id}>{attachment.original_filename}</p>
+          ))}
+        </section>
+        <section className="dashboard-card">
+          <h2>Annotations</h2>
+          {reference.annotations.map((annotation) => (
+            <article key={annotation.id}>
+              <blockquote>{annotation.quote ?? ""}</blockquote>
+              <p>{annotation.comment}</p>
+              <small>{annotation.page_locator ?? ""}</small>
+            </article>
+          ))}
+        </section>
+      </div>
+    </section>
+  );
+}

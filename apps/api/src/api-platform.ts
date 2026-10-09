@@ -32,7 +32,7 @@ function classify(request: FastifyRequest): EndpointClass {
 function clientKey(request: FastifyRequest): string {
   const auth = request.headers.authorization ?? "anonymous";
   return createHash("sha256")
-    .update(request.ip + "\n" + auth)
+    .update(`${request.ip}\n${auth}`)
     .digest("hex")
     .slice(0, 32);
 }
