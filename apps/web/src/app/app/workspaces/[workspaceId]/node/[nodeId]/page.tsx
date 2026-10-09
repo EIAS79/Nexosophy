@@ -13,6 +13,11 @@ import { NotebookManager } from "../../../../../../components/notebook-manager";
 import { RealtimeRoomProvider } from "../../../../../../components/realtime-room";
 import { RichDocumentEditor } from "../../../../../../components/rich-document-editor";
 import { SpatialCanvasEditor } from "../../../../../../components/spatial-canvas-editor";
+import {
+  CodeDocumentEditor,
+  ComputationalNotebookEditor,
+  StructuredDataEditor,
+} from "../../../../../../components/specialized-editor";
 import { nexosophyApi } from "../../../../../../lib/api-server";
 import { resolveEditorPlugin } from "../../../../../../lib/editor-registry";
 
@@ -89,7 +94,13 @@ export default async function WorkspaceNodePage({
       </header>
 
       <RealtimeRoomProvider workspaceId={workspaceId} nodeId={node.id}>
-        {assetId ? (
+        {editorPlugin?.id === "structured-data" ? (
+          <StructuredDataEditor workspaceId={workspaceId} nodeId={node.id} />
+        ) : editorPlugin?.id === "code-document" ? (
+          <CodeDocumentEditor workspaceId={workspaceId} nodeId={node.id} />
+        ) : editorPlugin?.id === "computational-notebook" ? (
+          <ComputationalNotebookEditor workspaceId={workspaceId} nodeId={node.id} />
+        ) : assetId ? (
           <AssetViewer workspaceId={workspaceId} assetId={assetId} />
         ) : document ? (
           <>

@@ -1,0 +1,16 @@
+import {NextResponse,type NextRequest} from "next/server";
+import {NexosophyApiError,nexosophyApi} from "../../../../lib/api-server";
+function err(e:unknown){if(e instanceof NexosophyApiError)return NextResponse.json({error:{code:e.code,message:e.message}},{status:e.status});throw e;}
+export async function GET(req:NextRequest,{params}:{params:Promise<{workspaceId:string}>}){const{workspaceId}=await params,v=req.nextUrl.searchParams.get("view")??"structured",nodeId=req.nextUrl.searchParams.get("nodeId")??"",q=new URLSearchParams(req.nextUrl.searchParams);q.delete("view");q.delete("nodeId");try{const p=v==="rows"?`/v1/workspaces/${workspaceId}/structured/${nodeId}/rows?${q}`:v==="code"?`/v1/workspaces/${workspaceId}/code/${nodeId}`:v==="notebook"?`/v1/workspaces/${workspaceId}/notebooks/${nodeId}`:v==="history"?`/v1/workspaces/${workspaceId}/specialized/${nodeId}/history`:`/v1/workspaces/${workspaceId}/structured/${nodeId}`;return NextResponse.json(await nexosophyApi(p));}catch(e){return err(e);}}
+export async function POST(req:NextRequest,{params}:{params:Promise<{workspaceId:string}>}){const{workspaceId}=await params,b=await req.json() as any;try{
+ if(b.action==="create"){const{action,...x}=b;return NextResponse.json(await nexosophyApi(`/v1/workspaces/${workspaceId}/specialized`,{method:"POST",body:JSON.stringify(x)}),{status:201});}
+ if(b.action==="column"){const{action,nodeId,...x}=b;return NextResponse.json(await nexosophyApi(`/v1/workspaces/${workspaceId}/structured/${nodeId}/columns`,{method:"POST",body:JSON.stringify(x)}),{status:201});}
+ if(b.action==="row"){const{action,nodeId,...x}=b;return NextResponse.json(await nexosophyApi(`/v1/workspaces/${workspaceId}/structured/${nodeId}/rows`,{method:"POST",body:JSON.stringify(x)}));}
+ if(b.action==="view"||b.action==="chart"){const{action,nodeId,...x}=b;return NextResponse.json(await nexosophyApi(`/v1/workspaces/${workspaceId}/structured/${nodeId}/${action==="view"?"views":"charts"}`,{method:"POST",body:JSON.stringify(x)}),{status:201});}
+ if(b.action==="code"){const{action,nodeId,...x}=b;return NextResponse.json(await nexosophyApi(`/v1/workspaces/${workspaceId}/code/${nodeId}`,{method:"PUT",body:JSON.stringify(x)}));}
+ if(b.action==="cell"){const{action,nodeId,cellId,...x}=b;return NextResponse.json(await nexosophyApi(`/v1/workspaces/${workspaceId}/notebooks/${nodeId}/cells${cellId?"/"+cellId:""}`,{method:cellId?"PATCH":"POST",body:JSON.stringify(x)}),{status:cellId?200:201});}
+ if(b.action==="reorder"){await nexosophyApi(`/v1/workspaces/${workspaceId}/notebooks/${b.nodeId}/reorder`,{method:"POST",body:JSON.stringify({cellIds:b.cellIds})});return new NextResponse(null,{status:204});}
+ if(b.action==="clearOutputs"){await nexosophyApi(`/v1/workspaces/${workspaceId}/notebooks/${b.nodeId}/outputs${b.cellId?"?cellId="+encodeURIComponent(b.cellId):""}`,{method:"DELETE"});return new NextResponse(null,{status:204});}
+ if(b.action==="execute"){return NextResponse.json(await nexosophyApi(`/v1/workspaces/${workspaceId}/notebooks/${b.nodeId}/execute`,{method:"POST",body:"{}"}));}
+ return NextResponse.json({error:{code:"VALIDATION_ERROR",message:"Unknown specialized action."}},{status:400});
+}catch(e){return err(e);}}

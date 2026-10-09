@@ -39,3 +39,5 @@ export * from "./search.js";
 export * from "./productivity.js";
 
 export * from "./templates-transfer.js";
+
+export * from "./structured-code.js";

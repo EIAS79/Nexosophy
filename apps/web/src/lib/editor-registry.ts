@@ -83,7 +83,21 @@ export const editorPlugins: readonly EditorPluginDescriptor[] = [
     label: "Structured data",
     nodeKinds: ["dataset", "spreadsheet"],
     capabilities: ["title", "history", "export-hook", "structured-data"],
-    availability: "future-phase",
+    availability: "active",
+  },
+  {
+    id: "code-document",
+    label: "Code document",
+    nodeKinds: ["document"],
+    capabilities: ["title", "history", "export-hook", "code-runtime"],
+    availability: "active",
+  },
+  {
+    id: "computational-notebook",
+    label: "Computational notebook",
+    nodeKinds: ["notebook"],
+    capabilities: ["title", "history", "export-hook", "code-runtime", "hierarchy"],
+    availability: "active",
   },
   {
     id: "attachment",
@@ -105,6 +119,12 @@ export function resolveEditorPlugin(
   }
   if (kind === "whiteboard") {
     return editorPlugins.find((plugin) => plugin.id === "whiteboard") ?? null;
+  }
+  if (kind === "document" && metadata.editorType === "code") {
+    return editorPlugins.find((plugin) => plugin.id === "code-document") ?? null;
+  }
+  if (kind === "notebook" && metadata.notebookType === "computational") {
+    return editorPlugins.find((plugin) => plugin.id === "computational-notebook") ?? null;
   }
   if (kind === "notebook") {
     return editorPlugins.find((plugin) => plugin.id === "notebook") ?? null;

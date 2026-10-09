@@ -1,0 +1,12 @@
+import { z } from "zod";
+const uuid=z.string().uuid();
+export const structuredColumnTypeSchema=z.enum(["text","number","boolean","date","select","formula"]);
+export const createSpecializedNodeSchema=z.object({kind:z.enum(["spreadsheet","database","code","notebook"]),name:z.string().trim().min(1).max(255),parentId:uuid.nullable().default(null),language:z.string().trim().max(80).default("text")});
+export const createStructuredColumnSchema=z.object({sheetId:uuid,key:z.string().regex(/^[A-Za-z][A-Za-z0-9_]{0,63}$/),name:z.string().trim().min(1).max(120),type:structuredColumnTypeSchema,formula:z.string().max(1000).nullable().optional(),validation:z.record(z.string(),z.unknown()).default({}),options:z.array(z.string().max(200)).max(500).default([]),width:z.number().int().min(60).max(800).default(180)});
+export const upsertStructuredRowSchema=z.object({sheetId:uuid,rowId:uuid.optional(),expectedVersion:z.number().int().positive().optional(),values:z.record(z.string(),z.unknown())});
+export const structuredRowsQuerySchema=z.object({sheetId:uuid,cursor:z.coerce.number().int().nonnegative().default(0),limit:z.coerce.number().int().min(1).max(500).default(200),sortKey:z.string().max(64).optional(),sortDir:z.enum(["asc","desc"]).default("asc"),filterKey:z.string().max(64).optional(),filterValue:z.string().max(500).optional()});
+export const createStructuredViewSchema=z.object({name:z.string().trim().min(1).max(120),type:z.enum(["table","board","calendar","gallery"]),config:z.record(z.string(),z.unknown()).default({})});
+export const updateCodeDocumentSchema=z.object({language:z.string().trim().min(1).max(80),source:z.string().max(5_000_000),expectedVersion:z.number().int().positive()});
+export const createNotebookCellSchema=z.object({type:z.enum(["markdown","code"]),language:z.string().trim().max(80).optional(),source:z.string().max(2_000_000).default("")});
+export const updateNotebookCellSchema=createNotebookCellSchema.partial().extend({expectedVersion:z.number().int().positive()});
+export const reorderNotebookCellsSchema=z.object({cellIds:z.array(uuid).max(5000)});

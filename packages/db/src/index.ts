@@ -52,3 +52,7 @@ export * from "./notification-store.js";
 export * from "./portable-archive-store.js";
 
 export * from "./template-transfer-store.js";
+
+export * from "./formula-engine.js";
+
+export * from "./structured-code-store.js";
