@@ -39,10 +39,8 @@ function newBlock(type: RichDocumentBlock["type"] = "paragraph"): RichDocumentBl
 async function responseError(response: Response): Promise<{ code?: string; message: string }> {
   try {
     const payload = (await response.json()) as { error?: { code?: string; message?: string } };
-    return {
-      code: payload.error?.code,
-      message: payload.error?.message ?? `Request failed with status ${response.status}.`,
-    };
+    const message = payload.error?.message ?? `Request failed with status ${response.status}.`;
+    return payload.error?.code ? { code: payload.error.code, message } : { message };
   } catch {
     return { message: `Request failed with status ${response.status}.` };
   }

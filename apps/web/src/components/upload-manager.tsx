@@ -185,12 +185,13 @@ export function UploadManager({
           uploadSessionId: sessionId,
           partNumber,
         });
-        const uploadResponse = await fetch(signed.url, {
+        const uploadInit: RequestInit = {
           method: "PUT",
-          headers: signed.headers,
           body: blob,
           signal: controller.signal,
-        });
+        };
+        if (signed.headers) uploadInit.headers = signed.headers;
+        const uploadResponse = await fetch(signed.url, uploadInit);
         if (!uploadResponse.ok) {
           throw new Error(
             `Storage rejected part ${partNumber} with status ${uploadResponse.status}.`,

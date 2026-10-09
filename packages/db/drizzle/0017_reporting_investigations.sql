@@ -114,7 +114,7 @@ create table "report_publications"(
 );
 create or replace function "nexosophy_reporting_evidence_guard"()returns trigger language plpgsql as $$begin raise exception 'evidence provenance is immutable';end;$$;
 create trigger "reporting_evidence_immutable" before update or delete on "reporting_evidence" for each row execute function "nexosophy_reporting_evidence_guard"();
-create or replace function "nexosophy_report_publication_guard"()returns trigger language plpgsql as $
+create or replace function "nexosophy_report_publication_guard"()returns trigger language plpgsql as $$
 begin
   if tg_op='DELETE' then
     raise exception 'published report snapshot is immutable';
@@ -125,5 +125,5 @@ begin
   end if;
   raise exception 'published report snapshot is immutable';
 end;
-$;
+$$;
 create trigger "report_publications_immutable" before update or delete on "report_publications" for each row execute function "nexosophy_report_publication_guard"();

@@ -499,7 +499,7 @@ create trigger "lab_access_reviews_append_only" before update or delete on "lab_
 create trigger "lab_export_records_append_only" before update or delete on "lab_export_records" for each row execute function "nexosophy_lab_append_only"();
 
 create or replace function "nexosophy_guard_signed_eln_document"()
-returns trigger language plpgsql as $
+returns trigger language plpgsql as $$
 declare row_workspace uuid;
 declare row_node uuid;
 begin
@@ -514,13 +514,13 @@ begin
   if tg_op='DELETE' then return old; end if;
   return new;
 end;
-$;
+$$;
 create trigger "documents_signed_eln_guard"
 before update or delete on "documents"
 for each row execute function "nexosophy_guard_signed_eln_document"();
 
 create or replace function "nexosophy_guard_signed_eln_child"()
-returns trigger language plpgsql as $
+returns trigger language plpgsql as $$
 declare entry uuid;
 begin
   entry := case when tg_op='DELETE' then old."entry_id" else new."entry_id" end;
@@ -530,7 +530,7 @@ begin
   if tg_op='DELETE' then return old; end if;
   return new;
 end;
-$;
+$$;
 create trigger "eln_observations_signed_guard"
 before insert or update or delete on "eln_observations"
 for each row execute function "nexosophy_guard_signed_eln_child"();
@@ -539,7 +539,7 @@ before insert or update or delete on "eln_links"
 for each row execute function "nexosophy_guard_signed_eln_child"();
 
 create or replace function "nexosophy_protocol_version_guard"()
-returns trigger language plpgsql as $
+returns trigger language plpgsql as $$
 begin
   if tg_op='DELETE' then
     if old."status"='approved' then raise exception 'approved protocol version is immutable'; end if;
@@ -557,12 +557,12 @@ begin
   ) then raise exception 'approved protocol version is immutable'; end if;
   return new;
 end;
-$;
+$$;
 create trigger "protocol_version_guard" before update or delete on "protocol_versions"
 for each row execute function "nexosophy_protocol_version_guard"();
 
 create or replace function "nexosophy_protocol_step_guard"()
-returns trigger language plpgsql as $
+returns trigger language plpgsql as $$
 declare version_id uuid;
 begin
   version_id := case when tg_op='DELETE' then old."protocol_version_id" else new."protocol_version_id" end;
@@ -572,7 +572,7 @@ begin
   if tg_op='DELETE' then return old; end if;
   return new;
 end;
-$;
+$$;
 create trigger "protocol_step_guard" before insert or update or delete on "protocol_steps"
 for each row execute function "nexosophy_protocol_step_guard"();
 
