@@ -29,6 +29,12 @@ import { registerStructuredCodeRoutes } from "./structured-code-routes.js";
 import { registerWorkspaceRoutes } from "./workspace-routes.js";
 import { registerResearchReferenceRoutes } from "./research-reference-routes.js";
 import { registerAcademicRoutes } from "./academic-routes.js";
+import { registerLabRoutes } from "./lab-routes.js";
+import { registerTeachingRoutes } from "./teaching-routes.js";
+import { registerReportingRoutes } from "./reporting-routes.js";
+import { registerAnalysisRoutes } from "./analysis-routes.js";
+import { registerIntegrationRoutes } from "./integration-routes.js";
+import { registerOfflineRoutes } from "./offline-routes.js";
 
 const serviceVersion = process.env.npm_package_version ?? "0.0.0";
 
@@ -155,6 +161,12 @@ export async function buildApp(
   await registerStructuredCodeRoutes(app, pool, runtime.verifier);
   await registerAcademicRoutes(app, pool, runtime.verifier);
   await registerResearchReferenceRoutes(app, pool, runtime.verifier);
+  await registerLabRoutes(app, pool, runtime.verifier);
+  await registerTeachingRoutes(app, pool, runtime.verifier);
+  await registerReportingRoutes(app, pool, runtime.verifier);
+  await registerAnalysisRoutes(app, pool, storage, runtime.verifier);
+  await registerIntegrationRoutes(app, pool, storage, runtime.verifier);
+  await registerOfflineRoutes(app, pool, runtime.verifier);
 
   if (runtime.provider && runtime.identityStore) {
     await registerClerkWebhookRoute(app, pool, runtime.provider, runtime.identityStore);

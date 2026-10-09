@@ -16,6 +16,7 @@ import {
   type KeyboardEvent,
 } from "react";
 
+import { queueDocumentSave, readOfflineRecord, saveOfflineRecord, syncOfflineWorkspace } from "../lib/offline-client";
 import styles from "./rich-document-editor.module.css";
 
 type SaveState = "saved" | "dirty" | "saving" | "offline" | "error" | "conflict";
@@ -56,7 +57,6 @@ export function RichDocumentEditor({
   node: ContentNode;
   initialDocument: DocumentRecord;
 }) {
-  const storageKey = `nexosophy:document-draft:${workspaceId}:${node.id}`;
   const [body, setBody] = useState<RichDocumentBody>(initialDocument.body);
   const [revision, setRevision] = useState(initialDocument.revision);
   const [nodeVersion, setNodeVersion] = useState(node.version);
@@ -76,26 +76,27 @@ export function RichDocumentEditor({
   const pendingSave = useRef(false);
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(storageKey);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as {
-        revision?: number;
-        body?: RichDocumentBody;
-      };
+    let cancelled = false;
+    void readOfflineRecord<{ revision: number; body: RichDocumentBody }>(
+      workspaceId,
+      "document",
+      node.id,
+    ).then((cached) => {
       if (
-        parsed.body?.type === "doc" &&
-        Array.isArray(parsed.body.blocks) &&
-        (parsed.revision ?? 0) >= initialDocument.revision
+        !cancelled &&
+        cached?.body?.type === "doc" &&
+        Array.isArray(cached.body.blocks) &&
+        cached.revision >= initialDocument.revision
       ) {
-        setBody(parsed.body);
+        setBody(cached.body);
+        setRevision(cached.revision);
         setSaveState(navigator.onLine ? "dirty" : "offline");
-        setMessage("Recovered a local draft that was not yet acknowledged by the server.");
+        setMessage("Recovered an encrypted offline document snapshot.");
       }
-    } catch {
-      window.localStorage.removeItem(storageKey);
-    }
-  }, [initialDocument.revision, storageKey]);
+    }).catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [initialDocument.revision, node.id, workspaceId]);
+
 
   const blockCount = body.blocks.length;
   const characterCount = useMemo(
@@ -105,21 +106,17 @@ export function RichDocumentEditor({
 
   const persistRecovery = useCallback(
     (nextBody: RichDocumentBody, nextRevision = revision) => {
-      try {
-        window.localStorage.setItem(
-          storageKey,
-          JSON.stringify({
-            revision: nextRevision,
-            updatedAt: new Date().toISOString(),
-            body: nextBody,
-          }),
-        );
-      } catch {
-        // Local recovery is best effort; canonical persistence remains server-side.
-      }
+      void saveOfflineRecord(workspaceId, "document", node.id, {
+        revision: nextRevision,
+        body: nextBody,
+      }).catch(() => undefined);
     },
-    [revision, storageKey],
+    [node.id, revision, workspaceId],
   );
+
+  useEffect(() => {
+    persistRecovery(initialDocument.body, initialDocument.revision);
+  }, [initialDocument.body, initialDocument.revision, persistRecovery]);
 
   function applyBody(nextBody: RichDocumentBody, pushHistory = true) {
     if (pushHistory) {
@@ -192,8 +189,10 @@ export function RichDocumentEditor({
       return;
     }
     if (!navigator.onLine) {
-      setSaveState("offline");
+      await queueDocumentSave(workspaceId, node.id, revision, body);
       persistRecovery(body);
+      setSaveState("offline");
+      setMessage("Offline. This encrypted change is queued for replay.");
       return;
     }
 
@@ -227,12 +226,19 @@ export function RichDocumentEditor({
       setRevision(saved.revision);
       setBody(saved.body);
       lastAcknowledged.current = cloneBody(saved.body);
-      window.localStorage.removeItem(storageKey);
+      persistRecovery(saved.body, saved.revision);
       setSaveState("saved");
       setMessage("Saved");
     } catch (error) {
-      setSaveState(navigator.onLine ? "error" : "offline");
-      setMessage(error instanceof Error ? error.message : "Autosave failed.");
+      const networkFailure = !navigator.onLine || error instanceof TypeError;
+      if (networkFailure) {
+        await queueDocumentSave(workspaceId, node.id, revision, body).catch(() => undefined);
+        setSaveState("offline");
+        setMessage("Connection unavailable. Encrypted change queued for replay.");
+      } else {
+        setSaveState("error");
+        setMessage(error instanceof Error ? error.message : "Autosave failed.");
+      }
       persistRecovery(body);
     } finally {
       saving.current = false;
@@ -241,7 +247,7 @@ export function RichDocumentEditor({
         window.setTimeout(() => void save(), 0);
       }
     }
-  }, [body, node.id, persistRecovery, revision, storageKey, workspaceId]);
+  }, [body, node.id, persistRecovery, revision, workspaceId]);
 
   useEffect(() => {
     if (saveState !== "dirty") return;
@@ -254,12 +260,30 @@ export function RichDocumentEditor({
 
   useEffect(() => {
     const online = () => {
-      setSaveState((current) => (current === "offline" ? "dirty" : current));
-      setMessage("Back online. Syncing changes…");
+      setMessage("Back online. Replaying encrypted changes…");
+      void syncOfflineWorkspace(workspaceId)
+        .then(async (result: any) => {
+          if ((result?.conflicts?.length ?? 0) > 0) {
+            setSaveState("conflict");
+            setMessage("An offline edit conflicted with a newer server version. Resolve it in Offline & PWA.");
+            return;
+          }
+          const response = await fetch(`/api/documents/${workspaceId}/${node.id}`, { cache: "no-store" });
+          if (response.ok) {
+            const latest = (await response.json()) as DocumentRecord;
+            setRevision(latest.revision);
+            setBody(latest.body);
+            lastAcknowledged.current = cloneBody(latest.body);
+            persistRecovery(latest.body, latest.revision);
+          }
+          setSaveState("saved");
+          setMessage("Offline changes synchronized.");
+        })
+        .catch(() => setSaveState("dirty"));
     };
     const offline = () => {
       setSaveState("offline");
-      setMessage("Offline. Changes are being kept in local recovery storage.");
+      setMessage("Offline. Changes are encrypted locally and queued for replay.");
       persistRecovery(body);
     };
     window.addEventListener("online", online);
@@ -268,7 +292,7 @@ export function RichDocumentEditor({
       window.removeEventListener("online", online);
       window.removeEventListener("offline", offline);
     };
-  }, [body, persistRecovery]);
+  }, [body, node.id, persistRecovery, workspaceId]);
 
   useEffect(() => {
     const beforeUnload = (event: BeforeUnloadEvent) => {
@@ -322,7 +346,7 @@ export function RichDocumentEditor({
     lastAcknowledged.current = cloneBody(latest.body);
     setHistory([]);
     setFuture([]);
-    window.localStorage.removeItem(storageKey);
+    persistRecovery(latest.body, latest.revision);
     setSaveState("saved");
     setMessage("Reloaded latest server version.");
   }
@@ -376,7 +400,7 @@ export function RichDocumentEditor({
                 : saveState === "saving"
                   ? "Saving…"
                   : saveState === "offline"
-                    ? "Offline recovery"
+                    ? "Offline queued"
                     : saveState === "conflict"
                       ? "Conflict"
                       : "Save error"}

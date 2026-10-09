@@ -4,6 +4,8 @@ import type { Asset, AssetVariant } from "@nexosophy/contracts";
 import { Button } from "@nexosophy/ui";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { cacheAttachmentOffline, openOfflineAttachment, removeOfflineAttachment } from "../lib/offline-client";
+import { OfficeEditorLauncher } from "./office-editor-launcher";
 import styles from "./asset-viewer.module.css";
 
 type AssetPayload = {
@@ -52,6 +54,7 @@ export function AssetViewer({
   const [previewMime, setPreviewMime] = useState<string | null>(null);
   const [status, setStatus] = useState("Loading attachment…");
   const [busy, setBusy] = useState(false);
+  const [offlinePinned, setOfflinePinned] = useState(false);
 
   const load = useCallback(async () => {
     const response = await fetch(
@@ -138,6 +141,42 @@ export function AssetViewer({
     }
   }
 
+  async function toggleOffline() {
+    if (!payload) return;
+    setBusy(true);
+    try {
+      if (offlinePinned) {
+        await removeOfflineAttachment(workspaceId, assetId);
+        setOfflinePinned(false);
+        setStatus("Removed encrypted offline copy.");
+      } else {
+        const policyResponse = await fetch(`/api/offline/${workspaceId}`, { cache: "no-store" });
+        const policyPayload = policyResponse.ok ? await policyResponse.json() as any : null;
+        if (!policyPayload?.policy?.attachmentsAllowed) throw new Error("Workspace policy does not allow offline attachments.");
+        await cacheAttachmentOffline(
+          workspaceId,
+          assetId,
+          payload.asset.originalFilename,
+          payload.asset.detectedMime ?? payload.asset.declaredMime,
+          Number(policyPayload.policy.maxDeviceBytes),
+        );
+        setOfflinePinned(true);
+        setStatus("Encrypted attachment is available offline on this browser.");
+      }
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Offline attachment action failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function openOfflineCopy() {
+    const cached = await openOfflineAttachment(workspaceId, assetId);
+    if (!cached) return;
+    window.open(cached.url, "_blank", "noopener,noreferrer");
+    window.setTimeout(() => URL.revokeObjectURL(cached.url), 60_000);
+  }
+
   async function remove() {
     if (!window.confirm("Move this attachment to the deletion pipeline?")) return;
     setBusy(true);
@@ -205,6 +244,13 @@ export function AssetViewer({
           >
             {previewVariant ? "Open preview" : processing.length > 0 ? "Preview processing…" : "No preview"}
           </Button>
+          <Button variant="secondary" onClick={() => void toggleOffline()} disabled={busy}>
+            {offlinePinned ? "Remove offline copy" : "Make available offline"}
+          </Button>
+          {offlinePinned ? <Button variant="secondary" onClick={() => void openOfflineCopy()}>Open offline copy</Button> : null}
+          {asset.nodeId && /(officedocument|msword|ms-excel|ms-powerpoint)/i.test(asset.detectedMime ?? asset.declaredMime) ? (
+            <OfficeEditorLauncher workspaceId={workspaceId} nodeId={asset.nodeId} />
+          ) : null}
           <Button variant="danger" onClick={() => void remove()} disabled={busy}>
             Delete
           </Button>

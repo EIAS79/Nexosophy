@@ -42,6 +42,10 @@ import { Queue, Worker } from "bullmq";
 import Fastify from "fastify";
 
 import { runTransferLoop } from "./transfer-worker.js";
+import { runAnalysisLoop } from "./analysis-worker.js";
+import { runIntegrationLoop } from "./integration-worker.js";
+import { runOfficeLoop } from "./office-worker.js";
+import { runLabAlertLoop } from "./lab-alert-worker.js";
 
 const env = parseWorkerEnv();
 const logger = createLogger("nexosophy-worker", env.LOG_LEVEL);
@@ -665,6 +669,19 @@ const transferLoop = runTransferLoop({
   stopping: () => stopping,
   delay,
 });
+const analysisLoop = runAnalysisLoop({
+  pool: contentPool, storage, workerId, logger, stopping: () => stopping, delay,
+});
+const integrationLoop = runIntegrationLoop({
+  pool: contentPool, workerId, logger, stopping: () => stopping, delay,
+});
+const officeLoop = runOfficeLoop({
+  pool: contentPool, storage, workerId, logger, stopping: () => stopping, delay,
+});
+const labAlertLoop = runLabAlertLoop({
+  pool: contentPool, logger, stopping: () => stopping, delay,
+});
+
 const health = Fastify({ loggerInstance: logger });
 
 health.get("/health", async () => ({
@@ -709,6 +726,10 @@ async function shutdown(signal: string) {
     reminderLoop,
     notificationLoop,
     transferLoop,
+    analysisLoop,
+    integrationLoop,
+    officeLoop,
+    labAlertLoop,
   ]);
   await worker.close();
   await systemQueue.close();
@@ -736,6 +757,10 @@ logger.info(
     reminderScheduler: true,
     notificationDelivery: true,
     transferPipeline: true,
+    analysisPipeline: true,
+    integrationPipeline: true,
+    officePipeline: true,
+    labAlertScheduler: true,
     storageConfigured: Boolean(storage),
   },
   "Worker started",

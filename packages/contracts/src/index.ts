@@ -45,3 +45,9 @@ export * from "./structured-code.js";
 export * from "./academic.js";
 
 export * from "./research-references.js";
+export * from "./lab.js";
+export * from "./teaching.js";
+export * from "./reporting.js";
+export * from "./analysis.js";
+export * from "./integrations.js";
+export * from "./offline.js";

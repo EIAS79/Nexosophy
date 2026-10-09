@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { AppShell } from "../../components/app-shell";
+import { PwaRuntime } from "../../components/pwa-runtime";
 import { getMe, nexosophyApi, NexosophyApiError } from "../../lib/api-server";
 import {
   assertClerkConfiguredForProtectedEnvironment,
@@ -66,6 +67,7 @@ export default async function ApplicationLayout({
 
   return (
     <AppShell workspace={workspace} workspaces={workspaceOptions}>
+      <PwaRuntime workspaceId={workspace.id} />
       {children}
     </AppShell>
   );

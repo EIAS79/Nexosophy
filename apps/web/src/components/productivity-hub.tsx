@@ -18,6 +18,7 @@ import {
   type FormEvent,
 } from "react";
 
+import { queueTaskMutation, readOfflineRecord, saveOfflineRecord, syncOfflineWorkspace } from "../lib/offline-client";
 import styles from "./productivity-hub.module.css";
 
 type Tab = "tasks" | "calendar" | "reminders" | "inbox" | "focus";
@@ -63,11 +64,20 @@ async function apiPost<T>(
   workspaceId: string,
   body: Record<string, unknown>,
 ): Promise<T> {
-  const response = await fetch(`/api/productivity/${workspaceId}`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`/api/productivity/${workspaceId}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch (error) {
+    if (body.action === "createTask" || body.action === "updateTask" || body.action === "completeTask") {
+      await queueTaskMutation(workspaceId, body);
+      return { offlineQueued: true } as T;
+    }
+    throw error;
+  }
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as
       | { error?: { message?: string } }
@@ -147,7 +157,7 @@ function TaskComposer({
       "UTC";
     setStatus("Creating task…");
     try {
-      await apiPost(workspaceId, {
+      const result = await apiPost<{ offlineQueued?: boolean }>(workspaceId, {
         action: "createTask",
         title: String(data.get("title") ?? ""),
         description: String(data.get("description") ?? ""),
@@ -164,8 +174,12 @@ function TaskComposer({
         dependencyIds: commaIds(data.get("dependencyIds")),
       });
       form.reset();
-      setStatus("Task created.");
-      onCreated();
+      if (result?.offlineQueued) {
+        setStatus("Task creation queued offline.");
+      } else {
+        setStatus("Task created.");
+        onCreated();
+      }
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Task creation failed.");
     }
@@ -286,13 +300,27 @@ export function ProductivityHub({
   const [focusSnapshotAt, setFocusSnapshotAt] = useState(Date.now());
 
   const loadTasks = useCallback(async () => {
-    const payload = await apiGet<{ items: TaskRecord[] }>(workspaceId, "tasks");
-    setTasks(payload.items);
+    try {
+      const payload = await apiGet<{ items: TaskRecord[] }>(workspaceId, "tasks");
+      setTasks(payload.items);
+      await saveOfflineRecord(workspaceId, "tasks", "list", payload);
+    } catch (error) {
+      const cached = await readOfflineRecord<{ items: TaskRecord[] }>(workspaceId, "tasks", "list");
+      if (!cached) throw error;
+      setTasks(cached.items);
+    }
   }, [workspaceId]);
 
   const loadProjects = useCallback(async () => {
-    const payload = await apiGet<{ items: TaskProject[] }>(workspaceId, "projects");
-    setProjects(payload.items);
+    try {
+      const payload = await apiGet<{ items: TaskProject[] }>(workspaceId, "projects");
+      setProjects(payload.items);
+      await saveOfflineRecord(workspaceId, "task-projects", "list", payload);
+    } catch (error) {
+      const cached = await readOfflineRecord<{ items: TaskProject[] }>(workspaceId, "task-projects", "list");
+      if (!cached) throw error;
+      setProjects(cached.items);
+    }
   }, [workspaceId]);
 
   const loadReminders = useCallback(async () => {
@@ -337,6 +365,11 @@ export function ProductivityHub({
   const refreshAll = useCallback(async () => {
     setStatus("Refreshing…");
     try {
+      if (!navigator.onLine) {
+        await Promise.all([loadTasks(), loadProjects()]);
+        setStatus("Offline · showing encrypted cached tasks and projects.");
+        return;
+      }
       await Promise.all([
         loadTasks(),
         loadProjects(),
@@ -352,7 +385,10 @@ export function ProductivityHub({
 
   useEffect(() => {
     void refreshAll();
-  }, [refreshAll]);
+    const online = () => { void syncOfflineWorkspace(workspaceId).then(() => refreshAll()).catch(() => undefined); };
+    window.addEventListener("online", online);
+    return () => window.removeEventListener("online", online);
+  }, [refreshAll, workspaceId]);
 
   useEffect(() => {
     if (tab === "calendar") void loadCalendar();
@@ -388,7 +424,22 @@ export function ProductivityHub({
 
   async function complete(task: TaskRecord) {
     try {
-      await apiPost(workspaceId, { action: "completeTask", taskId: task.id });
+      const result = await apiPost<{ offlineQueued?: boolean }>(workspaceId, {
+        action: "completeTask",
+        taskId: task.id,
+        expectedVersion: task.version,
+      });
+      if (result?.offlineQueued) {
+        setTasks((current) => {
+          const next = current.map((item) =>
+            item.id === task.id ? { ...item, status: "done" as const } : item,
+          );
+          void saveOfflineRecord(workspaceId, "tasks", "list", { items: next });
+          return next;
+        });
+        setStatus("Task completion queued offline.");
+        return;
+      }
       await Promise.all([loadTasks(), loadFocus()]);
       setStatus(task.recurrenceRule ? "Occurrence completed; next occurrence generated." : "Task completed.");
     } catch (error) {
@@ -401,12 +452,23 @@ export function ProductivityHub({
     patch: Record<string, unknown>,
   ) {
     try {
-      await apiPost(workspaceId, {
+      const result = await apiPost<{ offlineQueued?: boolean }>(workspaceId, {
         action: "updateTask",
         taskId: task.id,
         expectedVersion: task.version,
         ...patch,
       });
+      if (result?.offlineQueued) {
+        setTasks((current) => {
+          const next = current.map((item) =>
+            item.id === task.id ? ({ ...item, ...patch } as TaskRecord) : item,
+          );
+          void saveOfflineRecord(workspaceId, "tasks", "list", { items: next });
+          return next;
+        });
+        setStatus("Task update queued offline.");
+        return;
+      }
       await loadTasks();
       setStatus("Task updated.");
     } catch (error) {

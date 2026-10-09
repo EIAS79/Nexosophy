@@ -64,3 +64,18 @@ export * from "./academic-store.js";
 export * from "./reference-format.js";
 
 export * from "./research-reference-store.js";
+export * from "./lab-core-store.js";
+export * from "./lab-protocol-store.js";
+export * from "./lab-inventory-store.js";
+export * from "./lab-equipment-store.js";
+export * from "./lab-compliance-store.js";
+export * from "./lab-alert-store.js";
+export * from "./teaching-store.js";
+export * from "./reporting-store.js";
+export * from "./analysis-store.js";
+export * from "./integration-crypto.js";
+export * from "./integration-provider.js";
+export * from "./integration-store.js";
+export * from "./integration-subscription-store.js";
+export * from "./office-store.js";
+export * from "./offline-store.js";

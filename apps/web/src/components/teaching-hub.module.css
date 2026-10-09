@@ -1,0 +1,1 @@
+.hub{display:grid;gap:16px}.head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.card{padding:14px;border:1px solid var(--nx-border,#ddd);border-radius:14px;background:var(--nx-surface,#fff);min-width:0}@media(max-width:760px){.head,.grid{display:flex;flex-direction:column}}
