@@ -36,7 +36,7 @@ create table "thesis_milestones" (
  "task_id" uuid not null references "tasks"("id") on delete cascade,"kind" text not null default 'milestone',
  "created_at" timestamptz not null default now(),unique("task_id")
 );
-create table "supervision_meetings" (
+create table "thesis_supervision_meetings" (
  "id" uuid primary key default gen_random_uuid(),"workspace_id" uuid not null references "workspaces"("id") on delete cascade,
  "project_id" uuid not null references "thesis_projects"("id") on delete cascade,
  "calendar_event_id" uuid not null references "calendar_events"("id") on delete cascade,"notes_node_id" uuid,

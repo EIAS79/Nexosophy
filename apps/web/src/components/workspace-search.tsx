@@ -34,9 +34,12 @@ const EMPTY: SearchState = {
 function HighlightedSnippet({ value }: { value: string }) {
   const parts = value.split(/(<mark>|<\/mark>)/g);
   let marked = false;
+  let offset = 0;
   return (
     <p>
-      {parts.map((part, index) => {
+      {parts.map((part) => {
+        const key = `${offset}:${part}`;
+        offset += part.length;
         if (part === "<mark>") {
           marked = true;
           return null;
@@ -45,7 +48,7 @@ function HighlightedSnippet({ value }: { value: string }) {
           marked = false;
           return null;
         }
-        return marked ? <mark key={index}>{part}</mark> : <span key={index}>{part}</span>;
+        return marked ? <mark key={key}>{part}</mark> : <span key={key}>{part}</span>;
       })}
     </p>
   );
@@ -115,14 +118,14 @@ export function WorkspaceSearch({ workspaceId }: { workspaceId: string }) {
   }, [workspaceId]);
 
   const run = useCallback(
-    async (state: SearchState, append = false) => {
+    async (state: SearchState, append = false, cursor: string | null = null) => {
       setLoading(true);
       setStatus(append ? "Loading more results…" : "Searching…");
       try {
         const response = await fetch(
           `/api/search/${workspaceId}?${queryString(
             state,
-            append ? nextCursor : null,
+            append ? cursor : null,
           ).toString()}`,
           { cache: "no-store" },
         );
@@ -146,12 +149,12 @@ export function WorkspaceSearch({ workspaceId }: { workspaceId: string }) {
         setLoading(false);
       }
     },
-    [loadMeta, nextCursor, queryString, workspaceId],
+    [loadMeta, queryString, workspaceId],
   );
 
   useEffect(() => {
     void Promise.all([loadMeta(), run(EMPTY)]);
-  }, []); // initial workspace search surface
+  }, [loadMeta, run]);
 
   const activeQueryObject = useMemo(
     () => ({
@@ -238,7 +241,6 @@ export function WorkspaceSearch({ workspaceId }: { workspaceId: string }) {
             value={draft.q}
             onChange={(event) => setDraft((current) => ({ ...current, q: event.currentTarget.value }))}
             placeholder="Find notes, files, reports, OCR text…"
-            autoFocus
           />
         </label>
         <label>
@@ -349,7 +351,7 @@ export function WorkspaceSearch({ workspaceId }: { workspaceId: string }) {
             </article>
           ))}
           {nextCursor ? (
-            <Button variant="secondary" disabled={loading} onClick={() => void run(active, true)}>
+            <Button variant="secondary" disabled={loading} onClick={() => void run(active, true, nextCursor)}>
               Load more
             </Button>
           ) : null}

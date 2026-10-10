@@ -819,7 +819,7 @@ export async function listNoteHierarchy(
         : row.kind === "folder"
           ? "section"
           : "page",
-    rank: Number(row.rank ?? 9223372036854775807),
+    rank: Number(row.rank ?? Number.MAX_SAFE_INTEGER),
     color: row.color,
     metadata: row.metadata ?? {},
   }));

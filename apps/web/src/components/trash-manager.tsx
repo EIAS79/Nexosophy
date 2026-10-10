@@ -28,9 +28,9 @@ export function TrashManager({ workspaceId }: { workspaceId: string }) {
   const [status, setStatus] = useState("Loading trash…");
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  const load = useCallback(async (append = false) => {
+  const load = useCallback(async (append = false, cursor: string | null = null) => {
     const query = new URLSearchParams();
-    if (append && nextCursor) query.set("cursor", nextCursor);
+    if (append && cursor) query.set("cursor", cursor);
     const response = await fetch(`/api/history/${workspaceId}?${query.toString()}`, {
       cache: "no-store",
     });
@@ -47,11 +47,11 @@ export function TrashManager({ workspaceId }: { workspaceId: string }) {
     setNextCursor(payload.nextCursor);
     setRetentionDays(payload.retentionDays);
     setStatus("");
-  }, [nextCursor, workspaceId]);
+  }, [workspaceId]);
 
   useEffect(() => {
     void load(false);
-  }, []); // initial load
+  }, [load]);
 
   async function restore(item: TrashEntry) {
     setBusyId(item.nodeId);
@@ -153,7 +153,7 @@ export function TrashManager({ workspaceId }: { workspaceId: string }) {
       </div>
 
       {nextCursor ? (
-        <Button variant="secondary" onClick={() => void load(true)}>Load more</Button>
+        <Button variant="secondary" onClick={() => void load(true, nextCursor)}>Load more</Button>
       ) : null}
       <p className={styles.live} aria-live="polite">{status}</p>
     </section>

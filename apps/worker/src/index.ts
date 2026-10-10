@@ -118,8 +118,8 @@ const worker = new Worker(
     if (data.workspaceId && data.outboxEventId) {
       await fanoutOutboxNotification(contentPool, job.name, {
         workspaceId: data.workspaceId,
-        aggregateType: data.aggregateType,
-        aggregateId: data.aggregateId,
+        ...(data.aggregateType ? { aggregateType: data.aggregateType } : {}),
+        ...(data.aggregateId ? { aggregateId: data.aggregateId } : {}),
         payload: {
           ...(data.payload ?? {}),
           outboxEventId: data.outboxEventId,
@@ -665,7 +665,7 @@ const transferLoop = runTransferLoop({
   storage,
   workerId,
   logger,
-  mediaProcessorUrl: mediaServices.MEDIA_PROCESSOR_URL,
+  ...(mediaServices.MEDIA_PROCESSOR_URL ? { mediaProcessorUrl: mediaServices.MEDIA_PROCESSOR_URL } : {}),
   stopping: () => stopping,
   delay,
 });

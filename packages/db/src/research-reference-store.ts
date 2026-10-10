@@ -345,7 +345,7 @@ export async function createThesisMilestone(
       userId: input.userId,
       title: input.title,
       description: input.description ?? "",
-      dueAt: input.dueAt,
+      ...(input.dueAt ? { dueAt: input.dueAt } : {}),
       linkedNodeId: project.rows[0].root_node_id,
     });
     const r = await db.query<any>(
@@ -358,7 +358,7 @@ export async function createThesisMilestone(
   });
 }
 
-export async function createSupervisionMeeting(
+export async function createThesisSupervisionMeeting(
   pool: Pool,
   input: {
     workspaceId: string;
@@ -402,7 +402,7 @@ export async function createSupervisionMeeting(
       linkedNodeId: notesNodeId,
     });
     const r = await db.query<any>(
-      `insert into "supervision_meetings"
+      `insert into "thesis_supervision_meetings"
          ("workspace_id","project_id","calendar_event_id","notes_node_id","agenda")
        values ($1,$2,$3,$4,$5)
        returning *`,
@@ -567,9 +567,9 @@ export async function getReference(pool: Pool, workspaceId: string, referenceId:
 async function findDuplicateReference(
   db: Pool | PoolClient,
   workspaceId: string,
-  input: ParsedReference | {
+  input: {
     title: string;
-    year?: number;
+    year?: number | undefined;
     identifiers: Array<{ type: string; value: string }>;
   },
 ) {
@@ -603,12 +603,12 @@ export async function createReference(
     userId: string;
     type: string;
     title: string;
-    year?: number;
-    containerTitle?: string;
-    publisher?: string;
-    url?: string;
-    abstract?: string;
-    authors: Array<{ family?: string; given?: string; literal?: string }>;
+    year?: number | undefined;
+    containerTitle?: string | undefined;
+    publisher?: string | undefined;
+    url?: string | undefined;
+    abstract?: string | undefined;
+    authors: Array<{ family?: string | undefined; given?: string | undefined; literal?: string | undefined }>;
     identifiers: Array<{ type: string; value: string }>;
     metadata: Record<string, unknown>;
     deduplicate?: boolean;
@@ -1216,7 +1216,7 @@ export async function thesisDetail(pool: Pool, workspaceId: string, projectId: s
       ),
       pool.query<any>(
         `select m.*,e."title",e."starts_at",e."ends_at"
-         from "supervision_meetings" m join "calendar_events" e on e."id"=m."calendar_event_id"
+         from "thesis_supervision_meetings" m join "calendar_events" e on e."id"=m."calendar_event_id"
          where m."project_id"=$1 order by e."starts_at" desc`,
         [projectId],
       ),

@@ -254,7 +254,7 @@ export function RichDocumentEditor({
     return () => {
       if (saveTimer.current) window.clearTimeout(saveTimer.current);
     };
-  }, [body, save, saveState]);
+  }, [save, saveState]);
 
   useEffect(() => {
     const online = () => {
@@ -377,7 +377,7 @@ export function RichDocumentEditor({
   }
 
   return (
-    <section className={styles.editor} onKeyDown={onEditorKeyDown}>
+    <section aria-label="Document editor" className={styles.editor} onKeyDown={onEditorKeyDown}>
       <header className={styles.topbar}>
         <div className={styles.titleWrap}>
           <label htmlFor="document-title">Document title</label>

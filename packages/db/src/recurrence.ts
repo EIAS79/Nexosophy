@@ -36,12 +36,12 @@ export function parseRRule(value?: string | null): ParsedRRule | null {
   const interval = Math.max(1, Number(fields.INTERVAL ?? "1") || 1);
   const byDay = (fields.BYDAY ?? "")
     .split(",")
-    .map((value) => WEEKDAYS[value])
-    .filter((value): value is number => Number.isInteger(value));
+    .map((value: string) => WEEKDAYS[value])
+    .filter((value: number | undefined): value is number => Number.isInteger(value));
   const byMonthDay = (fields.BYMONTHDAY ?? "")
     .split(",")
     .map(Number)
-    .filter((value) => Number.isInteger(value) && value >= 1 && value <= 31);
+    .filter((value: number) => Number.isInteger(value) && value >= 1 && value <= 31);
   const count = fields.COUNT ? Math.max(1, Number(fields.COUNT) || 1) : null;
   const until = fields.UNTIL
     ? new Date(

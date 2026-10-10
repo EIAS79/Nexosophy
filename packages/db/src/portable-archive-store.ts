@@ -108,8 +108,8 @@ function replaceVars(value:unknown,values:Record<string,unknown>):unknown{
   if(value&&typeof value==="object")return Object.fromEntries(Object.entries(value as Record<string,unknown>).map(([k,v])=>[k,replaceVars(v,values)]));
   if(typeof value!=="string")return value;
   const exact=value.match(/^\{\{([A-Za-z][A-Za-z0-9_.-]{0,79})\}\}$/);
-  if(exact&&Object.prototype.hasOwnProperty.call(values,exact[1]!))return values[exact[1]!];
-  return value.replace(/\{\{([A-Za-z][A-Za-z0-9_.-]{0,79})\}\}/g,(_m,k:string)=>Object.prototype.hasOwnProperty.call(values,k)?String(values[k]??""):"");
+  if(exact&&Object.hasOwn(values,exact[1]!))return values[exact[1]!];
+  return value.replace(/\{\{([A-Za-z][A-Za-z0-9_.-]{0,79})\}\}/g,(_m,k:string)=>Object.hasOwn(values,k)?String(values[k]??""):"");
 }
 export function applyTemplateVariables(manifest:PortableManifest,values:Record<string,unknown>):PortableManifest{return replaceVars(manifest,values) as PortableManifest;}
 

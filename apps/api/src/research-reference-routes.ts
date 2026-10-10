@@ -1,3 +1,4 @@
+import { omitUndefined } from "./omit-undefined.js";
 import type { AuthVerifier } from "@nexosophy/auth";
 import {
   bibliographyQuerySchema,
@@ -14,7 +15,7 @@ import {
   createLiteratureCollection,
   createReference,
   createReferenceAnnotation,
-  createSupervisionMeeting,
+  createThesisSupervisionMeeting,
   createThesisMilestone,
   createThesisProject,
   exportReferenceText,
@@ -69,7 +70,7 @@ export async function registerResearchReferenceRoutes(
   app.post("/v1/workspaces/:workspaceId/research/theses",async(request,reply)=>{
     const{workspaceId}=request.params as any,b=createThesisSchema.parse(request.body),p=await requireWorkspacePrincipal(request,reply,verifier);
     if(!p)return;if(!(await authorizeWorkspace(pool,p,workspaceId,"content.create",request,reply)))return;
-    try{const x=await createThesisProject(pool,{workspaceId,userId:p.internalUserId,...b,requestId:request.id});reply.code(201);return x;}catch(e){return fail(reply,request,e);}
+    try{const x=await createThesisProject(pool,omitUndefined({workspaceId,userId:p.internalUserId,...b,supervisors:b.supervisors.map(supervisor=>omitUndefined(supervisor)),requestId:request.id}));reply.code(201);return x;}catch(e){return fail(reply,request,e);}
   });
 
   app.post("/v1/workspaces/:workspaceId/research/theses/:projectId/statements",async(request,reply)=>{
@@ -88,13 +89,13 @@ export async function registerResearchReferenceRoutes(
   app.post("/v1/workspaces/:workspaceId/research/theses/:projectId/milestones",async(request,reply)=>{
     const{workspaceId,projectId}=request.params as any,b=request.body as any,p=await requireWorkspacePrincipal(request,reply,verifier);
     if(!p)return;if(!(await authorizeWorkspace(pool,p,workspaceId,"content.create",request,reply)))return;
-    try{reply.code(201);return await createThesisMilestone(pool,{workspaceId,projectId,userId:p.internalUserId,title:text(b?.title,500),description:text(b?.description),dueAt:typeof b?.dueAt==="string"?new Date(b.dueAt):undefined,kind:text(b?.kind,80)||"milestone"});}catch(e){return fail(reply,request,e);}
+    try{reply.code(201);return await createThesisMilestone(pool,omitUndefined({workspaceId,projectId,userId:p.internalUserId,title:text(b?.title,500),description:text(b?.description),dueAt:typeof b?.dueAt==="string"?new Date(b.dueAt):undefined,kind:text(b?.kind,80)||"milestone"}));}catch(e){return fail(reply,request,e);}
   });
 
   app.post("/v1/workspaces/:workspaceId/research/theses/:projectId/meetings",async(request,reply)=>{
     const{workspaceId,projectId}=request.params as any,b=request.body as any,p=await requireWorkspacePrincipal(request,reply,verifier);
     if(!p)return;if(!(await authorizeWorkspace(pool,p,workspaceId,"content.create",request,reply)))return;
-    try{reply.code(201);return await createSupervisionMeeting(pool,{workspaceId,projectId,userId:p.internalUserId,title:text(b?.title,500)||"Supervision meeting",startsAt:new Date(String(b?.startsAt)),endsAt:new Date(String(b?.endsAt)),timezone:text(b?.timezone,120)||"UTC",agenda:text(b?.agenda)});}catch(e){return fail(reply,request,e);}
+    try{reply.code(201);return await createThesisSupervisionMeeting(pool,{workspaceId,projectId,userId:p.internalUserId,title:text(b?.title,500)||"Supervision meeting",startsAt:new Date(String(b?.startsAt)),endsAt:new Date(String(b?.endsAt)),timezone:text(b?.timezone,120)||"UTC",agenda:text(b?.agenda)});}catch(e){return fail(reply,request,e);}
   });
 
   app.patch("/v1/workspaces/:workspaceId/research/theses/:projectId/status",async(request,reply)=>{
@@ -121,7 +122,7 @@ export async function registerResearchReferenceRoutes(
     const{workspaceId,projectId}=request.params as any,b=request.body as any,p=await requireWorkspacePrincipal(request,reply,verifier);
     if(!p)return;if(!(await authorizeWorkspace(pool,p,workspaceId,"content.update",request,reply)))return;
     if(!["not_required","planned","submitted","approved","rejected","expired"].includes(String(b?.status)))return fail(reply,request,new Error("ETHICS_STATUS_INVALID"));
-    return upsertEthicsRecord(pool,{workspaceId,projectId,status:b.status,authority:text(b?.authority,300)||undefined,referenceNumber:text(b?.referenceNumber,200)||undefined,submittedOn:text(b?.submittedOn,20)||undefined,approvedOn:text(b?.approvedOn,20)||undefined,expiresOn:text(b?.expiresOn,20)||undefined,notes:text(b?.notes)});
+    return upsertEthicsRecord(pool,omitUndefined({workspaceId,projectId,status:b.status,authority:text(b?.authority,300)||undefined,referenceNumber:text(b?.referenceNumber,200)||undefined,submittedOn:text(b?.submittedOn,20)||undefined,approvedOn:text(b?.approvedOn,20)||undefined,expiresOn:text(b?.expiresOn,20)||undefined,notes:text(b?.notes)}));
   });
 
   app.patch("/v1/workspaces/:workspaceId/research/theses/:projectId/checklist/:itemId",async(request,reply)=>{
@@ -164,19 +165,19 @@ export async function registerResearchReferenceRoutes(
   app.post("/v1/workspaces/:workspaceId/references/:referenceId/attachments",async(request,reply)=>{
     const{workspaceId,referenceId}=request.params as any,b=request.body as any,p=await requireWorkspacePrincipal(request,reply,verifier);
     if(!p)return;if(!(await authorizeWorkspace(pool,p,workspaceId,"content.update",request,reply)))return;
-    try{await attachReferenceAsset(pool,{workspaceId,referenceId,assetId:String(b?.assetId??""),label:text(b?.label,200)||undefined});reply.code(204);return;}catch(e){return fail(reply,request,e);}
+    try{await attachReferenceAsset(pool,omitUndefined({workspaceId,referenceId,assetId:String(b?.assetId??""),label:text(b?.label,200)||undefined}));reply.code(204);return;}catch(e){return fail(reply,request,e);}
   });
 
   app.post("/v1/workspaces/:workspaceId/references/:referenceId/annotations",async(request,reply)=>{
     const{workspaceId,referenceId}=request.params as any,b=request.body as any,p=await requireWorkspacePrincipal(request,reply,verifier);
     if(!p)return;if(!(await authorizeWorkspace(pool,p,workspaceId,"content.update",request,reply)))return;
-    reply.code(201);return createReferenceAnnotation(pool,{workspaceId,userId:p.internalUserId,referenceId,noteNodeId:optionalUuid(b?.noteNodeId),quote:text(b?.quote,100000)||undefined,comment:text(b?.comment,100000),pageLocator:text(b?.pageLocator,100)||undefined});
+    reply.code(201);return createReferenceAnnotation(pool,omitUndefined({workspaceId,userId:p.internalUserId,referenceId,noteNodeId:optionalUuid(b?.noteNodeId),quote:text(b?.quote,100000)||undefined,comment:text(b?.comment,100000),pageLocator:text(b?.pageLocator,100)||undefined}));
   });
 
   app.post("/v1/workspaces/:workspaceId/references/collections",async(request,reply)=>{
     const{workspaceId}=request.params as any,b=request.body as any,p=await requireWorkspacePrincipal(request,reply,verifier);
     if(!p)return;if(!(await authorizeWorkspace(pool,p,workspaceId,"content.create",request,reply)))return;
-    reply.code(201);return createLiteratureCollection(pool,{workspaceId,projectId:optionalUuid(b?.projectId),name:text(b?.name,200)});
+    reply.code(201);return createLiteratureCollection(pool,omitUndefined({workspaceId,projectId:optionalUuid(b?.projectId),name:text(b?.name,200)}));
   });
 
   app.post("/v1/workspaces/:workspaceId/references/collections/:collectionId/items",async(request,reply)=>{
@@ -188,19 +189,19 @@ export async function registerResearchReferenceRoutes(
   app.put("/v1/workspaces/:workspaceId/references/:referenceId/matrix",async(request,reply)=>{
     const{workspaceId,referenceId}=request.params as any,b=request.body as any,p=await requireWorkspacePrincipal(request,reply,verifier);
     if(!p)return;if(!(await authorizeWorkspace(pool,p,workspaceId,"content.update",request,reply)))return;
-    return upsertLiteratureMatrixRow(pool,{workspaceId,projectId:optionalUuid(b?.projectId),referenceId,question:text(b?.question,100000)||undefined,method:text(b?.method,100000)||undefined,sample:text(b?.sample,100000)||undefined,findings:text(b?.findings,200000)||undefined,limitations:text(b?.limitations,100000)||undefined,relevance:text(b?.relevance,100000)||undefined,custom:typeof b?.custom==="object"&&b.custom?b.custom:{}});
+    return upsertLiteratureMatrixRow(pool,omitUndefined({workspaceId,projectId:optionalUuid(b?.projectId),referenceId,question:text(b?.question,100000)||undefined,method:text(b?.method,100000)||undefined,sample:text(b?.sample,100000)||undefined,findings:text(b?.findings,200000)||undefined,limitations:text(b?.limitations,100000)||undefined,relevance:text(b?.relevance,100000)||undefined,custom:typeof b?.custom==="object"&&b.custom?b.custom:{}}));
   });
 
   app.post("/v1/workspaces/:workspaceId/references/citations",async(request,reply)=>{
     const{workspaceId}=request.params as any,b=insertCitationSchema.parse(request.body),p=await requireWorkspacePrincipal(request,reply,verifier);
     if(!p)return;if(!(await authorizeWorkspace(pool,p,workspaceId,"content.update",request,reply)))return;
-    try{reply.code(201);return await insertCitation(pool,{workspaceId,userId:p.internalUserId,...b,requestId:request.id});}catch(e){return fail(reply,request,e);}
+    try{reply.code(201);return await insertCitation(pool,omitUndefined({workspaceId,userId:p.internalUserId,...b,requestId:request.id}));}catch(e){return fail(reply,request,e);}
   });
 
   app.get("/v1/workspaces/:workspaceId/references/bibliography",async(request,reply)=>{
     const{workspaceId}=request.params as any,q=bibliographyQuerySchema.parse(request.query),p=await requireWorkspacePrincipal(request,reply,verifier);
     if(!p)return;if(!(await authorizeWorkspace(pool,p,workspaceId,"content.read",request,reply)))return;
-    return{items:await generateBibliography(pool,{workspaceId,styleId:q.styleId,documentNodeId:q.documentNodeId})};
+    return{items:await generateBibliography(pool,omitUndefined({workspaceId,styleId:q.styleId,documentNodeId:q.documentNodeId}))};
   });
 
   app.post("/v1/workspaces/:workspaceId/references/import",async(request,reply)=>{

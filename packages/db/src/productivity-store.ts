@@ -1081,7 +1081,8 @@ export async function deleteCalendarEvent(
     return;
   }
   if (input.scope === "future") {
-    if (!input.occurrenceStartAt) {
+    const occurrenceStartAt = input.occurrenceStartAt;
+    if (!occurrenceStartAt) {
       throw new Error("FUTURE_SCOPE_REQUIRES_RECURRING_EVENT");
     }
     await withWorkspaceTransaction(pool, async (client) => {
@@ -1104,7 +1105,7 @@ export async function deleteCalendarEvent(
         [
           input.workspaceId,
           input.eventId,
-          truncateRuleBefore(rule, input.occurrenceStartAt),
+          truncateRuleBefore(rule, occurrenceStartAt),
           input.actorUserId,
         ],
       );

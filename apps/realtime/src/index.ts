@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { IncomingMessage } from "node:http";
-import type { Socket } from "node:net";
+import type { Duplex } from "node:stream";
 
 import { verifyRealtimeRoomToken, type RealtimeRoomTokenClaims } from "@nexosophy/auth";
 import { collaborationUpdateSchema, presenceStateSchema } from "@nexosophy/contracts";
@@ -268,7 +268,7 @@ function removeConnection(connection: Connection): void {
 
 async function authorizeUpgrade(
   request: IncomingMessage,
-  socket: Socket,
+  socket: Duplex,
 ): Promise<void> {
   const url = new URL(request.url ?? "/", "http://realtime.local");
   const match = url.pathname.match(

@@ -99,6 +99,7 @@ export function RealtimeRoomProvider({
   const reconnectTimer = useRef<number | null>(null);
   const stopped = useRef(false);
   const reconnectAttempts = useRef(0);
+  const connectRef = useRef<() => Promise<void>>(async () => {});
   const queue = useRef<QueuedUpdate[]>([]);
   const clientId = useRef("");
   const clock = useRef(0);
@@ -152,9 +153,8 @@ export function RealtimeRoomProvider({
     reconnectAttempts.current += 1;
     reconnectTimer.current = window.setTimeout(() => {
       reconnectTimer.current = null;
-      void connect();
+      void connectRef.current();
     }, delay);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const connect = useCallback(async () => {
@@ -268,6 +268,10 @@ export function RealtimeRoomProvider({
       scheduleReconnect();
     }
   }, [applySnapshot, nodeId, persistQueue, scheduleReconnect, workspaceId]);
+
+  useEffect(() => {
+    connectRef.current = connect;
+  }, [connect]);
 
   useEffect(() => {
     stopped.current = false;

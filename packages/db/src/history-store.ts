@@ -1020,7 +1020,7 @@ export type AuditEventRecord = {
   createdAt: Date;
 };
 
-export async function listWorkspaceAuditEvents(
+export async function listWorkspaceHistoryAuditEvents(
   pool: Pool,
   input: {
     workspaceId: string;

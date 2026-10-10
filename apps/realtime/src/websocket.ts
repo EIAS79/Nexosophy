@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { IncomingMessage } from "node:http";
-import type { Socket } from "node:net";
+import type { Duplex } from "node:stream";
 
 type MessageHandler = (message: string) => void | Promise<void>;
 type CloseHandler = () => void;
@@ -31,7 +31,7 @@ export class WebSocketPeer {
   private closeHandler: CloseHandler | null = null;
 
   constructor(
-    readonly socket: Socket,
+    readonly socket: Duplex,
     readonly maxMessageBytes: number,
   ) {
     socket.on("data", (chunk: Buffer) => this.onData(chunk));
@@ -145,7 +145,7 @@ export class WebSocketPeer {
 
 export function acceptWebSocket(
   request: IncomingMessage,
-  socket: Socket,
+  socket: Duplex,
   protocol: string,
   maxMessageBytes: number,
 ): WebSocketPeer {
@@ -170,7 +170,7 @@ export function acceptWebSocket(
   return new WebSocketPeer(socket, maxMessageBytes);
 }
 
-export function rejectUpgrade(socket: Socket, status: number, message: string): void {
+export function rejectUpgrade(socket: Duplex, status: number, message: string): void {
   const reason =
     status === 401
       ? "Unauthorized"

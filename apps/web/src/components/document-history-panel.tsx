@@ -34,10 +34,10 @@ export function DocumentHistoryPanel({
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(async (append = false) => {
+  const load = useCallback(async (append = false, cursor: string | null = null) => {
     setStatus(append ? "Loading more history…" : "Loading history…");
     const query = new URLSearchParams({ view: "versions", nodeId });
-    if (append && nextCursor) query.set("cursor", nextCursor);
+    if (append && cursor) query.set("cursor", cursor);
     const response = await fetch(`/api/history/${workspaceId}?${query.toString()}`, {
       cache: "no-store",
     });
@@ -52,11 +52,11 @@ export function DocumentHistoryPanel({
     setItems((current) => (append ? [...current, ...payload.items] : payload.items));
     setNextCursor(payload.nextCursor);
     setStatus("");
-  }, [nodeId, nextCursor, workspaceId]);
+  }, [nodeId, workspaceId]);
 
   useEffect(() => {
     if (open) void load(false);
-  }, [open]); // load intentionally only when panel opens
+  }, [open, load]);
 
   async function checkpoint() {
     const label = window.prompt("Checkpoint label (optional)")?.trim() || undefined;
@@ -130,7 +130,7 @@ export function DocumentHistoryPanel({
           ))}
           {items.length === 0 && !status ? <p>No checkpoints yet.</p> : null}
           {nextCursor ? (
-            <Button variant="secondary" onClick={() => void load(true)} disabled={busy}>
+            <Button variant="secondary" onClick={() => void load(true, nextCursor)} disabled={busy}>
               Load more
             </Button>
           ) : null}

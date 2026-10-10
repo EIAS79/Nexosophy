@@ -186,7 +186,7 @@ export class S3CompatibleStorageAdapter implements StorageAdapter {
     return fetch(input.url, {
       method: input.method,
       headers,
-      body: input.body,
+      body: input.body ?? null,
     });
   }
 

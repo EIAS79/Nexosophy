@@ -36,7 +36,7 @@ export async function GET(
     if (view === "audit") {
       return NextResponse.json(
         await nexosophyApi(
-          `/v1/workspaces/${workspaceId}/audit?${query.toString()}`,
+          `/v1/workspaces/${workspaceId}/history/audit?${query.toString()}`,
         ),
       );
     }

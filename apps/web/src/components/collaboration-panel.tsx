@@ -142,14 +142,14 @@ export function CollaborationPanel({
 
       {open ? (
         <>
-          <div className={styles.presence} aria-label="Live collaborators">
+          <section className={styles.presence} aria-label="Live collaborators">
             {presence.map((entry) => (
               <span key={entry.connectionId} title={entry.userId}>
                 {entry.userId.slice(0, 8)}
               </span>
             ))}
             {presence.length === 0 ? <small>No one else is active in this room.</small> : null}
-          </div>
+          </section>
 
           <div className={styles.comments}>
             {comments.map((comment) => (

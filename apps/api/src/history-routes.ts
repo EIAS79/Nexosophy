@@ -10,7 +10,7 @@ import {
   createManualDocumentCheckpoint,
   enqueuePermanentDeletion,
   listDocumentVersions,
-  listWorkspaceAuditEvents,
+  listWorkspaceHistoryAuditEvents,
   listWorkspaceTrash,
   restoreContentSubtree,
   restoreDocumentVersion,
@@ -137,7 +137,7 @@ export async function registerHistoryRoutes(
     return { status: "queued", ...queued };
   });
 
-  app.get("/v1/workspaces/:workspaceId/audit", async (request, reply) => {
+  app.get("/v1/workspaces/:workspaceId/history/audit", async (request, reply) => {
     const { workspaceId } = request.params as { workspaceId: string };
     const query = auditListQuerySchema.parse(request.query);
     const principal = await requireWorkspacePrincipal(request, reply, verifier);
@@ -145,7 +145,7 @@ export async function registerHistoryRoutes(
     if (!(await authorizeWorkspace(pool, principal, workspaceId, "workspace.update", request, reply))) {
       return;
     }
-    return listWorkspaceAuditEvents(pool, {
+    return listWorkspaceHistoryAuditEvents(pool, {
       workspaceId,
       limit: query.limit,
       cursor: query.cursor,

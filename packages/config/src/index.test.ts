@@ -29,7 +29,11 @@ describe("environment configuration", () => {
   });
 
   it("parses realtime defaults", () => {
-    const env = parseRealtimeEnv(base);
+    const env = parseRealtimeEnv({
+      ...base,
+      REALTIME_TOKEN_SECRET: "test-only-realtime-secret-32-bytes-12345",
+      REALTIME_PUBLIC_URL: "ws://localhost:4100",
+    });
     expect(env.REALTIME_PORT).toBe(4100);
   });
 

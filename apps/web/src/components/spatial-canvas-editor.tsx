@@ -9,6 +9,7 @@ import type {
 } from "@nexosophy/contracts";
 import { Button } from "@nexosophy/ui";
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -300,12 +301,12 @@ export function SpatialCanvasEditor({
     return () => window.clearTimeout(timer);
   }, [node.id, room.sendPresence, selected, viewport, workspaceId]);
 
-  function nextLamport(): number {
+  const nextLamport = useCallback((): number => {
     lamport.current = Math.max(lamport.current + 1, Date.now());
     return lamport.current;
-  }
+  }, []);
 
-  function publishElement(element: CanvasElement) {
+  const publishElement = useCallback((element: CanvasElement) => {
     setElements((current) => ({ ...current, [element.id]: element }));
     room.sendUpdate([
       {
@@ -315,7 +316,7 @@ export function SpatialCanvasEditor({
         lamport: nextLamport(),
       },
     ]);
-  }
+  }, [nextLamport, room.sendUpdate]);
 
   function deleteElements(ids: string[]) {
     if (ids.length === 0) return;
@@ -718,7 +719,7 @@ export function SpatialCanvasEditor({
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
     };
-  }, [drag, elements, viewport.zoom]);
+  }, [drag, elements, viewport.zoom, publishElement]);
 
   function wheel(event: WheelEvent<SVGSVGElement>) {
     event.preventDefault();
@@ -1052,7 +1053,7 @@ export function SpatialCanvasEditor({
           </g>
         </svg>
 
-        <div className={styles.minimap} aria-label="Canvas minimap">
+        <aside className={styles.minimap} aria-label="Canvas minimap">
           {sortedElements.slice(0, 500).map((element) => (
             <span
               key={element.id}
@@ -1064,7 +1065,7 @@ export function SpatialCanvasEditor({
               }}
             />
           ))}
-        </div>
+        </aside>
       </div>
 
       <aside className={styles.inspector} aria-label="Canvas inspector">

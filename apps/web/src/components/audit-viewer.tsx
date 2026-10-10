@@ -12,10 +12,10 @@ export function AuditViewer({ workspaceId }: { workspaceId: string }) {
   const [filter, setFilter] = useState("");
   const [status, setStatus] = useState("Loading audit events…");
 
-  const load = useCallback(async (append = false) => {
+  const load = useCallback(async (append = false, cursor: string | null = null) => {
     const query = new URLSearchParams({ view: "audit" });
     if (filter.trim()) query.set("action", filter.trim());
-    if (append && nextCursor) query.set("cursor", nextCursor);
+    if (append && cursor) query.set("cursor", cursor);
     const response = await fetch(`/api/history/${workspaceId}?${query.toString()}`, {
       cache: "no-store",
     });
@@ -30,11 +30,11 @@ export function AuditViewer({ workspaceId }: { workspaceId: string }) {
     setItems((current) => (append ? [...current, ...payload.items] : payload.items));
     setNextCursor(payload.nextCursor);
     setStatus("");
-  }, [filter, nextCursor, workspaceId]);
+  }, [filter, workspaceId]);
 
   useEffect(() => {
     void load(false);
-  }, []); // initial load
+  }, [load]);
 
   return (
     <section className={styles.pageSurface}>
@@ -80,7 +80,7 @@ export function AuditViewer({ workspaceId }: { workspaceId: string }) {
         ))}
         {items.length === 0 && !status ? <div className={styles.empty}>No audit events match.</div> : null}
       </div>
-      {nextCursor ? <Button variant="secondary" onClick={() => void load(true)}>Load more</Button> : null}
+      {nextCursor ? <Button variant="secondary" onClick={() => void load(true, nextCursor)}>Load more</Button> : null}
       <p className={styles.live} aria-live="polite">{status}</p>
     </section>
   );
