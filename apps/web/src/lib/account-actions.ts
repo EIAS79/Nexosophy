@@ -1,6 +1,5 @@
 "use server";
 
-import { auth, reverificationError } from "@clerk/nextjs/server";
 import type { MeResponse } from "@nexosophy/contracts";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -134,26 +133,10 @@ export async function skipOnboardingAction(): Promise<void> {
 }
 
 export async function requestDeletionAction(formData: FormData) {
-  const { has } = await auth.protect();
-
-  if (!has({ reverification: "strict" })) {
-    return reverificationError("strict");
-  }
-
-  try {
-    await nexosophyApi("/v1/me/deletion-request", {
-      method: "POST",
-      body: JSON.stringify({
-        reasonCategory: text(formData, "reasonCategory"),
-      }),
-    });
-
-    return {
-      ok: true,
-      message:
-        "Deletion request recorded. Your account remains recoverable until the deletion pipeline advances.",
-    };
-  } catch (error) {
-    return actionError(error);
-  }
+  // Phase 02B: require a real recent second factor before enabling deletion.
+  // Fail closed while the Nexosophy-owned step-up flow is being certified.
+  return {
+    ok: false,
+    message: "Account deletion requires verified MFA re-authentication, which is not yet enabled.",
+  };
 }

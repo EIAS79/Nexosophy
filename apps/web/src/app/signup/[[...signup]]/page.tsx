@@ -1,50 +1,18 @@
-import { SignUp } from "@clerk/nextjs";
-
-import {
-  assertClerkConfiguredForProtectedEnvironment,
-  isClerkWebConfigured,
-} from "../../../lib/clerk-config";
+import { OwnedAuthForm } from "../../../components/owned-auth-form";
 
 export default function SignupPage() {
-  assertClerkConfiguredForProtectedEnvironment();
-
-  if (!isClerkWebConfigured()) {
-    return (
-      <main className="auth-shell" id="main-content">
-        <section className="route-state__card">
-          <p className="eyebrow">Development configuration</p>
-          <h1>Authentication is not configured.</h1>
-          <p>
-            Connect the Nexosophy Clerk development instance to create test
-            accounts locally.
-          </p>
-        </section>
-      </main>
-    );
-  }
-
   return (
     <main className="auth-shell" id="main-content">
       <div className="auth-shell__context">
         <a className="brand" href="/">
-          <span className="brand__mark" aria-hidden="true">N</span>
-          <span>Nexosophy</span>
+          Nexosophy
         </a>
-        <p className="eyebrow">Create your account</p>
-        <h1>Start with one workspace. Grow from there.</h1>
-        <p>
-          After identity verification, Nexosophy creates its own internal account
-          and onboarding state.
-        </p>
+        <p className="eyebrow">Create an account</p>
+        <h1>Build your connected workspace.</h1>
+        <p>Your credentials and sessions belong to Nexosophy's own authentication service.</p>
       </div>
       <div className="auth-shell__provider">
-        <SignUp
-          path="/signup"
-          routing="path"
-          signInUrl="/login"
-          fallbackRedirectUrl="/onboarding"
-          signInFallbackRedirectUrl="/app"
-        />
+        <OwnedAuthForm mode="signup" />
       </div>
     </main>
   );

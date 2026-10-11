@@ -13,8 +13,8 @@ import { createClient } from "redis";
 
 import { installApiPlatform } from "./api-platform.js";
 import { registerAssetRoutes } from "./asset-routes.js";
-import { createAuthRuntime } from "./auth-runtime.js";
-import { registerClerkWebhookRoute } from "./clerk-webhook.js";
+import { createAuthRuntime, type AuthRuntime } from "./auth-runtime.js";
+import { registerOwnedAuthRoutes } from "./owned-auth-routes.js";
 import { registerCollaborationRoutes } from "./collaboration-routes.js";
 import { registerContentRoutes } from "./content-routes.js";
 import { registerEditorRoutes } from "./editor-routes.js";
@@ -122,12 +122,12 @@ export async function buildApp(
     });
   });
 
-  const runtime =
+  const runtime: AuthRuntime =
     options.authVerifier || options.identityProvider || options.identityStore
       ? {
-          verifier: options.authVerifier,
-          provider: options.identityProvider,
-          identityStore: options.identityStore,
+          ...(options.authVerifier ? { verifier: options.authVerifier } : {}),
+          ...(options.identityProvider ? { provider: options.identityProvider } : {}),
+          ...(options.identityStore ? { identityStore: options.identityStore } : {}),
         }
       : createAuthRuntime(env, pool);
 
@@ -168,8 +168,8 @@ export async function buildApp(
   await registerIntegrationRoutes(app, pool, storage, runtime.verifier);
   await registerOfflineRoutes(app, pool, runtime.verifier);
 
-  if (runtime.provider && runtime.identityStore) {
-    await registerClerkWebhookRoute(app, pool, runtime.provider, runtime.identityStore);
+  if (runtime.ownedAuth) {
+    registerOwnedAuthRoutes(app, runtime.ownedAuth, process.env.NEXOSOPHY_AUTH_URL!);
   }
 
   app.get("/health", async (request) => {

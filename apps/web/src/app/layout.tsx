@@ -1,4 +1,3 @@
-import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 
@@ -12,8 +11,7 @@ export const metadata: Metadata = {
     default: "Nexosophy",
     template: "%s · Nexosophy",
   },
-  description:
-    "Connected knowledge for study, research, laboratories, reporting and analysis.",
+  description: "Connected knowledge for study, research, laboratories, reporting and analysis.",
   metadataBase: new URL("https://nexosophy.com"),
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, title: "Nexosophy", statusBarStyle: "default" },
@@ -26,36 +24,14 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{ children: ReactNode }>) {
-  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-
-  const content = (
-    <>
-      <a className="skip-link" href="#main-content">
-        Skip to main content
-      </a>
-      <ToastProvider>{children}</ToastProvider>
-    </>
-  );
-
+export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        {publishableKey ? (
-          <ClerkProvider
-            publishableKey={publishableKey}
-            signInUrl="/login"
-            signUpUrl="/signup"
-            signInFallbackRedirectUrl="/app"
-            signUpFallbackRedirectUrl="/onboarding"
-          >
-            {content}
-          </ClerkProvider>
-        ) : (
-          content
-        )}
+        <a className="skip-link" href="#main-content">
+          Skip to main content
+        </a>
+        <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
   );

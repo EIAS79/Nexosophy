@@ -1,7 +1,7 @@
 # Nexosophy — Execution Checkpoint and Release Roadmap
 
 > **Last verified:** 2026-10-11 (Europe/Warsaw)  
-> **Status:** IN PROGRESS — remote CI green; Anas Render staging API/realtime/worker created; worker packaging fixed locally and queued for remote verification; Clerk staging authentication/acceptance pending.  
+> **Status:** IN PROGRESS — Phases 05–21 draft PR CI green; API/realtime/worker staging resources provisioned. **Owner has replaced Clerk with Nexosophy-owned authentication; Phase 02B integration is actively in development and NOT deployed or certified.**  
 > **Canonical plan:** `plan/IMPLEMENTATION_SEQUENCE.md` and `plan/13-phases/phase-00…phase-24*.md`.  
 > **Rule:** Checkboxes mean claimed completion in the plan, not independent certification. Never mark a phase fully accepted without evidence.
 
@@ -15,8 +15,8 @@ This file is the persistent handoff for the next ChatGPT coding session. **Read 
 - Release branch/PR: `phases-05-07-storage-editor-history`, PR **#19** (`https://github.com/EIAS79/Nexosophy/pull/19`). On 2026-10-11 the **remote head** was `9b99480617081eeb09842ac7c219ce4ceaead0df`, **draft**, **mergeable=false**, **not merged**. Re-fetch before publishing. The branch is behind newer `main`, which contains the cinematic homepage; DO NOT overwrite it.
 - Authorized desktop clone: `C:\Users\khali\AppData\Local\Temp\nexosophy-20261010-clean`, Windows device `Our-CS`. Locally reconciled `main` in merge commit `a0533b8`, then fixed Windows/unix migration CLI in `8251765`; both were **local only** at last verification. Local untracked `tsconfig.tsbuildinfo` must NEVER be committed.
 - Direct git push from this Windows clone failed because noninteractive GitHub credentials are missing. Connected **GitHub** tools can create trees, commits and update refs. Avoid rewriting published history or generating many commits/previews.
-- **On resume: priority one is reconcile/publish ONE combined tested PR update preserving current `main` homepage; trigger/confirm remote CI; do not merge while tests are absent or failing.**
-- Current task at checkpoint creation: create this document; staging Neon branch has been provisioned. Documentation alone does not close release/phase gates.
+- **Current remote release PR #19 head**: `490dc80b8c39121eb767b4bb92a534ec0f8b20b3` (CI Fast, Build, Backend Integration passed). **Next** publish one controlled owned-auth migration commit after local verification, then run new PostgreSQL integration and repair failures. Preserve `main` and avoid repeated Vercel previews.
+- Current task: implement **Phase 02B Nexosophy-owned authentication** per `plan/02-identity-billing/00-auth-nexosophy-owned.md` and `plan/13-phases/phase-02b-owned-auth-replacement.md`. Do not configure Clerk or treat obsolete Phase 02 checks as acceptance. Backend code generated on Windows working tree remains unmerged pending CI.
 
 ## 2. Verified engineering evidence
 
@@ -45,7 +45,7 @@ This file is the persistent handoff for the next ChatGPT coding session. **Read 
 | Neon private object bucket | `nexosophy-assets` on main branch, private | Validate S3 adapter/credentials and that staging storage is isolated; enforce scanning/quarantine |
 | Render workspace | `venue flow`, `tea-d86vi4ek1jcs739nm350` | Use only this account |
 | Render Key Value | `nexosophy-redis`, `red-db5gentckfvc73a4hbm0`, Frankfurt, **Free/available** | Configure connection securely; Free is not durable production cache |
-| Render staging API/realtime/worker | API `srv-db5hd1l9fdbs73ct2v50`, realtime `srv-db5hdcl9fdbs73ct427g`, worker `srv-db5hddlckfvc73a7npkg`. All Anas, Frankfurt, Free and autoDeploy=no | Each connects to Neon staging and internal Redis; API still needs Clerk Development configuration. Worker free tier is not reliable always-on hosting. |
+| Render Nexosophy API/worker/realtime | **None created** at verification | Prepare deploys and secrets. Worker requires reliable always-on service; obtain approval for any paid tier |
 | Clerk application | `Nexosophy` (renamed from My Application), app `app_3KX73PP1OGDDwRdMPyIEvVsdpuS` | **Development** instance only. Production instance + owned custom domain intentionally deferred until launch |
 | Clerk Development instance | `ins_3KX73MssFzzwP7TKi7KTCfG6A2s` | Use for stage E2E and test users. Never use Dev credentials for public production |
 | Vercel | Existing site `nexosophy.vercel.app` | Current project previously had no environment variables; verify live. Preserve homepage; do not trigger previews needlessly |
@@ -112,29 +112,31 @@ The separate Khalid Render workspace contains Edulytics/Apexify; Khalid Neon con
 
 ### P5 — Production hardening and launch
 1. Phase 23: tenant penetration regression, dependency/secret/container scans, capacity/spike/soak, backup/PITR drill, object-store restore, observability/alerts, legal/privacy/accessibility review, rollout/rollback rehearse.
-2. Buy/verify custom domain near release; create Clerk **Production** instance, configure DNS and production secrets. User deferred domain intentionally.
+2. Buy/verify custom domain near release; configure Nexosophy-owned authentication production cookies, WebAuthn RP ID, provider callback URLs and signed email DNS records. User deferred domain intentionally.
 3. Phase 24: internal alpha, invite-only alpha, university/research beta, public beta, GA with rollout/rollback metrics. Merge/release only after explicit gates, verify live domain and end-to-end smoke.
 
 ## 6. Completion definition and reporting cadence
 
 - **Implemented** = checked-in code and persistence, not enough by itself.
 - **Locally verified** = passing automated test/build against the exact commit.
-- **Staging accepted** = real PG/Redis/Clerk/S3/worker/realtime/browser E2E evidence; security/rollback flows verified.
+- **Staging accepted** = real PG/Redis/Nexosophy-owned auth/S3/worker/realtime/browser E2E evidence; security/rollback flows verified.
 - **Production certified** = staged release, production secrets/domains, hardened infrastructure, security/load/recovery signoffs, controlled rollout and smoke test.
 - Report each phase as `coded / locally tested / staging tested / accepted`, not arbitrary completion percentages.
 - Work through backlog sequentially and batch publication. Never claim “fully working in production” on the basis of a build or schema only.
 
 ## 7. Resume command for next session
 
-> Read `plan/RELEASE_EXECUTION_CHECKPOINT.md`, inspect PR #19 and current `main`, then continue **P1 release reconciliation and remote checks**, followed by P2 staging setup. Use Anas cloud accounts exclusively. Keep main/homepage safe. Consolidate commits, prove all claims with tests, and update this checkpoint after each durable milestone.
+> Read `plan/RELEASE_EXECUTION_CHECKPOINT.md` and `plan/13-phases/phase-02b-owned-auth-replacement.md`. Current priority is **self-hosted Nexosophy authentication migration** and real PostgreSQL email/session/revocation E2E. Inspect PR #19 and current `main`, publish a single consolidated feature checkpoint once tests pass, then proceed with Anas-only staging. Preserve homepage/main and avoid excess previews.
 
+## 8. Phase 02B — Nexosophy-owned auth migration checkpoint (2026-10-11)
 
-## 8. 2026-10-11 staging deployment checkpoint
+**Owner decision:** replace Clerk with Nexosophy-owned, self-hosted Better Auth / PostgreSQL; no hosted identity provider. This supersedes prior Phase 02 acceptance. Canonical specs: `plan/02-identity-billing/00-auth-nexosophy-owned.md` and `plan/13-phases/phase-02b-owned-auth-replacement.md`.
 
-- PR #19 reconciled commit `df82f255` passed remote CI Fast, Build and Backend Integration, and was mergeable but remains draft. New worker-fix commit below must pass these checks again.
-- Staging Render services under **Anas**: API `srv-db5hd1l9fdbs73ct2v50`, realtime `srv-db5hdcl9fdbs73ct427g`, worker `srv-db5hddlckfvc73a7npkg`; Docker from PR branch `phases-05-07-storage-editor-history`, Frankfurt Free, `autoDeploy=no` to prevent repeated previews. Neon project `little-frost-55011435`, staging branch `br-wandering-frog-ba0xb6si` and private storage bucket `nexosophy-assets`; NO production-main DB was used.
-- Render private `nexosophy-redis` internal URL configured under its default no-internal-auth mode; shared randomly generated realtime signing secret configured for API/realtime; websocket URL `wss://nexosophy-realtime-staging.onrender.com`.
-- Actual Render build/start uncovered missing **BullMQ optional `ioredis` runtime dependency** in worker package. Fixed with pinned `ioredis@5.8.2` in `apps/worker/package.json`, matching lockfile, and portable `scripts/verify-worker-runtime.mjs` appended to `ci:build`. `pnpm ci:full` passed locally, including a prod pnpm deploy resolving both BullMQ and ioredis. Confirm remote CI on new commit then manually deploy worker once (autoDeploy=no).
-- API has a deliberate fail-closed production/staging auth gate; Render logs show **Clerk configuration required**, not a source build bug. Need five Clerk Development values: `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `CLERK_JWT_KEY`, `CLERK_WEBHOOK_SIGNING_SECRET`, `CLERK_AUTHORIZED_PARTIES` for the actual staging frontend URL. Create signed webhook at `https://nexosophy-api-staging.onrender.com/api/webhooks/clerk`, then supply secrets through official provider dashboard. Do NOT bypass auth and do not paste secrets into chat or GitHub. Vercel Preview needs `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` and `NEXOSOPHY_API_URL` scoped to Preview only.
-- Worker and realtime still require live health/realtime checks; no two-user E2E complete. Render Free sleeping prevents production-grade always-on worker. Do not create paid resources without explicit plan approval. Domain and Clerk Production remain deferred at user's request.
-- **Next:** verify new remote CI, restart worker only after fix, inspect runtime logs; securely configure Clerk Dev and Vercel Preview, verify API `health`/`ready`, run two-user auth/RBAC/content/upload/history/collaboration staging acceptance; then phases 09–21.
+- Implemented locally: Fastify auth engine, accounts/password/verification/recovery handlers, PostgreSQL sessions with database rate limiter, TOTP and passkey plugin hooks, configured Google/GitHub/Facebook/Apple OAuth adapters, internal `users` provisioning bridge, web same-origin auth proxy/login/signup/session verification/security/device screens, generated migration `0021_nexosophy_auth_core.sql` (includes six auth tables and rate-limit table).
+- Frontend Clerk dependency removed; API runtime now fails closed when auth is absent outside explicit unit-test mode. Removed retired Clerk webhook/runtime/config test code.
+- Local `ci:fast` **20/20 tasks passed** after refactor. Earlier local `ci:full` passed 13/13 builds, but rerun on exact final commit after added integration test and cleanup.
+- Added real Postgres auth integration test `apps/api/src/owned-auth.integration.test.ts` and GitHub integration.yml step, gated by `RUN_OWNED_AUTH_INTEGRATION=1`. It is *skipped locally* without live Postgres; MUST pass on GitHub PostgreSQL 17 before calling Phase 02B accepted.
+- **Not yet verified:** real OAuth with approved provider credentials, outbound email delivery, two-browser account isolation, MFA/passkeys using authenticators, high-risk action step-up, social account linking, backup codes, load/security certification, owned-auth staging deployment. Account deletion intentionally fails closed.
+- Do **not** apply migration to Neon production `main`, configure a public auth service without secrets, or merge PR #19 before staging acceptance.
+- Next exact tasks: run `pnpm ci:full` on this branch, publish ONE consolidated code-and-plan PR commit, run remote CI including auth integration, fix failures, configure Anas staging secrets and verified email callback, run E2E; then enable OAuth apps and full MFA/revocation tests.
+

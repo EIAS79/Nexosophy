@@ -4,11 +4,12 @@
 
 ## Objective
 
-Implement real Clerk-backed identity while keeping Nexosophy user/profile state internal and provider-independent.
+Implement Nexosophy-owned, self-hosted identity and sessions backed by its PostgreSQL database, while preserving stable internal user IDs and workspace permissions. The previous Clerk implementation is historical and not an accepted replacement.
 
 ## Owning specifications
 
-- [00-auth-clerk.md](../02-identity-billing/00-auth-clerk.md)
+- [00-auth-nexosophy-owned.md](../02-identity-billing/00-auth-nexosophy-owned.md) — **new canonical specification**.
+- [00-auth-clerk.md](../02-identity-billing/00-auth-clerk.md) — historical/retired design only.
 - [01-users-profiles-onboarding.md](../02-identity-billing/01-users-profiles-onboarding.md)
 - [05-data-classification-retention.md](../00-product-governance/05-data-classification-retention.md)
 

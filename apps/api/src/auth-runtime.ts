@@ -1,14 +1,15 @@
 import {
-  createClerkIdentityProvider,
   createInternalAuthVerifier,
   type AuthVerifier,
   type IdentityProvider,
   type IdentityStorePort,
 } from "@nexosophy/auth";
-import { parseOptionalClerkEnv, type ApiEnv } from "@nexosophy/config";
+import type { ApiEnv } from "@nexosophy/config";
 import type { createDatabasePool } from "@nexosophy/db";
 
 import { createDatabaseIdentityStore } from "./auth-store-adapter.js";
+import { createNexosophyAuth, type NexosophyAuth } from "./owned-auth.js";
+import { createOwnedIdentityProvider } from "./owned-identity-provider.js";
 
 type DatabasePool = ReturnType<typeof createDatabasePool>;
 
@@ -16,6 +17,7 @@ export type AuthRuntime = {
   verifier?: AuthVerifier;
   provider?: IdentityProvider;
   identityStore?: IdentityStorePort;
+  ownedAuth?: NexosophyAuth;
 };
 
 export function createAuthRuntime(
@@ -23,29 +25,18 @@ export function createAuthRuntime(
   pool: DatabasePool,
   processEnv: NodeJS.ProcessEnv = process.env,
 ): AuthRuntime {
-  const clerk = parseOptionalClerkEnv(processEnv);
-
-  if (!clerk) {
-    if (env.APP_ENV === "staging" || env.APP_ENV === "production") {
-      throw new Error(
-        "Clerk authentication configuration is required in staging and production.",
-      );
+  if (!processEnv.NEXOSOPHY_AUTH_SECRET || !processEnv.NEXOSOPHY_AUTH_URL) {
+    if (env.APP_ENV === "local" && processEnv.NODE_ENV === "test") {
+      return {};
     }
-
-    return {};
+    throw new Error("Nexosophy-owned authentication must be configured before starting the API.");
   }
 
-  const provider = createClerkIdentityProvider({
-    secretKey: clerk.CLERK_SECRET_KEY,
-    publishableKey: clerk.CLERK_PUBLISHABLE_KEY,
-    jwtKey: clerk.CLERK_JWT_KEY,
-    authorizedParties: clerk.CLERK_AUTHORIZED_PARTIES,
-    webhookSigningSecret: clerk.CLERK_WEBHOOK_SIGNING_SECRET,
-  });
-
+  const ownedAuth = createNexosophyAuth(pool, processEnv);
+  const provider = createOwnedIdentityProvider(ownedAuth, pool);
   const identityStore = createDatabaseIdentityStore(pool);
-
   return {
+    ownedAuth,
     provider,
     identityStore,
     verifier: createInternalAuthVerifier(provider, identityStore),

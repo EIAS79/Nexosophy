@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { cookies } from "next/headers";
 import type { MeResponse } from "@nexosophy/contracts";
 
 const API_URL = process.env.NEXOSOPHY_API_URL ?? "http://127.0.0.1:4000";
@@ -14,27 +14,15 @@ export class NexosophyApiError extends Error {
   }
 }
 
-export async function nexosophyApi<T>(
-  path: string,
-  init: RequestInit = {},
-): Promise<T> {
-  const session = await auth();
-
-  if (!session.isAuthenticated) {
+export async function nexosophyApi<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const jar = await cookies();
+  const sessionCookie = jar.toString();
+  if (!sessionCookie) {
     throw new NexosophyApiError(401, "UNAUTHENTICATED", "Authentication is required.");
   }
 
-  const token = await session.getToken();
-  if (!token) {
-    throw new NexosophyApiError(
-      401,
-      "SESSION_TOKEN_UNAVAILABLE",
-      "Session token unavailable.",
-    );
-  }
-
   const headers = new Headers(init.headers);
-  headers.set("authorization", `Bearer ${token}`);
+  headers.set("cookie", sessionCookie);
 
   if (init.body && !headers.has("content-type")) {
     headers.set("content-type", "application/json");

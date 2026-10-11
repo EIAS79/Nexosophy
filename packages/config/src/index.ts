@@ -32,7 +32,12 @@ export const realtimeEnvSchema = dataEnvSchema.extend({
   REALTIME_TOKEN_SECRET: z.string().min(32),
   REALTIME_PUBLIC_URL: z.string().url(),
   REALTIME_MAX_ROOM_CONNECTIONS: z.coerce.number().int().min(2).max(5000).default(200),
-  REALTIME_MAX_MESSAGE_BYTES: z.coerce.number().int().min(1024).max(4 * 1024 * 1024).default(262144),
+  REALTIME_MAX_MESSAGE_BYTES: z.coerce
+    .number()
+    .int()
+    .min(1024)
+    .max(4 * 1024 * 1024)
+    .default(262144),
 });
 
 export type BaseEnv = z.infer<typeof baseEnvSchema>;
@@ -56,44 +61,6 @@ export function parseRealtimeEnv(env: NodeJS.ProcessEnv = process.env): Realtime
   return realtimeEnvSchema.parse(env);
 }
 
-
-export const clerkEnvSchema = z.object({
-  CLERK_SECRET_KEY: z.string().min(1),
-  CLERK_PUBLISHABLE_KEY: z.string().min(1),
-  CLERK_JWT_KEY: z.string().min(1),
-  CLERK_WEBHOOK_SIGNING_SECRET: z.string().min(1),
-  CLERK_AUTHORIZED_PARTIES: z
-    .string()
-    .min(1)
-    .transform((value) =>
-      value
-        .split(",")
-        .map((entry) => entry.trim())
-        .filter(Boolean),
-    )
-    .pipe(z.array(z.url()).min(1)),
-});
-
-export type ClerkEnv = z.infer<typeof clerkEnvSchema>;
-
-export function parseOptionalClerkEnv(
-  env: NodeJS.ProcessEnv = process.env,
-): ClerkEnv | null {
-  const keys = [
-    "CLERK_SECRET_KEY",
-    "CLERK_PUBLISHABLE_KEY",
-    "CLERK_JWT_KEY",
-    "CLERK_WEBHOOK_SIGNING_SECRET",
-    "CLERK_AUTHORIZED_PARTIES",
-  ] as const;
-
-  const configured = keys.filter((key) => Boolean(env[key]));
-  if (configured.length === 0) return null;
-
-  return clerkEnvSchema.parse(env);
-}
-
-
 export const storageEnvSchema = z.object({
   S3_ENDPOINT: z.string().url(),
   S3_REGION: z.string().min(1),
@@ -105,9 +72,7 @@ export const storageEnvSchema = z.object({
 
 export type StorageEnv = z.infer<typeof storageEnvSchema>;
 
-export function parseOptionalStorageEnv(
-  env: NodeJS.ProcessEnv = process.env,
-): StorageEnv | null {
+export function parseOptionalStorageEnv(env: NodeJS.ProcessEnv = process.env): StorageEnv | null {
   const required = [
     "S3_ENDPOINT",
     "S3_REGION",
@@ -127,25 +92,17 @@ export const mediaServicesEnvSchema = z.object({
 
 export type MediaServicesEnv = z.infer<typeof mediaServicesEnvSchema>;
 
-export function parseMediaServicesEnv(
-  env: NodeJS.ProcessEnv = process.env,
-): MediaServicesEnv {
+export function parseMediaServicesEnv(env: NodeJS.ProcessEnv = process.env): MediaServicesEnv {
   return mediaServicesEnvSchema.parse(env);
 }
 
-
-export function parseRealtimeTokenSecret(
-  env: NodeJS.ProcessEnv = process.env,
-): string {
+export function parseRealtimeTokenSecret(env: NodeJS.ProcessEnv = process.env): string {
   return z.string().min(32).parse(env.REALTIME_TOKEN_SECRET);
 }
 
-export function parseRealtimePublicUrl(
-  env: NodeJS.ProcessEnv = process.env,
-): string {
+export function parseRealtimePublicUrl(env: NodeJS.ProcessEnv = process.env): string {
   return z.string().url().parse(env.REALTIME_PUBLIC_URL);
 }
-
 
 export const notificationDeliveryEnvSchema = z.object({
   NOTIFICATION_EMAIL_URL: z.string().url().optional(),

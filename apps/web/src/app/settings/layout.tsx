@@ -1,10 +1,5 @@
-import { auth } from "@clerk/nextjs/server";
 import type { ReactNode } from "react";
-
-import {
-  assertClerkConfiguredForProtectedEnvironment,
-  isClerkWebConfigured,
-} from "../../lib/clerk-config";
+import { requireOwnedSession } from "../../lib/auth-server";
 
 const items = [
   ["/settings/profile", "Profile"],
@@ -13,23 +8,13 @@ const items = [
   ["/settings/account", "Account"],
 ] as const;
 
-export default async function SettingsLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  assertClerkConfiguredForProtectedEnvironment();
-
-  if (isClerkWebConfigured()) {
-    await auth.protect({ unauthenticatedUrl: "/login" });
-  }
-
+export default async function SettingsLayout({ children }: { children: ReactNode }) {
+  await requireOwnedSession();
   return (
     <div className="settings-shell">
       <header className="settings-shell__top">
         <a className="brand" href="/app">
-          <span className="brand__mark" aria-hidden="true">N</span>
-          <span>Nexosophy</span>
+          Nexosophy
         </a>
         <a href="/app">Back to workspace</a>
       </header>

@@ -64,10 +64,7 @@ export type MeAccountRecord = {
   };
 };
 
-async function withTransaction<T>(
-  pool: Pool,
-  fn: (client: PoolClient) => Promise<T>,
-): Promise<T> {
+async function withTransaction<T>(pool: Pool, fn: (client: PoolClient) => Promise<T>): Promise<T> {
   const client = await pool.connect();
   try {
     await client.query("begin");
@@ -158,27 +155,25 @@ export async function provisionIdentity(
     const identityId = createdIdentity.rows[0]?.id;
     if (!identityId) throw new Error("Failed to create external identity mapping");
 
-    await Promise.all([
-      client.query(
-        `insert into "user_profiles"
+    await client.query(
+      `insert into "user_profiles"
            ("user_id", "display_name", "avatar_asset_id")
          values ($1, $2, null)
          on conflict ("user_id") do nothing`,
-        [userId, input.displayName ?? ""],
-      ),
-      client.query(
-        `insert into "user_preferences" ("user_id")
+      [userId, input.displayName ?? ""],
+    );
+    await client.query(
+      `insert into "user_preferences" ("user_id")
          values ($1)
          on conflict ("user_id") do nothing`,
-        [userId],
-      ),
-      client.query(
-        `insert into "onboarding_states" ("user_id")
+      [userId],
+    );
+    await client.query(
+      `insert into "onboarding_states" ("user_id")
          values ($1)
          on conflict ("user_id") do nothing`,
-        [userId],
-      ),
-    ]);
+      [userId],
+    );
 
     await client.query(
       `with inserted as (
@@ -566,17 +561,15 @@ export async function appendSecurityEvent(
   );
 }
 
-
 export async function requestAccountDeletion(
   pool: Pool,
   userId: string,
   reasonCategory?: string,
 ): Promise<{ requestId: string; created: boolean }> {
   return withTransaction(pool, async (client) => {
-    await client.query(
-      "select pg_advisory_xact_lock(hashtextextended($1, 0))",
-      [`account-deletion:${userId}`],
-    );
+    await client.query("select pg_advisory_xact_lock(hashtextextended($1, 0))", [
+      `account-deletion:${userId}`,
+    ]);
 
     const existing = await client.query<{ id: string }>(
       `select "id"
@@ -672,7 +665,6 @@ export async function listSecurityEvents(
   }));
 }
 
-
 export async function handleProviderIdentityDeletion(
   pool: Pool,
   provider: string,
@@ -683,7 +675,11 @@ export async function handleProviderIdentityDeletion(
     const lockKey = `${provider}:${providerUserId}`;
     await client.query("select pg_advisory_xact_lock(hashtextextended($1, 0))", [lockKey]);
 
-    const identity = await client.query<{ id: string; user_id: string; last_provider_event_at: Date | null }>(
+    const identity = await client.query<{
+      id: string;
+      user_id: string;
+      last_provider_event_at: Date | null;
+    }>(
       `select "id", "user_id", "last_provider_event_at"
        from "user_identities"
        where "provider" = $1 and "provider_user_id" = $2
