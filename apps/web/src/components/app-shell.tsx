@@ -1,4 +1,4 @@
-import { CommandPalette, Tree } from "@nexosophy/ui";
+import { Tree } from "@nexosophy/ui";
 import type { ReactNode } from "react";
 
 import { switchWorkspaceAction } from "../lib/workspace-actions";
@@ -6,6 +6,16 @@ import { switchWorkspaceAction } from "../lib/workspace-actions";
 import { appNavigation, mobileNavigation } from "../lib/navigation";
 import type { ShellWorkspace } from "../lib/shell-data";
 import { AppearanceControl } from "./appearance-control";
+import { WorkspaceCommandPalette } from "./workspace-command-palette";
+
+const capabilityLinks = (workspaceId: string) => [
+  { href: `/app/workspaces/${workspaceId}/lab`, label: "Lab" },
+  { href: `/app/workspaces/${workspaceId}/teach`, label: "Teaching" },
+  { href: `/app/workspaces/${workspaceId}/reporting`, label: "Reporting" },
+  { href: `/app/workspaces/${workspaceId}/analysis`, label: "Analysis" },
+  { href: `/app/workspaces/${workspaceId}/integrations`, label: "Integrations" },
+  { href: `/app/workspaces/${workspaceId}/offline`, label: "Offline & PWA" },
+] as const;
 
 function WorkspacePane({ workspace, workspaces }: { workspace: ShellWorkspace; workspaces: readonly { id: string; name: string }[] }) {
   return (
@@ -28,6 +38,12 @@ function WorkspacePane({ workspace, workspaces }: { workspace: ShellWorkspace; w
       <div className="app-shell__tree">
         <Tree label="Workspace files and sections" nodes={workspace.tree} defaultExpanded={["workspace-root"]} />
       </div>
+      <nav className="workspace-capabilities" aria-label="Workspace capabilities">
+        <span>Capabilities</span>
+        {capabilityLinks(workspace.id).map((item) => (
+          <a key={item.href} href={item.href}>{item.label}</a>
+        ))}
+      </nav>
     </>
   );
 }
@@ -41,12 +57,20 @@ export function AppShell({
   workspaces?: readonly { id: string; name: string }[];
   children: ReactNode;
 }) {
-  const commands = appNavigation.map((item) => ({
-    id: item.href,
-    label: `Go to ${item.label}`,
-    keywords: [item.label, "navigation"],
-    href: item.href,
-  }));
+  const commands = [
+    ...appNavigation.map((item) => ({
+      id: item.href,
+      label: `Go to ${item.label}`,
+      keywords: [item.label, "navigation"],
+      href: item.href,
+    })),
+    ...capabilityLinks(workspace.id).map((item) => ({
+      id: item.href,
+      label: `Open ${item.label}`,
+      keywords: [item.label, "workspace", "capability"],
+      href: item.href,
+    })),
+  ];
 
   return (
     <div className="app-shell">
@@ -88,7 +112,7 @@ export function AppShell({
           </nav>
 
           <div className="app-topbar__tools">
-            <CommandPalette commands={commands} />
+            <WorkspaceCommandPalette workspaceId={workspace.id} commands={commands} />
             <AppearanceControl />
           </div>
         </header>

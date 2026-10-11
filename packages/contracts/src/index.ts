@@ -25,3 +25,29 @@ export type ApiError = z.infer<typeof apiErrorSchema>;
 export * from "./identity.js";
 export * from "./workspace.js";
 export * from "./content.js";
+export * from "./storage.js";
+export * from "./editor.js";
+
+export * from "./history.js";
+
+export * from "./collaboration.js";
+
+export * from "./spatial.js";
+
+export * from "./search.js";
+
+export * from "./productivity.js";
+
+export * from "./templates-transfer.js";
+
+export * from "./structured-code.js";
+
+export * from "./academic.js";
+
+export * from "./research-references.js";
+export * from "./lab.js";
+export * from "./teaching.js";
+export * from "./reporting.js";
+export * from "./analysis.js";
+export * from "./integrations.js";
+export * from "./offline.js";

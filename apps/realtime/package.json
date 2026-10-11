@@ -15,6 +15,9 @@
     "@nexosophy/config": "workspace:*",
     "@nexosophy/observability": "workspace:*",
     "fastify": "5.12.5",
-    "redis": "6.3.0"
+    "redis": "6.3.0",
+    "@nexosophy/auth": "workspace:*",
+    "@nexosophy/contracts": "workspace:*",
+    "@nexosophy/db": "workspace:*"
   }
 }

@@ -1,5 +1,5 @@
 import { ClerkProvider } from "@clerk/nextjs";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 
 import "@nexosophy/ui/styles.css";
@@ -15,6 +15,15 @@ export const metadata: Metadata = {
   description:
     "Connected knowledge for study, research, laboratories, reporting and analysis.",
   metadataBase: new URL("https://nexosophy.com"),
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, title: "Nexosophy", statusBarStyle: "default" },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#171925",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

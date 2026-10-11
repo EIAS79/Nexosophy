@@ -1,0 +1,1 @@
+import{ReportingHub}from"../../../../../components/reporting-hub";export default async function Page({params}:{params:Promise<{workspaceId:string}>}){const{workspaceId}=await params;return <ReportingHub workspaceId={workspaceId}/>} 

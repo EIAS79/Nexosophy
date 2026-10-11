@@ -197,8 +197,11 @@ export async function assertContentParent(
   if (!row || row.trashed_at) {
     throw new ContentStoreError("PARENT_NOT_FOUND", "The destination folder is unavailable.");
   }
-  if (row.kind !== "folder") {
-    throw new ContentStoreError("PARENT_NOT_FOLDER", "Content can only be placed inside folders.");
+  if (row.kind !== "folder" && row.kind !== "notebook") {
+    throw new ContentStoreError(
+      "PARENT_NOT_FOLDER",
+      "Content can only be placed inside folders or notebooks.",
+    );
   }
 }
 

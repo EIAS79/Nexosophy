@@ -3,18 +3,38 @@ import { randomUUID } from "node:crypto";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import type { AuthVerifier, IdentityProvider, IdentityStorePort } from "@nexosophy/auth";
-import type { ApiEnv } from "@nexosophy/config";
+import { parseOptionalStorageEnv, type ApiEnv } from "@nexosophy/config";
 import { healthResponseSchema } from "@nexosophy/contracts";
 import { createDatabasePool } from "@nexosophy/db";
 import { createLoggerOptions } from "@nexosophy/observability";
+import { S3CompatibleStorageAdapter, type StorageAdapter } from "@nexosophy/storage";
 import Fastify, { type FastifyError, type FastifyInstance } from "fastify";
 import { createClient } from "redis";
 
+import { installApiPlatform } from "./api-platform.js";
+import { registerAssetRoutes } from "./asset-routes.js";
 import { createAuthRuntime } from "./auth-runtime.js";
 import { registerClerkWebhookRoute } from "./clerk-webhook.js";
+import { registerCollaborationRoutes } from "./collaboration-routes.js";
 import { registerContentRoutes } from "./content-routes.js";
+import { registerEditorRoutes } from "./editor-routes.js";
+import { registerHistoryRoutes } from "./history-routes.js";
 import { registerIdentityRoutes } from "./identity-routes.js";
+import { registerJobRoutes } from "./job-routes.js";
+import { registerProductivityRoutes } from "./productivity-routes.js";
+import { registerSearchRoutes } from "./search-routes.js";
+import { registerSpatialRoutes } from "./spatial-routes.js";
+import { registerTemplateTransferRoutes } from "./template-transfer-routes.js";
+import { registerStructuredCodeRoutes } from "./structured-code-routes.js";
 import { registerWorkspaceRoutes } from "./workspace-routes.js";
+import { registerResearchReferenceRoutes } from "./research-reference-routes.js";
+import { registerAcademicRoutes } from "./academic-routes.js";
+import { registerLabRoutes } from "./lab-routes.js";
+import { registerTeachingRoutes } from "./teaching-routes.js";
+import { registerReportingRoutes } from "./reporting-routes.js";
+import { registerAnalysisRoutes } from "./analysis-routes.js";
+import { registerIntegrationRoutes } from "./integration-routes.js";
+import { registerOfflineRoutes } from "./offline-routes.js";
 
 const serviceVersion = process.env.npm_package_version ?? "0.0.0";
 
@@ -22,6 +42,7 @@ export type BuildAppOptions = {
   authVerifier?: AuthVerifier;
   identityProvider?: IdentityProvider;
   identityStore?: IdentityStorePort;
+  storageAdapter?: StorageAdapter | null;
 };
 
 export async function buildApp(
@@ -36,8 +57,9 @@ export async function buildApp(
     },
   });
 
-  const pool = createDatabasePool(env.DATABASE_URL, { max: 10 });
+  const pool = createDatabasePool(env.DATABASE_URL, { max: env.DB_POOL_MAX });
   const redis = createClient({ url: env.REDIS_URL });
+  installApiPlatform(app, redis);
 
   redis.on("error", (error) => {
     app.log.warn({ err: error }, "Redis connection error");
@@ -109,9 +131,42 @@ export async function buildApp(
         }
       : createAuthRuntime(env, pool);
 
+  const storageEnv = parseOptionalStorageEnv();
+  const storage =
+    options.storageAdapter !== undefined
+      ? options.storageAdapter
+      : storageEnv
+        ? new S3CompatibleStorageAdapter({
+            endpoint: storageEnv.S3_ENDPOINT,
+            region: storageEnv.S3_REGION,
+            bucket: storageEnv.S3_BUCKET,
+            accessKeyId: storageEnv.S3_ACCESS_KEY_ID,
+            secretAccessKey: storageEnv.S3_SECRET_ACCESS_KEY,
+            sessionToken: storageEnv.S3_SESSION_TOKEN,
+          })
+        : null;
+
   await registerIdentityRoutes(app, pool, runtime.verifier);
   await registerWorkspaceRoutes(app, pool, runtime.verifier);
   await registerContentRoutes(app, pool, runtime.verifier);
+  await registerCollaborationRoutes(app, pool, runtime.verifier);
+  await registerAssetRoutes(app, pool, storage, runtime.verifier);
+  await registerEditorRoutes(app, pool, runtime.verifier);
+  await registerHistoryRoutes(app, pool, runtime.verifier);
+  await registerJobRoutes(app, pool, runtime.verifier);
+  await registerSpatialRoutes(app, pool, runtime.verifier);
+  await registerSearchRoutes(app, pool, runtime.verifier);
+  await registerProductivityRoutes(app, pool, runtime.verifier);
+  await registerTemplateTransferRoutes(app, pool, storage, runtime.verifier);
+  await registerStructuredCodeRoutes(app, pool, runtime.verifier);
+  await registerAcademicRoutes(app, pool, runtime.verifier);
+  await registerResearchReferenceRoutes(app, pool, runtime.verifier);
+  await registerLabRoutes(app, pool, runtime.verifier);
+  await registerTeachingRoutes(app, pool, runtime.verifier);
+  await registerReportingRoutes(app, pool, runtime.verifier);
+  await registerAnalysisRoutes(app, pool, storage, runtime.verifier);
+  await registerIntegrationRoutes(app, pool, storage, runtime.verifier);
+  await registerOfflineRoutes(app, pool, runtime.verifier);
 
   if (runtime.provider && runtime.identityStore) {
     await registerClerkWebhookRoute(app, pool, runtime.provider, runtime.identityStore);
@@ -162,8 +217,18 @@ export async function buildApp(
       timestamp: new Date().toISOString(),
       requestId: request.id,
       dependencies: checks,
+      capacity: {
+        dbPool: {
+          max: env.DB_POOL_MAX,
+          total: pool.totalCount,
+          idle: pool.idleCount,
+          waiting: pool.waitingCount,
+        },
+      },
     };
   });
+
+  app.get("/openapi.json", async () => app.swagger());
 
   app.get("/v1/meta", async (request) => ({
     name: "Nexosophy",

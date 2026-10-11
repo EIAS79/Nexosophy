@@ -15,7 +15,13 @@
     "@nexosophy/config": "workspace:*",
     "@nexosophy/db": "workspace:*",
     "@nexosophy/observability": "workspace:*",
+    "@nexosophy/storage": "workspace:*",
     "bullmq": "6.3.10",
-    "fastify": "5.12.5"
+    "fastify": "5.12.5",
+    "ioredis": "5.8.2",
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "@types/pg": "8.23.1"
   }
 }

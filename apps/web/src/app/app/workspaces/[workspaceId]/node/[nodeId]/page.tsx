@@ -1,6 +1,32 @@
-import type { ContentNode } from "@nexosophy/contracts";
+import type {
+  ContentNode,
+  DocumentRecord,
+  SpatialDocument,
+  SpatialElement,
+} from "@nexosophy/contracts";
 
+import { AssetViewer } from "../../../../../../components/asset-viewer";
+import { CollaborationPanel } from "../../../../../../components/collaboration-panel";
+import { CitationPanel } from "../../../../../../components/citation-panel";
+import { DocumentHistoryPanel } from "../../../../../../components/document-history-panel";
+import { KnowledgeConnectionsPanel } from "../../../../../../components/knowledge-connections-panel";
+import { NotebookManager } from "../../../../../../components/notebook-manager";
+import { RealtimeRoomProvider } from "../../../../../../components/realtime-room";
+import { RichDocumentEditor } from "../../../../../../components/rich-document-editor";
+import { SpatialCanvasEditor } from "../../../../../../components/spatial-canvas-editor";
+import {
+  CodeDocumentEditor,
+  ComputationalNotebookEditor,
+  StructuredDataEditor,
+} from "../../../../../../components/specialized-editor";
 import { nexosophyApi } from "../../../../../../lib/api-server";
+import { resolveEditorPlugin } from "../../../../../../lib/editor-registry";
+
+type SpatialResponse = {
+  document: SpatialDocument;
+  elements: SpatialElement[];
+  nextCursor: string | null;
+};
 
 export default async function WorkspaceNodePage({
   params,
@@ -14,6 +40,26 @@ export default async function WorkspaceNodePage({
       `/v1/workspaces/${workspaceId}/nodes/${nodeId}/breadcrumbs`,
     ),
   ]);
+
+  const assetId =
+    node.kind === "attachment" && typeof node.metadata.assetId === "string"
+      ? node.metadata.assetId
+      : null;
+  const editorPlugin = resolveEditorPlugin(node);
+
+  const document =
+    editorPlugin?.id === "rich-document"
+      ? await nexosophyApi<DocumentRecord>(
+          `/v1/workspaces/${workspaceId}/documents/${node.id}`,
+        )
+      : null;
+
+  const spatial =
+    editorPlugin?.id === "spatial-note" || editorPlugin?.id === "whiteboard"
+      ? await nexosophyApi<SpatialResponse>(
+          `/v1/workspaces/${workspaceId}/spatial/${node.id}?limit=500`,
+        )
+      : null;
 
   return (
     <section className="workspace-page">
@@ -48,34 +94,72 @@ export default async function WorkspaceNodePage({
         </a>
       </header>
 
-      <div className="content-node-placeholder">
-        <div>
-          <p className="eyebrow">Phase 04 node surface</p>
-          <h2>{node.name}</h2>
-          <p>
-            This route is the stable identity surface reused by note, document, whiteboard, dataset,
-            spreadsheet, notebook, report, research, lab, and attachment editors in later phases.
-          </p>
-        </div>
-        <dl>
-          <div>
-            <dt>Node ID</dt>
-            <dd>{node.id}</dd>
+      <RealtimeRoomProvider workspaceId={workspaceId} nodeId={node.id}>
+        {editorPlugin?.id === "structured-data" ? (
+          <StructuredDataEditor workspaceId={workspaceId} nodeId={node.id} />
+        ) : editorPlugin?.id === "code-document" ? (
+          <CodeDocumentEditor workspaceId={workspaceId} nodeId={node.id} />
+        ) : editorPlugin?.id === "computational-notebook" ? (
+          <ComputationalNotebookEditor workspaceId={workspaceId} nodeId={node.id} />
+        ) : assetId ? (
+          <AssetViewer workspaceId={workspaceId} assetId={assetId} />
+        ) : document ? (
+          <>
+            <RichDocumentEditor
+              workspaceId={workspaceId}
+              node={node}
+              initialDocument={document}
+            />
+            <DocumentHistoryPanel workspaceId={workspaceId} nodeId={node.id} />
+          </>
+        ) : spatial ? (
+          <>
+            <SpatialCanvasEditor
+              workspaceId={workspaceId}
+              node={node}
+              initialDocument={spatial.document}
+              initialElements={spatial.elements}
+            />
+            <DocumentHistoryPanel workspaceId={workspaceId} nodeId={node.id} />
+          </>
+        ) : editorPlugin?.id === "notebook" ? (
+          <NotebookManager workspaceId={workspaceId} rootNotebookId={node.id} />
+        ) : (
+          <div className="content-node-placeholder">
+            <div>
+              <p className="eyebrow">Universal node surface</p>
+              <h2>{node.name}</h2>
+              <p>
+                This content type keeps the same stable node identity while its specialized
+                editor is delivered by the capability registry in its owning phase.
+              </p>
+            </div>
+            <dl>
+              <div>
+                <dt>Node ID</dt>
+                <dd>{node.id}</dd>
+              </div>
+              <div>
+                <dt>Workspace</dt>
+                <dd>{node.workspaceId}</dd>
+              </div>
+              <div>
+                <dt>Parent</dt>
+                <dd>{node.parentId ?? "Workspace root"}</dd>
+              </div>
+              <div>
+                <dt>Children</dt>
+                <dd>{node.hasChildren ? "Yes" : "No"}</dd>
+              </div>
+            </dl>
           </div>
-          <div>
-            <dt>Workspace</dt>
-            <dd>{node.workspaceId}</dd>
-          </div>
-          <div>
-            <dt>Parent</dt>
-            <dd>{node.parentId ?? "Workspace root"}</dd>
-          </div>
-          <div>
-            <dt>Children</dt>
-            <dd>{node.hasChildren ? "Yes" : "No"}</dd>
-          </div>
-        </dl>
-      </div>
+        )}
+        {editorPlugin?.id === "rich-document" ? (
+          <CitationPanel workspaceId={workspaceId} nodeId={node.id} />
+        ) : null}
+        <CollaborationPanel workspaceId={workspaceId} nodeId={node.id} />
+        <KnowledgeConnectionsPanel workspaceId={workspaceId} nodeId={node.id} />
+      </RealtimeRoomProvider>
     </section>
   );
 }

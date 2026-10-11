@@ -1,6 +1,18 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { buildApp } from "./app.js";
+
+// API foundation tests exercise route wiring without requiring an external Redis server.
+vi.mock("redis", () => ({
+  createClient: () => ({
+    isOpen: true,
+    on: () => undefined,
+    connect: async () => undefined,
+    ping: async () => "PONG",
+    eval: async () => [1, 60],
+    quit: async () => undefined,
+  }),
+}));
 
 const env = {
   NODE_ENV: "test",
@@ -8,6 +20,7 @@ const env = {
   LOG_LEVEL: "silent",
   API_HOST: "127.0.0.1",
   API_PORT: 4000,
+  DB_POOL_MAX: 10,
   DATABASE_URL: "postgresql://user:password@127.0.0.1:5432/nexosophy",
   REDIS_URL: "redis://127.0.0.1:6379",
 } as const;

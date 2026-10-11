@@ -1,6 +1,6 @@
 import { readdir, readFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { Pool } from "pg";
 
@@ -70,7 +70,7 @@ export async function migrate(connectionString = process.env.DATABASE_URL): Prom
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   const applied = await migrate();
   process.stdout.write(
     applied.length === 0

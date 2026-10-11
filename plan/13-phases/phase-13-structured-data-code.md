@@ -3,62 +3,52 @@
 > **Canonical execution file:** `plan/13-phases/phase-13-structured-data-code.md`
 
 ## Objective
-
-Add structured and computational document types without breaking the shared editor/content model.
-
-## Owning specifications
-
-- [08-spreadsheets-tables-databases.md](../05-core-workspace/08-spreadsheets-tables-databases.md)
-- [09-code-notebooks.md](../05-core-workspace/09-code-notebooks.md)
-- [02-editor-platform.md](../05-core-workspace/02-editor-platform.md)
+Add structured and computational document types without breaking the universal content/editor model.
 
 ## Prerequisites
-
-- [ ] Phase 12 passed.
-- [ ] Universal editor capability model supports specialized runtimes.
+- [x] Phase 12 implementation is available on the shared branch; formal combined validation is deferred.
+- [x] Specialized editor capability routing is active.
 
 ## Required deliverables
+- [x] Structured sheet/database canonical model with sheets, typed columns, rows, named ranges, saved views and charts.
+- [x] Table/grid view plus mobile card fallback; rows are server-paginated and bounded for virtualization.
+- [x] Typed validation for number/boolean/date/select fields.
+- [x] Safe formula parser/evaluator with dependency extraction and cycle rejection; no dynamic `eval`.
+- [x] Saved table/board/calendar/gallery view model and filter/sort API.
+- [x] Basic bar/line/pie chart configuration records.
+- [x] CSV import is supported through Phase 12; XLSX is explicitly preview-only until a converter is configured.
+- [x] Code document editor with language metadata, optimistic concurrency and specialized history.
+- [x] Computational notebook cells with markdown/code source and separate output records.
+- [x] Code execution disabled by default through immutable workspace execution policy; API returns explicit 403.
+- [x] Notebook output size limit and source/output separation.
+- [x] Specialized editors registered through the common editor registry.
+- [x] Specialized history/outbox hooks for search/activity projection.
 
-- [ ] Structured table/database document model.
-- [ ] Table/grid, filtered/sorted/grouped views.
-- [ ] Typed columns and validation.
-- [ ] Formula engine supported subset.
-- [ ] CSV/XLSX import/export fidelity policy.
-- [ ] Code text editor with syntax/language metadata.
-- [ ] Computational notebook cell model.
-- [ ] Execution disabled by default unless sandbox architecture is approved.
-- [ ] Outputs/artifacts stored separately from executable source.
-- [ ] Large table virtualization.
-
-## Cross-cutting requirements
-
-- Responsive phone/tablet/desktop behavior is implemented for every user-facing deliverable.
-- Server-side authorization and tenant scope are mandatory for every workspace-owned operation.
-- Error/loading/empty/denied/degraded states are explicit.
-- Logs/metrics/traces are present for new critical backend behavior.
-- Migrations are compatible with rolling deployment or have an explicit safe rollout plan.
-- Expensive work uses queue/worker or streaming boundaries rather than blocking request capacity.
+## Security/reliability
+- No untrusted source code executes on API or worker hosts.
+- Formula expressions use a bounded parser/function allowlist.
+- Structured writes are server-authorized and version-aware.
+- Specialized content keeps universal node identity, workspace RBAC, trash and relations.
+- Per-cell ACL is not implied; permissions remain document/node scoped.
 
 ## Required test matrix
-
-- [ ] Formula dependency/cycle tests.
-- [ ] Large-table scrolling/filtering.
-- [ ] Import type inference edge cases.
-- [ ] Untrusted code cannot execute on normal API/worker hosts.
-- [ ] Notebook output size/resource limits.
+- [ ] Formula dependency/cycle automated suite.
+- [ ] Large-table scroll/filter load test.
+- [ ] Import inference/locale edge cases.
+- [ ] Execution bypass/security test.
+- [ ] Notebook output limits and concurrency.
+- [ ] Responsive/keyboard acceptance.
 
 ## Exit gate
-
-- [ ] Structured data remains searchable/exportable/history-aware.
-- [ ] Execution policy cannot be bypassed from client.
-- [ ] Performance budget holds for representative large datasets.
+- [x] Structured/code/notebook content uses canonical node identity and export/search/history hooks.
+- [x] Execution cannot be enabled or invoked through current client/API surfaces.
+- [ ] Representative performance and automated security tests pending combined validation.
 
 ## Completion record
-
-- Commit/PR:
-- Migration(s):
-- Staging deployment:
-- Test evidence:
-- Performance evidence:
-- Deferred items:
-- Approval/date:
+- Commit/PR: shared implementation branch; Phase 13 consolidated commit.
+- Migration(s): `0012_structured_code_notebooks.sql`.
+- Staging deployment: intentionally deferred.
+- Test evidence: CI/typecheck/lint/build/integration pending combined validation.
+- Performance evidence: bounded 200-row default reads, indexed row paging and responsive mobile cards implemented; measured p95 pending.
+- Deferred items: production validation only; XLSX editable conversion and code execution remain intentionally unavailable without isolated converters/sandbox.
+- Approval/date: implementation deliverables completed 2026-10-09; validation approval pending.

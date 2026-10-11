@@ -1,0 +1,5 @@
+import { OfficeEditorSurface } from "../../../../../../components/office-editor-surface";
+
+export default function Page() {
+  return <OfficeEditorSurface />;
+}
