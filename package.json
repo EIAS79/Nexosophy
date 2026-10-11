@@ -20,7 +20,7 @@
     "clean": "turbo run clean && rm -rf .turbo",
     "boundaries": "node scripts/check-boundaries.mjs",
     "ci:fast": "pnpm lint && pnpm boundaries && pnpm typecheck && pnpm test",
-    "ci:build": "pnpm build",
+    "ci:build": "pnpm build && node scripts/verify-worker-runtime.mjs",
     "ci:full": "pnpm format:check && pnpm ci:fast && pnpm ci:build",
     "load:phase06": "k6 run infra/load/phase06-mixed-workload.js"
   },

@@ -1,7 +1,7 @@
 # Nexosophy — Execution Checkpoint and Release Roadmap
 
 > **Last verified:** 2026-10-11 (Europe/Warsaw)  
-> **Status:** IN PROGRESS — staging database ready; PR release, deployed backend and phase acceptance incomplete.  
+> **Status:** IN PROGRESS — remote CI green; Anas Render staging API/realtime/worker created; worker packaging fixed locally and queued for remote verification; Clerk staging authentication/acceptance pending.  
 > **Canonical plan:** `plan/IMPLEMENTATION_SEQUENCE.md` and `plan/13-phases/phase-00…phase-24*.md`.  
 > **Rule:** Checkboxes mean claimed completion in the plan, not independent certification. Never mark a phase fully accepted without evidence.
 
@@ -45,7 +45,7 @@ This file is the persistent handoff for the next ChatGPT coding session. **Read 
 | Neon private object bucket | `nexosophy-assets` on main branch, private | Validate S3 adapter/credentials and that staging storage is isolated; enforce scanning/quarantine |
 | Render workspace | `venue flow`, `tea-d86vi4ek1jcs739nm350` | Use only this account |
 | Render Key Value | `nexosophy-redis`, `red-db5gentckfvc73a4hbm0`, Frankfurt, **Free/available** | Configure connection securely; Free is not durable production cache |
-| Render Nexosophy API/worker/realtime | **None created** at verification | Prepare deploys and secrets. Worker requires reliable always-on service; obtain approval for any paid tier |
+| Render staging API/realtime/worker | API `srv-db5hd1l9fdbs73ct2v50`, realtime `srv-db5hdcl9fdbs73ct427g`, worker `srv-db5hddlckfvc73a7npkg`. All Anas, Frankfurt, Free and autoDeploy=no | Each connects to Neon staging and internal Redis; API still needs Clerk Development configuration. Worker free tier is not reliable always-on hosting. |
 | Clerk application | `Nexosophy` (renamed from My Application), app `app_3KX73PP1OGDDwRdMPyIEvVsdpuS` | **Development** instance only. Production instance + owned custom domain intentionally deferred until launch |
 | Clerk Development instance | `ins_3KX73MssFzzwP7TKi7KTCfG6A2s` | Use for stage E2E and test users. Never use Dev credentials for public production |
 | Vercel | Existing site `nexosophy.vercel.app` | Current project previously had no environment variables; verify live. Preserve homepage; do not trigger previews needlessly |
@@ -127,3 +127,14 @@ The separate Khalid Render workspace contains Edulytics/Apexify; Khalid Neon con
 ## 7. Resume command for next session
 
 > Read `plan/RELEASE_EXECUTION_CHECKPOINT.md`, inspect PR #19 and current `main`, then continue **P1 release reconciliation and remote checks**, followed by P2 staging setup. Use Anas cloud accounts exclusively. Keep main/homepage safe. Consolidate commits, prove all claims with tests, and update this checkpoint after each durable milestone.
+
+
+## 8. 2026-10-11 staging deployment checkpoint
+
+- PR #19 reconciled commit `df82f255` passed remote CI Fast, Build and Backend Integration, and was mergeable but remains draft. New worker-fix commit below must pass these checks again.
+- Staging Render services under **Anas**: API `srv-db5hd1l9fdbs73ct2v50`, realtime `srv-db5hdcl9fdbs73ct427g`, worker `srv-db5hddlckfvc73a7npkg`; Docker from PR branch `phases-05-07-storage-editor-history`, Frankfurt Free, `autoDeploy=no` to prevent repeated previews. Neon project `little-frost-55011435`, staging branch `br-wandering-frog-ba0xb6si` and private storage bucket `nexosophy-assets`; NO production-main DB was used.
+- Render private `nexosophy-redis` internal URL configured under its default no-internal-auth mode; shared randomly generated realtime signing secret configured for API/realtime; websocket URL `wss://nexosophy-realtime-staging.onrender.com`.
+- Actual Render build/start uncovered missing **BullMQ optional `ioredis` runtime dependency** in worker package. Fixed with pinned `ioredis@5.8.2` in `apps/worker/package.json`, matching lockfile, and portable `scripts/verify-worker-runtime.mjs` appended to `ci:build`. `pnpm ci:full` passed locally, including a prod pnpm deploy resolving both BullMQ and ioredis. Confirm remote CI on new commit then manually deploy worker once (autoDeploy=no).
+- API has a deliberate fail-closed production/staging auth gate; Render logs show **Clerk configuration required**, not a source build bug. Need five Clerk Development values: `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `CLERK_JWT_KEY`, `CLERK_WEBHOOK_SIGNING_SECRET`, `CLERK_AUTHORIZED_PARTIES` for the actual staging frontend URL. Create signed webhook at `https://nexosophy-api-staging.onrender.com/api/webhooks/clerk`, then supply secrets through official provider dashboard. Do NOT bypass auth and do not paste secrets into chat or GitHub. Vercel Preview needs `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` and `NEXOSOPHY_API_URL` scoped to Preview only.
+- Worker and realtime still require live health/realtime checks; no two-user E2E complete. Render Free sleeping prevents production-grade always-on worker. Do not create paid resources without explicit plan approval. Domain and Clerk Production remain deferred at user's request.
+- **Next:** verify new remote CI, restart worker only after fix, inspect runtime logs; securely configure Clerk Dev and Vercel Preview, verify API `health`/`ready`, run two-user auth/RBAC/content/upload/history/collaboration staging acceptance; then phases 09–21.
