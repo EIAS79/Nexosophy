@@ -29,3 +29,12 @@ Verified: 2026-10-11 (Europe/Warsaw). Owner scope: core phases 00–21, includin
 - `plan/13-phases/phase-00...phase-21*.md` — individual phase acceptance
 - `plan/RELEASE_EXECUTION_CHECKPOINT.md` — project handoff; note old Clerk-era statements are obsolete
 - `plan/IMPLEMENTATION_SEQUENCE.md` — canonical phase ordering; Phase 02 updated to owned authentication
+
+## 2026-10-12 follow-up: auth transport and Phase 14 tenant isolation
+
+- Corrected Fastify auth adapter to preserve OAuth form-encoded POST callbacks (required by Apple Sign-In), JSON bodies and multiple Set-Cookie headers; added three focused tests.
+- Reject unencrypted trusted origins in staging/production auth configuration; frontend authentication proxy now specifies private, no-store response caching.
+- Corrected academic course section and grade-item writes to insert only when the course belongs to the authorized workspace, atomically at the PostgreSQL query layer.
+- Added two real-PostgreSQL regression tests showing cross-workspace grade and section injection is rejected while legitimate same-workspace inserts succeed. Added a GitHub backend integration gate for those tests.
+- These tests improve the evidence for Phases 02B and 14, but do not certify social provider configuration, browser E2E, MFA/passkeys, the full academic module, or the remaining core phases.
+- Vercel previews on the release branch were canceled; do not burn preview quota. Keep this release in PR #19 pending comprehensive staging acceptance. Phases 22–24 remain deferred.

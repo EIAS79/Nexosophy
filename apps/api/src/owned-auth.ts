@@ -15,7 +15,7 @@ function providerCredentials(env: NodeJS.ProcessEnv, name: ProviderName) {
   return clientId && clientSecret ? { clientId, clientSecret } : undefined;
 }
 
-function trustedOrigins(value: string | undefined, baseURL: string) {
+function trustedOrigins(value: string | undefined, baseURL: string, requireHttps: boolean) {
   const origins = (value || baseURL)
     .split(",")
     .map((part) => part.trim())
@@ -24,6 +24,9 @@ function trustedOrigins(value: string | undefined, baseURL: string) {
     const u = new URL(origin);
     if (u.origin !== origin || !["https:", "http:"].includes(u.protocol)) {
       throw new Error("Nexosophy auth origins must be exact URL origins.");
+    }
+    if (requireHttps && u.protocol !== "https:") {
+      throw new Error("Nexosophy trusted origins require HTTPS in staging and production.");
     }
   }
   return origins;
@@ -69,7 +72,8 @@ export function createNexosophyAuth(
     throw new Error("Nexosophy-owned auth secret (32+ characters) and public URL are required.");
   }
   const origin = new URL(baseURL).origin;
-  if (env.APP_ENV !== "local" && env.NODE_ENV !== "test" && !origin.startsWith("https://")) {
+  const requireHttps = env.APP_ENV === "staging" || env.APP_ENV === "production";
+  if (requireHttps && !origin.startsWith("https://")) {
     throw new Error("Nexosophy authentication requires HTTPS outside local/test.");
   }
 
@@ -79,7 +83,7 @@ export function createNexosophyAuth(
     baseURL,
     basePath: "/api/auth",
     database: pool,
-    trustedOrigins: trustedOrigins(env.NEXOSOPHY_AUTH_TRUSTED_ORIGINS, origin),
+    trustedOrigins: trustedOrigins(env.NEXOSOPHY_AUTH_TRUSTED_ORIGINS, origin, requireHttps),
     emailAndPassword: {
       enabled: true,
       minPasswordLength: 12,

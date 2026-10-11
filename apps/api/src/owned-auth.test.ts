@@ -31,6 +31,18 @@ describe("Nexosophy-owned auth environment", () => {
     ).toThrow("requires HTTPS");
   });
 
+  it("rejects insecure trusted origins in protected environments", () => {
+    expect(() =>
+      createNexosophyAuth(pool, {
+        ...basicConfig,
+        APP_ENV: "staging",
+        NODE_ENV: "production",
+        NEXOSOPHY_AUTH_URL: "https://auth.nexosophy.test",
+        NEXOSOPHY_AUTH_TRUSTED_ORIGINS: "https://nexosophy.test,http://unsecured.nexosophy.test",
+      }),
+    ).toThrow("require HTTPS");
+  });
+
   it("accepts a restricted same-origin test configuration without provider keys", () => {
     const auth = createNexosophyAuth(pool, basicConfig);
     expect(typeof auth.handler).toBe("function");

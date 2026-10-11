@@ -124,6 +124,11 @@ jobs:
           RUN_OWNED_AUTH_INTEGRATION: '1'
         run: pnpm --filter @nexosophy/api exec vitest run src/owned-auth.integration.test.ts
 
+      - name: Verify academic course and grade tenant isolation
+        env:
+          RUN_OWNED_AUTH_INTEGRATION: '1'
+        run: pnpm --filter @nexosophy/api exec vitest run src/academic-isolation.integration.test.ts
+
       - name: Verify workspace isolation, RBAC and sharing invariants
         run: pnpm --filter @nexosophy/db test:workspace-integration
 

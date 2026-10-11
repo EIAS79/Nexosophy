@@ -29,6 +29,8 @@ async function proxyAuthentication(request: NextRequest) {
     for (const key of ["connection", "transfer-encoding", "content-length"]) {
       returnedHeaders.delete(key);
     }
+    // Never let a shared CDN or intermediary cache an authenticated response.
+    returnedHeaders.set("cache-control", "private, no-store");
     return new Response(response.body, {
       status: response.status,
       headers: returnedHeaders,

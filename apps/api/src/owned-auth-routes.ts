@@ -4,32 +4,50 @@ import type { NexosophyAuth } from "./owned-auth.js";
 const rejectedResponseHeaders = new Set(["transfer-encoding", "connection", "content-length"]);
 
 /**
- * Better Auth's Web-standard Request/Response adapter for Fastify. Must be
- * deployed behind the same-origin Next.js proxy so auth cookies stay first party.
+ * Mount Better Auth on the Fastify API behind the same-origin Next.js proxy.
+ * Apple's OAuth callback uses application/x-www-form-urlencoded form_post.
+ * Preserve that raw form payload rather than JSON-encoding it.
  */
 export function registerOwnedAuthRoutes(
   app: FastifyInstance,
   auth: NexosophyAuth,
   publicAuthUrl: string,
 ) {
+  if (!app.hasContentTypeParser("application/x-www-form-urlencoded")) {
+    app.addContentTypeParser(
+      "application/x-www-form-urlencoded",
+      { parseAs: "string" },
+      (_request, body, done) => done(null, body),
+    );
+  }
+
   app.route({
     method: ["GET", "POST"],
     url: "/api/auth/*",
     async handler(request, reply) {
       const headers = new Headers();
       for (const [key, value] of Object.entries(request.headers)) {
-        if (rejectedResponseHeaders.has(key) || value === undefined) continue;
+        if (rejectedResponseHeaders.has(key) || key === "host" || value === undefined) continue;
         for (const item of Array.isArray(value) ? value : [value]) {
           headers.append(key, String(item));
         }
       }
 
       const url = new URL(request.url, publicAuthUrl);
-      const body = request.body === undefined ? undefined : JSON.stringify(request.body);
+      const formEncoded =
+        request.headers["content-type"]
+          ?.toLowerCase()
+          .startsWith("application/x-www-form-urlencoded") && typeof request.body === "string";
+      const body =
+        request.body === undefined
+          ? undefined
+          : formEncoded
+            ? (request.body as string)
+            : JSON.stringify(request.body);
       const browserRequest = new Request(url, {
         method: request.method,
         headers,
-        ...(body && request.method !== "GET" ? { body } : {}),
+        ...(body !== undefined && request.method !== "GET" ? { body } : {}),
       });
 
       const response = await auth.handler(browserRequest);
