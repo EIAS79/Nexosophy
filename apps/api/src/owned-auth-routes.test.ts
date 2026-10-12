@@ -60,6 +60,49 @@ describe("owned authentication Fastify transport", () => {
     expect(signup.statusCode).toBe(204);
   });
 
+  it("rejects cross-origin credential POSTs without forwarding them to the auth engine", async () => {
+    let handlerCalls = 0;
+    const auth = {
+      handler: async () => {
+        handlerCalls += 1;
+        return new Response(null, { status: 204 });
+      },
+    } as unknown as NexosophyAuth;
+    const app = Fastify();
+    apps.push(app);
+    registerOwnedAuthRoutes(app, auth, "https://auth.nexosophy.test", {
+      NEXOSOPHY_AUTH_TRUSTED_ORIGINS: "https://auth.nexosophy.test",
+    });
+
+    const crossOrigin = await app.inject({
+      method: "POST",
+      url: "/api/auth/sign-in/email",
+      headers: { origin: "https://untrusted.invalid" },
+      payload: { email: "a@example.net", password: "long-password-test" },
+    });
+    expect(crossOrigin.statusCode).toBe(403);
+    expect(crossOrigin.body).toContain("UNTRUSTED_AUTH_ORIGIN");
+    expect(handlerCalls).toBe(0);
+
+    const forgedSite = await app.inject({
+      method: "POST",
+      url: "/api/auth/sign-out",
+      headers: { "sec-fetch-site": "cross-site" },
+      payload: {},
+    });
+    expect(forgedSite.statusCode).toBe(403);
+    expect(handlerCalls).toBe(0);
+
+    const trusted = await app.inject({
+      method: "POST",
+      url: "/api/auth/sign-in/email",
+      headers: { origin: "https://auth.nexosophy.test" },
+      payload: { email: "a@example.net", password: "long-password-test" },
+    });
+    expect(trusted.statusCode).toBe(204);
+    expect(handlerCalls).toBe(1);
+  });
+
   it("preserves JSON sign-in requests and distinct Set-Cookie headers", async () => {
     let received: Request | undefined;
     const auth = {

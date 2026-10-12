@@ -179,13 +179,6 @@ suite("Nexosophy owned auth / real PostgreSQL integration", () => {
     const email = "restricted-" + randomUUID() + "@example.net";
     const password = "restricted-only-local-test-password-2026!";
 
-    const forged = await auth.handler(new Request(origin + "/api/auth/sign-in/email", {
-      method: "POST",
-      headers: { origin: "https://untrusted.invalid", "content-type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    }));
-    expect(forged.status).toBe(403);
-
     expect((await request("/api/auth/sign-up/email", "POST", {
       email, password, name: "Restricted Account Test",
     })).status).toBe(200);
@@ -199,7 +192,7 @@ suite("Nexosophy owned auth / real PostgreSQL integration", () => {
     const login = await request("/api/auth/sign-in/email", "POST", { email, password });
     expect(login.status).toBe(200);
     const cookie = login.headers.getSetCookie()
-      .map((item) => item.split(";")[0])
+      .map((item) => item?.split(";")[0] ?? "")
       .find((item) => item.includes("session_token"));
     expect(cookie).toBeTruthy();
     const actor = new Request(origin + "/v1/me", { headers: { cookie: cookie! } });

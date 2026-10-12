@@ -17,6 +17,13 @@ export function registerOwnedAuthRoutes(
   const emailSignupAvailable = Boolean(
     runtimeEnv.NEXOSOPHY_EMAIL_API_KEY && runtimeEnv.NEXOSOPHY_EMAIL_FROM,
   );
+  const allowedRequestOrigins = new Set([
+    new URL(publicAuthUrl).origin,
+    ...(runtimeEnv.NEXOSOPHY_AUTH_TRUSTED_ORIGINS ?? "")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean),
+  ]);
   const socialProviders = (["google", "github", "facebook", "apple"] as const).filter(
     (provider) => {
       const prefix = provider.toUpperCase();
@@ -41,6 +48,20 @@ export function registerOwnedAuthRoutes(
     method: ["GET", "POST"],
     url: "/api/auth/*",
     async handler(request, reply) {
+      const pathname = request.url.split("?")[0] ?? "";
+      // State-changing browser auth requests must originate on a configured
+      // Nexosophy frontend. Apple form_post is the one external OAuth callback
+      // whose origin is validated by the OAuth state/nonce exchange instead.
+      if (request.method === "POST" && pathname !== "/api/auth/callback/apple") {
+        const origin = request.headers.origin;
+        const fetchSite = request.headers["sec-fetch-site"];
+        if (
+          (origin !== undefined && !allowedRequestOrigins.has(origin)) ||
+          (!origin && fetchSite === "cross-site")
+        ) {
+          return reply.code(403).send({ error: "UNTRUSTED_AUTH_ORIGIN" });
+        }
+      }
       if (
         !emailSignupAvailable &&
         request.method === "POST" &&
