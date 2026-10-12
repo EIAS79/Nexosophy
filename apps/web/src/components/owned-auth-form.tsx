@@ -19,6 +19,7 @@ export function OwnedAuthForm({ mode }: { mode: AuthMode }) {
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
   const [secondFactor, setSecondFactor] = useState(false);
+  const [useBackupCode, setUseBackupCode] = useState(false);
   const [recover, setRecover] = useState(false);
   const [working, setWorking] = useState(false);
   const [message, setMessage] = useState("");
@@ -30,7 +31,9 @@ export function OwnedAuthForm({ mode }: { mode: AuthMode }) {
     setError("");
     try {
       if (secondFactor) {
-        const result = await authClient.twoFactor.verifyTotp({ code });
+        const result = useBackupCode
+          ? await authClient.twoFactor.verifyBackupCode({ code: code.trim() })
+          : await authClient.twoFactor.verifyTotp({ code: code.trim() });
         if (result.error) throw new Error(result.error.message);
         window.location.assign("/app");
         return;
@@ -70,6 +73,23 @@ export function OwnedAuthForm({ mode }: { mode: AuthMode }) {
       window.location.assign("/app");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Authentication failed. Please try again.");
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  async function signInWithPasskey() {
+    setWorking(true);
+    setError("");
+    try {
+      if (!window.isSecureContext || !("PublicKeyCredential" in window)) {
+        throw new Error("Passkey sign-in requires a secure, WebAuthn-capable browser.");
+      }
+      const result = await authClient.signIn.passkey();
+      if (result.error) throw new Error(result.error.message || "Passkey sign-in failed.");
+      window.location.assign("/app");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Passkey sign-in failed.");
     } finally {
       setWorking(false);
     }
@@ -139,13 +159,14 @@ export function OwnedAuthForm({ mode }: { mode: AuthMode }) {
         )}
         {secondFactor && (
           <label>
-            6-digit authenticator code{" "}
+            {useBackupCode ? "One-time recovery code" : "6-digit authenticator code"}{" "}
             <input
               name="code"
-              inputMode="numeric"
-              autoComplete="one-time-code"
+              inputMode={useBackupCode ? "text" : "numeric"}
+              autoComplete={useBackupCode ? "off" : "one-time-code"}
               required
-              maxLength={6}
+              maxLength={useBackupCode ? 128 : 6}
+              minLength={useBackupCode ? 1 : 6}
               value={code}
               onChange={(e) => setCode(e.target.value)}
             />
@@ -155,7 +176,9 @@ export function OwnedAuthForm({ mode }: { mode: AuthMode }) {
           {working
             ? "Please wait…"
             : secondFactor
-              ? "Verify and continue"
+              ? useBackupCode
+                ? "Use recovery code"
+                : "Verify and continue"
               : recover
                 ? "Send recovery email"
                 : mode === "signup"
@@ -163,6 +186,24 @@ export function OwnedAuthForm({ mode }: { mode: AuthMode }) {
                   : "Sign in"}
         </button>
       </form>
+      {secondFactor && (
+        <button
+          type="button"
+          disabled={working}
+          onClick={() => {
+            setUseBackupCode(!useBackupCode);
+            setCode("");
+            setError("");
+          }}
+        >
+          {useBackupCode ? "Use authenticator app" : "Use a recovery code instead"}
+        </button>
+      )}
+      {mode === "login" && !secondFactor && !recover && (
+        <button type="button" disabled={working} onClick={() => void signInWithPasskey()}>
+          Sign in with a passkey
+        </button>
+      )}
       {error && <p role="alert">{error}</p>}
       {message && <p role="status">{message}</p>}
       {!secondFactor && !recover && (
