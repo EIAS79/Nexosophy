@@ -7,6 +7,25 @@ const { chromium } = require("playwright");
 
 const origin = "http://localhost:3000";
 const password = process.env.AUTH_TEST_PASSWORD;
+const { Pool } = require("../apps/api/node_modules/pg");
+
+async function resetDisposableRateLimits() {
+  // All browser actors share one loopback IP. Keep real production rate limiting enabled,
+  // while clearing local-only counters between independent acceptance scenarios.
+  if (
+    process.env.AUTH_LOCAL_E2E !== "1" ||
+    process.env.APP_ENV !== "local" ||
+    process.env.NODE_ENV !== "test" ||
+    !process.env.DATABASE_URL?.includes("127.0.0.1:5432/nexosophy")
+  ) throw new Error("Refusing to clear non-disposable rate-limit records.");
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
+  try {
+    await pool.query('delete from "rateLimit"');
+  } finally {
+    await pool.end();
+  }
+}
+
 if (process.env.AUTH_LOCAL_E2E !== "1" || !password) {
   throw new Error("Local-only browser test must be explicitly enabled.");
 }
@@ -97,6 +116,7 @@ async function signout(context) {
     assert.ok((await session(first))?.session?.id, "Current browser must remain active");
     await second.close();
     console.log("PASS multi-session isolation and revoke-other");
+    await resetDisposableRateLimits();
 
     const cdp = await first.newCDPSession(p1);
     await cdp.send("WebAuthn.enable");
@@ -140,6 +160,7 @@ async function signout(context) {
     await p1.waitForURL(/\/app(?:\?|$)/, { timeout: 15000 });
     assert.ok((await session(first))?.session?.id, "Virtual WebAuthn must authenticate");
     console.log("PASS real Chromium virtual WebAuthn enrollment and passkey sign-in");
+    await resetDisposableRateLimits();
 
     const totpContext = await browser.newContext();
     const totpPage = await totpContext.newPage();
@@ -158,6 +179,7 @@ async function signout(context) {
     await totpPage.getByRole("button", { name: "Verify authenticator" }).click();
     await totpPage.getByText("Authenticator verified.").waitFor();
     await signout(totpContext);
+    await resetDisposableRateLimits();
     const credentialReplies = [];
     totpPage.on("response", async (reply) => {
       if (new URL(reply.url()).pathname === "/api/auth/sign-in/email") {
@@ -195,6 +217,7 @@ async function signout(context) {
     console.log("PASS browser TOTP enrollment, challenge and session gate");
 
     await signout(totpContext);
+    await resetDisposableRateLimits();
     await login(totpPage, "second@local.nexosophy.test");
     await totpPage.getByRole("heading", { name: "Verify your authenticator" }).waitFor();
     await totpPage.getByRole("button", { name: "Use a recovery code instead" }).click();
