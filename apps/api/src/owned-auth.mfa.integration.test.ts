@@ -138,3 +138,10 @@ suite("Nexosophy owned MFA / real PostgreSQL", () => {
         code: enrollment.backupCodes![0],
       },
       secondCookie,
+    );
+    expect(recover.status).toBe(200);
+    expect(cookieString(recover)).toContain("session_token");
+    const active = await send("/api/auth/get-session", undefined, cookieString(recover));
+    expect(((await active.json()) as { session?: { id: string } })?.session?.id).toBeTruthy();
+  });
+});
