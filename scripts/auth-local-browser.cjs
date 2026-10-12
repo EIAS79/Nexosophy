@@ -110,8 +110,29 @@ async function signout(context) {
         automaticPresenceSimulation: true,
       },
     });
+    const passkeyHttp = [];
+    p1.on("response", async (response) => {
+      if (response.url().includes("/api/auth/passkey/")) {
+        let details = "";
+        try {
+          if (!response.ok()) {
+            const data = await response.json();
+            details = JSON.stringify({ code: data.code, message: data.message }).slice(0, 300);
+          }
+        } catch {
+          details = "non-json response";
+        }
+        passkeyHttp.push({ route: new URL(response.url()).pathname, status: response.status(), details });
+      }
+    });
     await p1.getByRole("button", { name: "Register a passkey" }).click();
-    await p1.getByText("Passkey registered.").waitFor({ timeout: 15000 });
+    try {
+      await p1.getByText("Passkey registered.").waitFor({ timeout: 8000 });
+    } catch (error) {
+      const ui = await p1.locator(".settings-panel [role=status]").allTextContents();
+      console.error("Passkey registration diagnostics", { ui, passkeyHttp });
+      throw error;
+    }
     await signout(first);
     assert.equal(await session(first), null, "Logout must revoke current browser");
     await p1.goto(origin + "/login");
