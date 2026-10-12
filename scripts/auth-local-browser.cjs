@@ -158,8 +158,35 @@ async function signout(context) {
     await totpPage.getByRole("button", { name: "Verify authenticator" }).click();
     await totpPage.getByText("Authenticator verified.").waitFor();
     await signout(totpContext);
+    const credentialReplies = [];
+    totpPage.on("response", async (reply) => {
+      if (new URL(reply.url()).pathname === "/api/auth/sign-in/email") {
+        try {
+          const data = await reply.json();
+          credentialReplies.push({
+            status: reply.status(),
+            twoFactorRedirect: data.twoFactorRedirect === true,
+            hasSession: Boolean(data.token),
+            errorCode: data.code || null,
+          });
+        } catch {
+          credentialReplies.push({ status: reply.status(), nonJson: true });
+        }
+      }
+    });
     await login(totpPage, "second@local.nexosophy.test");
-    await totpPage.getByRole("heading", { name: "Verify your authenticator" }).waitFor();
+    try {
+      await totpPage.getByRole("heading", { name: "Verify your authenticator" }).waitFor({ timeout: 5000 });
+    } catch (error) {
+      console.error("MFA challenge browser diagnostics", {
+        route: new URL(totpPage.url()).pathname,
+        headings: await totpPage.locator("h1,h2").allTextContents(),
+        alerts: await totpPage.getByRole("alert").allTextContents(),
+        credentialReplies,
+        authenticated: Boolean((await session(totpContext))?.session?.id),
+      });
+      throw error;
+    }
     assert.equal(await session(totpContext), null, "Password alone must not issue MFA session");
     await totpPage.getByLabel("6-digit authenticator code").fill(currentTotp(uri));
     await totpPage.getByRole("button", { name: "Verify and continue" }).click();
