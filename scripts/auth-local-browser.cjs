@@ -67,6 +67,14 @@ async function login(page, email) {
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
 }
 
+async function finishOnboarding(page) {
+  await page.waitForURL(/\/(?:onboarding|app)(?:\?|$)/);
+  if (new URL(page.url()).pathname === "/onboarding") {
+    await page.getByRole("button", { name: "Skip for now" }).click();
+    await page.waitForURL(/\/app(?:\?|$)/);
+  }
+}
+
 async function signout(context) {
   const response = await context.request.post(origin + "/api/auth/sign-out", {
     data: {},
@@ -212,7 +220,7 @@ async function signout(context) {
     assert.equal(await session(totpContext), null, "Password alone must not issue MFA session");
     await totpPage.getByLabel("6-digit authenticator code").fill(currentTotp(uri));
     await totpPage.getByRole("button", { name: "Verify and continue" }).click();
-    await totpPage.waitForURL(/\/app(?:\?|$)/);
+    await finishOnboarding(totpPage);
     assert.ok((await session(totpContext))?.session?.id, "TOTP must complete login");
     console.log("PASS browser TOTP enrollment, challenge and session gate");
 
@@ -223,7 +231,7 @@ async function signout(context) {
     await totpPage.getByRole("button", { name: "Use a recovery code instead" }).click();
     await totpPage.getByLabel("One-time recovery code").fill(backup);
     await totpPage.getByRole("button", { name: "Use recovery code" }).click();
-    await totpPage.waitForURL(/\/app(?:\?|$)/);
+    await finishOnboarding(totpPage);
     assert.ok((await session(totpContext))?.session?.id, "Recovery code must complete login");
     await totpContext.close();
     console.log("PASS browser one-time MFA recovery code");

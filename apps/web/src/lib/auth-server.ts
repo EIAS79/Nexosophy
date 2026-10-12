@@ -29,6 +29,15 @@ export async function getOwnedSession(): Promise<OwnedSession | null> {
     if (!payload || typeof payload !== "object") return null;
     const session = payload as Partial<OwnedSession>;
     if (!session.session?.id || !session.user?.id || !session.user.emailVerified) return null;
+
+    // Authorization can be withdrawn independently of a valid Better Auth cookie.
+    // A disabled/suspended/deleted Nexosophy user must never render protected layouts.
+    const principal = await fetch(new URL("/v1/me", backend), {
+      headers: { cookie },
+      cache: "no-store",
+      signal: AbortSignal.timeout(5_000),
+    });
+    if (!principal.ok) return null;
     return session as OwnedSession;
   } catch {
     return null;

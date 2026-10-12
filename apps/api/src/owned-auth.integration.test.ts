@@ -173,4 +173,53 @@ suite("Nexosophy owned auth / real PostgreSQL integration", () => {
       expect(unaffected.principal.internalUserId).toBe(second.internalUserId);
     }
   });
+
+  it("rejects untrusted origins, suspended/deleted users and expired sessions", async () => {
+    await pool.query('delete from "rateLimit"');
+    const email = "restricted-" + randomUUID() + "@example.net";
+    const password = "restricted-only-local-test-password-2026!";
+
+    const forged = await auth.handler(new Request(origin + "/api/auth/sign-in/email", {
+      method: "POST",
+      headers: { origin: "https://untrusted.invalid", "content-type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    }));
+    expect(forged.status).toBe(403);
+
+    expect((await request("/api/auth/sign-up/email", "POST", {
+      email, password, name: "Restricted Account Test",
+    })).status).toBe(200);
+    const link = sentLinks.get(email);
+    expect(link).toBeTruthy();
+    const verification = await auth.handler(new Request(link!, {
+      headers: { origin }, redirect: "manual",
+    }));
+    expect([200, 302, 303]).toContain(verification.status);
+
+    const login = await request("/api/auth/sign-in/email", "POST", { email, password });
+    expect(login.status).toBe(200);
+    const cookie = login.headers.getSetCookie()
+      .map((item) => item.split(";")[0])
+      .find((item) => item.includes("session_token"));
+    expect(cookie).toBeTruthy();
+    const actor = new Request(origin + "/v1/me", { headers: { cookie: cookie! } });
+    const first = await verifier.verify(actor);
+    expect(first.authenticated).toBe(true);
+    if (!first.authenticated) throw new Error("Missing internal identity");
+    const accountId = first.principal.internalUserId;
+
+    await pool.query("update users set status='suspended' where id=$1", [accountId]);
+    expect(await verifier.verify(actor)).toEqual({ authenticated: false, reason: "suspended" });
+    await pool.query("update users set status='deleted' where id=$1", [accountId]);
+    expect(await verifier.verify(actor)).toEqual({ authenticated: false, reason: "deleted" });
+    await pool.query("update users set status='active' where id=$1", [accountId]);
+    expect((await verifier.verify(actor)).authenticated).toBe(true);
+
+    await pool.query(
+      "update session set \"expiresAt\"=now()-interval '1 minute' where id=$1",
+      [first.principal.sessionId],
+    );
+    expect((await verifier.verify(actor)).authenticated).toBe(false);
+  });
+
 });
