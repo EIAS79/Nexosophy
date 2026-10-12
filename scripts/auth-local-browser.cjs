@@ -5,7 +5,7 @@ const assert = require("node:assert/strict");
 const { createHmac } = require("node:crypto");
 const { chromium } = require("playwright");
 
-const origin = "http://127.0.0.1:3000";
+const origin = "http://localhost:3000";
 const password = process.env.AUTH_TEST_PASSWORD;
 if (process.env.AUTH_LOCAL_E2E !== "1" || !password) {
   throw new Error("Local-only browser test must be explicitly enabled.");

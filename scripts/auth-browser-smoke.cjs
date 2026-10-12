@@ -36,11 +36,21 @@ const { chromium } = require("playwright");
     assert.match(response.headers()["cache-control"] || "", /no-store/i);
     assert.equal(await response.json(), null, "Guest must not have a session.");
 
-    await page.getByRole("button", { name: "Forgot password?" }).click();
-    await page.getByRole("heading", { name: "Recover your account" }).waitFor();
+    // Staging without a verified sending domain must not advertise password recovery.
+    const capabilities = await context.request.get(origin + "/api/auth/capabilities");
+    assert.equal(capabilities.status(), 200);
+    const features = await capabilities.json();
+    if (features.emailSignupAvailable) {
+      await page.getByRole("button", { name: "Forgot password?" }).click();
+      await page.getByRole("heading", { name: "Recover your account" }).waitFor();
+    } else {
+      assert.equal(await page.getByRole("button", { name: "Forgot password?" }).count(), 0);
+    }
 
     if (process.env.AUTH_SMOKE_EMAIL && process.env.AUTH_SMOKE_PASSWORD) {
-      await page.getByRole("button", { name: "Back to sign in" }).click();
+      if (features.emailSignupAvailable) {
+        await page.getByRole("button", { name: "Back to sign in" }).click();
+      }
       await page.locator('input[name="email"]').fill(process.env.AUTH_SMOKE_EMAIL);
       await page.locator('input[name="password"]').fill(process.env.AUTH_SMOKE_PASSWORD);
       await page.getByRole("button", { name: "Sign in", exact: true }).click();

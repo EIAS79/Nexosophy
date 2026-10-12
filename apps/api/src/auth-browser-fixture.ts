@@ -4,7 +4,7 @@
 import { Pool } from "pg";
 import { createNexosophyAuth } from "./owned-auth.js";
 
-const origin = "http://127.0.0.1:3000";
+const origin = "http://localhost:3000";
 if (
   process.env.APP_ENV !== "local" ||
   process.env.NODE_ENV !== "test" ||
