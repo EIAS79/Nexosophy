@@ -1,7 +1,14 @@
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { addCourseSection, addGradeItem } from "@nexosophy/db";
+import {
+  addCourseSection,
+  addGradeItem,
+  createAcademicCourse,
+  createFlashcard,
+  createFlashcardDeck,
+  linkCourseNode,
+} from "@nexosophy/db";
 
 const url = process.env.DATABASE_URL;
 const integration =
@@ -91,4 +98,137 @@ integration("Academic workspace-reference isolation / real PostgreSQL", () => {
     );
     expect(Number(count.rows[0]!.count)).toBe(1);
   });
+
+  it("rejects foreign terms before creating course resource folders", async () => {
+    const term = await pool.query<{ term_id: string }>(
+      `select term_id from "academic_courses" where id=$1`,
+      [foreignCourse],
+    );
+    const owner = await pool.query<{ owner_user_id: string }>(
+      `select owner_user_id from "workspaces" where id=$1`,
+      [ownWorkspace],
+    );
+    await expect(
+      createAcademicCourse(pool, {
+        workspaceId: ownWorkspace,
+        userId: owner.rows[0]!.owner_user_id,
+        termId: term.rows[0]!.term_id,
+        name: "Unauthorized cross-workspace course",
+        description: "",
+        instructor: {},
+      }),
+    ).rejects.toThrow("TERM_NOT_FOUND");
+    const nodes = await pool.query<{ count: string }>(
+      `select count(*)::text as count from "content_nodes"
+       where workspace_id=$1 and name like 'Unauthorized cross-workspace course%'`,
+      [ownWorkspace],
+    );
+    expect(Number(nodes.rows[0]!.count)).toBe(0);
+  });
+
+  it("rejects cross-tenant course links while preserving valid local links", async () => {
+    const owner = await pool.query<{ owner_user_id: string }>(
+      `select owner_user_id from "workspaces" where id=$1`,
+      [ownWorkspace],
+    );
+    const node = await pool.query<{ id: string }>(
+      `insert into "content_nodes"
+       ("workspace_id","kind","name","created_by_user_id","updated_by_user_id")
+       values ($1,'document',$2,$3,$3) returning "id"`,
+      [ownWorkspace, "Local link " + randomUUID(), owner.rows[0]!.owner_user_id],
+    );
+    await expect(
+      linkCourseNode(pool, {
+        workspaceId: ownWorkspace,
+        courseId: foreignCourse,
+        nodeId: node.rows[0]!.id,
+        linkType: "resource",
+        pinned: true,
+      }),
+    ).rejects.toThrow("COURSE_OR_NODE_NOT_FOUND");
+    const term = await pool.query<{ id: string }>(
+      `insert into "academic_terms"
+       ("workspace_id","name","starts_on","ends_on","created_by_user_id","updated_by_user_id")
+       values ($1,'Local term','2026-01-01','2026-12-31',$2,$2) returning "id"`,
+      [ownWorkspace, owner.rows[0]!.owner_user_id],
+    );
+    const course = await pool.query<{ id: string }>(
+      `insert into "academic_courses"
+       ("workspace_id","term_id","name","created_by_user_id","updated_by_user_id")
+       values ($1,$2,'Local course',$3,$3) returning "id"`,
+      [ownWorkspace, term.rows[0]!.id, owner.rows[0]!.owner_user_id],
+    );
+    await linkCourseNode(pool, {
+      workspaceId: ownWorkspace,
+      courseId: course.rows[0]!.id,
+      nodeId: node.rows[0]!.id,
+      linkType: "resource",
+      pinned: true,
+    });
+    const links = await pool.query<{ count: string }>(
+      `select count(*)::text as count from "course_links"
+       where workspace_id=$1 and course_id=$2`,
+      [ownWorkspace, course.rows[0]!.id],
+    );
+    expect(Number(links.rows[0]!.count)).toBe(1);
+  });
+
+  it("rejects foreign course and parent deck references", async () => {
+    const owner = await pool.query<{ owner_user_id: string }>(
+      `select owner_user_id from "workspaces" where id=$1`,
+      [ownWorkspace],
+    );
+    const otherOwner = await pool.query<{ owner_user_id: string }>(
+      `select owner_user_id from "workspaces" where id=$1`,
+      [foreignWorkspace],
+    );
+    const foreignDeck = await pool.query<{ id: string }>(
+      `insert into "flashcard_decks" ("workspace_id","name","created_by_user_id")
+       values ($1,$2,$3) returning "id"`,
+      [foreignWorkspace, "Foreign deck " + randomUUID(), otherOwner.rows[0]!.owner_user_id],
+    );
+    await expect(
+      createFlashcardDeck(pool, {
+        workspaceId: ownWorkspace,
+        userId: owner.rows[0]!.owner_user_id,
+        courseId: foreignCourse,
+        name: "Foreign course deck",
+      }),
+    ).rejects.toThrow("ACADEMIC_REFERENCE_NOT_FOUND");
+    await expect(
+      createFlashcardDeck(pool, {
+        workspaceId: ownWorkspace,
+        userId: owner.rows[0]!.owner_user_id,
+        parentDeckId: foreignDeck.rows[0]!.id,
+        name: "Foreign parent deck",
+      }),
+    ).rejects.toThrow("ACADEMIC_REFERENCE_NOT_FOUND");
+
+    const localDeck = await createFlashcardDeck(pool, {
+      workspaceId: ownWorkspace,
+      userId: owner.rows[0]!.owner_user_id,
+      name: "Legitimate deck " + randomUUID(),
+    });
+    expect(localDeck.id).toBeTruthy();
+    await expect(
+      createFlashcard(pool, {
+        workspaceId: ownWorkspace,
+        deckId: foreignDeck.rows[0]!.id,
+        type: "basic",
+        front: "Wrong tenant",
+        back: "Denied",
+        tags: [],
+      }),
+    ).rejects.toThrow("DECK_OR_REFERENCE_NOT_FOUND");
+    const localCard = await createFlashcard(pool, {
+      workspaceId: ownWorkspace,
+      deckId: localDeck.id,
+      type: "basic",
+      front: "Local card",
+      back: "Allowed",
+      tags: [],
+    });
+    expect(localCard.id).toBeTruthy();
+  });
+
 });

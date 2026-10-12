@@ -131,6 +131,13 @@ export async function createAcademicCourse(
   },
 ) {
   return withWorkspaceTransaction(pool, async (c) => {
+    const term = await c.query(
+      `select 1 from "academic_terms"
+       where "id"=$1::uuid and "workspace_id"=$2::uuid and "archived_at" is null`,
+      [input.termId, input.workspaceId],
+    );
+    if (!term.rowCount) throw new Error("TERM_NOT_FOUND");
+
     const root = await folder(
         c,
         input.workspaceId,
@@ -224,10 +231,18 @@ export async function linkCourseNode(
     pinned: boolean;
   },
 ) {
-  await pool.query(
-    `insert into "course_links" ("workspace_id","course_id","node_id","link_type","pinned") values ($1,$2,$3,$4::academic_link_type,$5) on conflict ("course_id","node_id","link_type") do update set "pinned"=excluded."pinned"`,
+  const result = await pool.query(
+    `insert into "course_links" ("workspace_id","course_id","node_id","link_type","pinned")
+     select c."workspace_id",c."id",n."id",$4::academic_link_type,$5
+     from "academic_courses" c
+     join "content_nodes" n on n."workspace_id"=c."workspace_id" and n."id"=$3::uuid
+     where c."workspace_id"=$1::uuid and c."id"=$2::uuid and n."trashed_at" is null
+     on conflict ("course_id","node_id","link_type")
+     do update set "pinned"=excluded."pinned"
+     returning "id"`,
     [input.workspaceId, input.courseId, input.nodeId, input.linkType, input.pinned],
   );
+  if (!result.rowCount) throw new Error("COURSE_OR_NODE_NOT_FOUND");
 }
 export async function createCourseMeeting(
   pool: Pool,
@@ -457,16 +472,28 @@ export async function createFlashcardDeck(
   },
 ) {
   const r = await pool.query<any>(
-    `insert into "flashcard_decks" ("workspace_id","course_id","parent_deck_id","name","source_node_id","created_by_user_id") values ($1,$2,$3,$4,$5,$6) returning *`,
+    `insert into "flashcard_decks"
+     ("workspace_id","course_id","parent_deck_id","name","source_node_id","created_by_user_id")
+     select $1::uuid,$3::uuid,$4::uuid,$5,$6::uuid,$2::uuid
+     where ($3::uuid is null or exists (
+       select 1 from "academic_courses" where "workspace_id"=$1::uuid and "id"=$3::uuid
+     )) and ($4::uuid is null or exists (
+       select 1 from "flashcard_decks" where "workspace_id"=$1::uuid and "id"=$4::uuid
+     )) and ($6::uuid is null or exists (
+       select 1 from "content_nodes"
+       where "workspace_id"=$1::uuid and "id"=$6::uuid and "trashed_at" is null
+     ))
+     returning *`,
     [
       input.workspaceId,
+      input.userId,
       input.courseId ?? null,
       input.parentDeckId ?? null,
       input.name,
       input.sourceNodeId ?? null,
-      input.userId,
     ],
   );
+  if (!r.rows[0]) throw new Error("ACADEMIC_REFERENCE_NOT_FOUND");
   return r.rows[0];
 }
 export async function createFlashcard(
@@ -484,7 +511,19 @@ export async function createFlashcard(
   },
 ) {
   const r = await pool.query<any>(
-    `insert into "flashcards" ("workspace_id","deck_id","type","front","back","cloze","image_asset_id","source_node_id","tags") values ($1,$2,$3::flashcard_type,$4,$5,$6,$7,$8,$9::jsonb) returning *`,
+    `insert into "flashcards"
+     ("workspace_id","deck_id","type","front","back","cloze","image_asset_id","source_node_id","tags")
+     select d."workspace_id",d."id",$3::flashcard_type,$4,$5,$6,$7::uuid,$8::uuid,$9::jsonb
+     from "flashcard_decks" d
+     where d."workspace_id"=$1::uuid and d."id"=$2::uuid
+       and ($7::uuid is null or exists (
+         select 1 from "assets" where "workspace_id"=$1::uuid and "id"=$7::uuid
+       ))
+       and ($8::uuid is null or exists (
+         select 1 from "content_nodes"
+         where "workspace_id"=$1::uuid and "id"=$8::uuid and "trashed_at" is null
+       ))
+     returning *`,
     [
       input.workspaceId,
       input.deckId,
@@ -497,6 +536,7 @@ export async function createFlashcard(
       JSON.stringify(input.tags),
     ],
   );
+  if (!r.rows[0]) throw new Error("DECK_OR_REFERENCE_NOT_FOUND");
   return r.rows[0];
 }
 export async function listDueFlashcards(pool: Pool, w: string, deckId?: string, limit = 50) {
