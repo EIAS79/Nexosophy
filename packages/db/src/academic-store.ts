@@ -431,6 +431,37 @@ export async function createStudyPlan(
   },
 ) {
   return withWorkspaceTransaction(pool, async (c) => {
+    const linkedNodes = [
+      ...new Set(input.topics.flatMap((topic) => topic.linkedNodeId ? [topic.linkedNodeId] : [])),
+    ];
+    const references = await c.query<{
+      valid_course: boolean;
+      valid_exam: boolean;
+      valid_nodes: string;
+    }>(
+      `select
+       ($2::uuid is null or exists (
+         select 1 from "academic_courses"
+         where "workspace_id"=$1::uuid and "id"=$2::uuid
+       )) as valid_course,
+       ($3::uuid is null or exists (
+         select 1 from "exams"
+         where "workspace_id"=$1::uuid and "id"=$3::uuid
+           and ($2::uuid is null or "course_id"=$2::uuid)
+       )) as valid_exam,
+       (select count(*)::text from "content_nodes"
+        where "workspace_id"=$1::uuid and "id"=any($4::uuid[])
+          and "trashed_at" is null) as valid_nodes`,
+      [input.workspaceId, input.courseId ?? null, input.examId ?? null, linkedNodes],
+    );
+    const checked = references.rows[0];
+    if (
+      !checked?.valid_course ||
+      !checked.valid_exam ||
+      Number(checked.valid_nodes) !== linkedNodes.length
+    ) {
+      throw new Error("STUDY_REFERENCE_NOT_FOUND");
+    }
     const r = await c.query<any>(
       `insert into "study_plans" ("workspace_id","course_id","exam_id","title","starts_on","ends_on","created_by_user_id") values ($1,$2,$3,$4,$5,$6,$7) returning *`,
       [
@@ -443,11 +474,12 @@ export async function createStudyPlan(
         input.userId,
       ],
     );
-    for (const t of input.topics)
+    for (const topic of input.topics) {
       await c.query(
         `insert into "study_plan_topics" ("plan_id","title","linked_node_id") values ($1,$2,$3)`,
-        [r.rows[0].id, t.title, t.linkedNodeId ?? null],
+        [r.rows[0].id, topic.title, topic.linkedNodeId ?? null],
       );
+    }
     return r.rows[0];
   });
 }
@@ -455,10 +487,37 @@ export async function linkStudyFocusSession(
   pool: Pool,
   input: { workspaceId: string; planId?: string; courseId?: string; focusSessionId: string },
 ) {
-  await pool.query(
-    `insert into "study_sessions" ("workspace_id","plan_id","course_id","focus_session_id") values ($1,$2,$3,$4) on conflict ("focus_session_id") do nothing`,
-    [input.workspaceId, input.planId ?? null, input.courseId ?? null, input.focusSessionId],
-  );
+  return withWorkspaceTransaction(pool, async (c) => {
+    const refs = await c.query<{
+      focus_ok: boolean;
+      plan_ok: boolean;
+      course_ok: boolean;
+    }>(
+      `select
+       exists (
+         select 1 from "focus_sessions"
+         where "workspace_id"=$1::uuid and "id"=$2::uuid
+       ) as focus_ok,
+       ($3::uuid is null or exists (
+         select 1 from "study_plans"
+         where "workspace_id"=$1::uuid and "id"=$3::uuid
+       )) as plan_ok,
+       ($4::uuid is null or exists (
+         select 1 from "academic_courses"
+         where "workspace_id"=$1::uuid and "id"=$4::uuid
+       )) as course_ok`,
+      [input.workspaceId, input.focusSessionId, input.planId ?? null, input.courseId ?? null],
+    );
+    const checked = refs.rows[0];
+    if (!checked?.focus_ok || !checked.plan_ok || !checked.course_ok) {
+      throw new Error("STUDY_REFERENCE_NOT_FOUND");
+    }
+    await c.query(
+      `insert into "study_sessions" ("workspace_id","plan_id","course_id","focus_session_id")
+       values ($1,$2,$3,$4) on conflict ("focus_session_id") do nothing`,
+      [input.workspaceId, input.planId ?? null, input.courseId ?? null, input.focusSessionId],
+    );
+  });
 }
 export async function createFlashcardDeck(
   pool: Pool,

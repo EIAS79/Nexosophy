@@ -8,6 +8,8 @@ import {
   createFlashcard,
   createFlashcardDeck,
   linkCourseNode,
+  createStudyPlan,
+  linkStudyFocusSession,
 } from "@nexosophy/db";
 
 const url = process.env.DATABASE_URL;
@@ -229,6 +231,116 @@ integration("Academic workspace-reference isolation / real PostgreSQL", () => {
       tags: [],
     });
     expect(localCard.id).toBeTruthy();
+  });
+
+
+  it("rejects study plans pointing to foreign courses or source documents", async () => {
+    const localOwner = await pool.query<{ owner_user_id: string }>(
+      `select owner_user_id from "workspaces" where id=$1`,
+      [ownWorkspace],
+    );
+    const foreignOwner = await pool.query<{ owner_user_id: string }>(
+      `select owner_user_id from "workspaces" where id=$1`,
+      [foreignWorkspace],
+    );
+    const userId = localOwner.rows[0]!.owner_user_id;
+    await expect(
+      createStudyPlan(pool, {
+        workspaceId: ownWorkspace,
+        userId,
+        courseId: foreignCourse,
+        title: "Unauthorized course study plan",
+        topics: [],
+      }),
+    ).rejects.toThrow("STUDY_REFERENCE_NOT_FOUND");
+
+    const node = await pool.query<{ id: string }>(
+      `insert into "content_nodes"
+       ("workspace_id","kind","name","created_by_user_id","updated_by_user_id")
+       values ($1,'document',$2,$3,$3) returning "id"`,
+      [
+        foreignWorkspace,
+        "Foreign study topic " + randomUUID(),
+        foreignOwner.rows[0]!.owner_user_id,
+      ],
+    );
+    await expect(
+      createStudyPlan(pool, {
+        workspaceId: ownWorkspace,
+        userId,
+        title: "Unauthorized source study plan",
+        topics: [{ title: "Foreign topic", linkedNodeId: node.rows[0]!.id }],
+      }),
+    ).rejects.toThrow("STUDY_REFERENCE_NOT_FOUND");
+
+    const plan = await createStudyPlan(pool, {
+      workspaceId: ownWorkspace,
+      userId,
+      title: "Local revision plan " + randomUUID(),
+      topics: [{ title: "Local topic" }],
+    });
+    expect(plan.id).toBeTruthy();
+  });
+
+  it("rejects focus-session links involving resources in other workspaces", async () => {
+    const localOwner = await pool.query<{ owner_user_id: string }>(
+      `select owner_user_id from "workspaces" where id=$1`,
+      [ownWorkspace],
+    );
+    const foreignOwner = await pool.query<{ owner_user_id: string }>(
+      `select owner_user_id from "workspaces" where id=$1`,
+      [foreignWorkspace],
+    );
+    const createFocus = async (workspaceId: string, userId: string) => {
+      const result = await pool.query<{ id: string }>(
+        `insert into "focus_sessions" ("workspace_id","user_id")
+         values ($1,$2) returning "id"`,
+        [workspaceId, userId],
+      );
+      return result.rows[0]!.id;
+    };
+    const localFocus = await createFocus(ownWorkspace, localOwner.rows[0]!.owner_user_id);
+    const foreignFocus = await createFocus(
+      foreignWorkspace,
+      foreignOwner.rows[0]!.owner_user_id,
+    );
+    await expect(
+      linkStudyFocusSession(pool, {
+        workspaceId: ownWorkspace,
+        focusSessionId: foreignFocus,
+      }),
+    ).rejects.toThrow("STUDY_REFERENCE_NOT_FOUND");
+    await expect(
+      linkStudyFocusSession(pool, {
+        workspaceId: ownWorkspace,
+        focusSessionId: localFocus,
+        courseId: foreignCourse,
+      }),
+    ).rejects.toThrow("STUDY_REFERENCE_NOT_FOUND");
+
+    const foreignPlan = await createStudyPlan(pool, {
+      workspaceId: foreignWorkspace,
+      userId: foreignOwner.rows[0]!.owner_user_id,
+      title: "Foreign revision plan",
+      topics: [],
+    });
+    await expect(
+      linkStudyFocusSession(pool, {
+        workspaceId: ownWorkspace,
+        focusSessionId: localFocus,
+        planId: foreignPlan.id,
+      }),
+    ).rejects.toThrow("STUDY_REFERENCE_NOT_FOUND");
+    await linkStudyFocusSession(pool, {
+      workspaceId: ownWorkspace,
+      focusSessionId: localFocus,
+    });
+    const linked = await pool.query<{ count: string }>(
+      `select count(*)::text as count from "study_sessions"
+       where "workspace_id"=$1 and "focus_session_id"=$2`,
+      [ownWorkspace, localFocus],
+    );
+    expect(Number(linked.rows[0]!.count)).toBe(1);
   });
 
 });
