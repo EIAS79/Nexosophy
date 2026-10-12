@@ -12,7 +12,23 @@ export function registerOwnedAuthRoutes(
   app: FastifyInstance,
   auth: NexosophyAuth,
   publicAuthUrl: string,
+  runtimeEnv: NodeJS.ProcessEnv = process.env,
 ) {
+  const emailSignupAvailable = Boolean(
+    runtimeEnv.NEXOSOPHY_EMAIL_API_KEY && runtimeEnv.NEXOSOPHY_EMAIL_FROM,
+  );
+  const socialProviders = (["google", "github", "facebook", "apple"] as const).filter(
+    (provider) => {
+      const prefix = provider.toUpperCase();
+      return Boolean(runtimeEnv[`${prefix}_CLIENT_ID`] && runtimeEnv[`${prefix}_CLIENT_SECRET`]);
+    },
+  );
+  // Non-secret capability discovery prevents advertising unavailable sign-in methods.
+  app.get("/api/auth/capabilities", async (_request, reply) => {
+    reply.header("cache-control", "private, no-store");
+    return { emailSignupAvailable, socialProviders };
+  });
+
   if (!app.hasContentTypeParser("application/x-www-form-urlencoded")) {
     app.addContentTypeParser(
       "application/x-www-form-urlencoded",
@@ -25,6 +41,17 @@ export function registerOwnedAuthRoutes(
     method: ["GET", "POST"],
     url: "/api/auth/*",
     async handler(request, reply) {
+      if (
+        !emailSignupAvailable &&
+        request.method === "POST" &&
+        [
+          "/api/auth/sign-up/email",
+          "/api/auth/request-password-reset",
+          "/api/auth/send-verification-email",
+        ].includes(request.url.split("?")[0] ?? "")
+      ) {
+        return reply.code(503).send({ error: "Authentication email delivery is not configured." });
+      }
       const headers = new Headers();
       for (const [key, value] of Object.entries(request.headers)) {
         if (rejectedResponseHeaders.has(key) || key === "host" || value === undefined) continue;

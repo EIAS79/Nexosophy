@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { authClient } from "../lib/auth-client";
 
 type AuthMode = "login" | "signup";
 type SocialProvider = "google" | "github" | "facebook" | "apple";
+
+type Capabilities = { emailSignupAvailable: boolean; socialProviders: SocialProvider[] };
 
 const providers: { id: SocialProvider; label: string }[] = [
   { id: "google", label: "Google" },
@@ -14,6 +16,38 @@ const providers: { id: SocialProvider; label: string }[] = [
 ];
 
 export function OwnedAuthForm({ mode }: { mode: AuthMode }) {
+  const [capabilities, setCapabilities] = useState<Capabilities>({
+    emailSignupAvailable: false,
+    socialProviders: [],
+  });
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetch("/api/auth/capabilities", { cache: "no-store", signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Auth capabilities unavailable");
+        return (await response.json()) as Capabilities;
+      })
+      .then((value) => {
+        if (!controller.signal.aborted) {
+          setCapabilities({
+            emailSignupAvailable: value.emailSignupAvailable === true,
+            socialProviders: Array.isArray(value.socialProviders)
+              ? value.socialProviders.filter((provider) =>
+                  ["google", "github", "facebook", "apple"].includes(provider),
+                )
+              : [],
+          });
+        }
+      })
+      .catch(() => {
+        // Failed capability discovery never enables a sign-up method.
+      });
+    return () => controller.abort();
+  }, []);
+  const availableSocialProviders = providers.filter(({ id }) =>
+    capabilities.socialProviders.includes(id),
+  );
+
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
@@ -21,6 +55,8 @@ export function OwnedAuthForm({ mode }: { mode: AuthMode }) {
   const [secondFactor, setSecondFactor] = useState(false);
   const [useBackupCode, setUseBackupCode] = useState(false);
   const [recover, setRecover] = useState(false);
+  const emailActionUnavailable =
+    (mode === "signup" || recover) && !capabilities.emailSignupAvailable;
   const [working, setWorking] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -172,7 +208,7 @@ export function OwnedAuthForm({ mode }: { mode: AuthMode }) {
             />
           </label>
         )}
-        <button type="submit" disabled={working}>
+        <button type="submit" disabled={working || emailActionUnavailable}>
           {working
             ? "Please wait…"
             : secondFactor
@@ -204,19 +240,25 @@ export function OwnedAuthForm({ mode }: { mode: AuthMode }) {
           Sign in with a passkey
         </button>
       )}
+      {emailActionUnavailable && (
+        <p role="status">
+          Email registration and recovery are unavailable until Nexosophy's sending domain is
+          verified. Existing accounts can still sign in.
+        </p>
+      )}
       {error && <p role="alert">{error}</p>}
       {message && <p role="status">{message}</p>}
-      {!secondFactor && !recover && (
+      {!secondFactor && !recover && availableSocialProviders.length > 0 && (
         <fieldset aria-label="Social sign-in methods">
           <p>Or continue with</p>
-          {providers.map(({ id, label }) => (
+          {availableSocialProviders.map(({ id, label }) => (
             <button key={id} type="button" disabled={working} onClick={() => void social(id)}>
               {label}
             </button>
           ))}
         </fieldset>
       )}
-      {mode === "login" && !secondFactor && (
+      {mode === "login" && !secondFactor && capabilities.emailSignupAvailable && (
         <button
           type="button"
           onClick={() => {

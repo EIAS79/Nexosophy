@@ -9,6 +9,57 @@ afterEach(async () => {
 });
 
 describe("owned authentication Fastify transport", () => {
+  it("reports only configured providers without leaking secrets or permitting unavailable signup", async () => {
+    const auth = {
+      handler: async (_request: Request) => new Response(null, { status: 204 }),
+    } as unknown as NexosophyAuth;
+    const app = Fastify();
+    apps.push(app);
+    registerOwnedAuthRoutes(app, auth, "https://nexosophy.example", {
+      GITHUB_CLIENT_ID: "app-public-id",
+      GITHUB_CLIENT_SECRET: "not-for-disclosure",
+      GOOGLE_CLIENT_ID: "missing-paired-secret",
+    });
+
+    const capabilities = await app.inject({ method: "GET", url: "/api/auth/capabilities" });
+    expect(capabilities.statusCode).toBe(200);
+    expect(capabilities.headers["cache-control"]).toContain("no-store");
+    expect(capabilities.json()).toEqual({
+      emailSignupAvailable: false,
+      socialProviders: ["github"],
+    });
+    expect(capabilities.body).not.toContain("not-for-disclosure");
+
+    const signup = await app.inject({
+      method: "POST",
+      url: "/api/auth/sign-up/email",
+      headers: { "content-type": "application/json" },
+      payload: { email: "someone@example.net", password: "example-only-password" },
+    });
+    expect(signup.statusCode).toBe(503);
+  });
+  it("enables registration capability only with a complete configured sender", async () => {
+    const auth = {
+      handler: async (_request: Request) => new Response(null, { status: 204 }),
+    } as unknown as NexosophyAuth;
+    const app = Fastify();
+    apps.push(app);
+    registerOwnedAuthRoutes(app, auth, "https://nexosophy.example", {
+      NEXOSOPHY_EMAIL_API_KEY: "server-only-key",
+      NEXOSOPHY_EMAIL_FROM: "Nexosophy <no-reply@nexosophy.example>",
+    });
+    const capabilities = await app.inject({ method: "GET", url: "/api/auth/capabilities" });
+    expect(capabilities.json().emailSignupAvailable).toBe(true);
+    expect(capabilities.body).not.toContain("server-only-key");
+    const signup = await app.inject({
+      method: "POST",
+      url: "/api/auth/sign-up/email",
+      headers: { "content-type": "application/json" },
+      payload: { email: "someone@example.net", password: "example-only-password" },
+    });
+    expect(signup.statusCode).toBe(204);
+  });
+
   it("preserves JSON sign-in requests and distinct Set-Cookie headers", async () => {
     let received: Request | undefined;
     const auth = {
