@@ -124,6 +124,11 @@ jobs:
           RUN_OWNED_AUTH_INTEGRATION: '1'
         run: pnpm --filter @nexosophy/api exec vitest run src/owned-auth.integration.test.ts
 
+      - name: Verify TOTP second-factor challenge and recovery codes against PostgreSQL
+        env:
+          RUN_OWNED_AUTH_INTEGRATION: '1'
+        run: pnpm --filter @nexosophy/api exec vitest run src/owned-auth.mfa.integration.test.ts
+
       - name: Verify academic course and grade tenant isolation
         env:
           RUN_OWNED_AUTH_INTEGRATION: '1'
