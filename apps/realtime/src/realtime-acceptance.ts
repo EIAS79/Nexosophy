@@ -5,7 +5,7 @@ import { randomUUID } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
 import { setTimeout as sleep } from "node:timers/promises";
 import assert from "node:assert/strict";
-import { Pool } from "pg";
+import { createDatabasePool } from "@nexosophy/db";
 import { createRealtimeRoomToken } from "@nexosophy/auth";
 
 const databaseURL = process.env.DATABASE_URL ?? "";
@@ -15,7 +15,7 @@ if (!databaseURL.includes("127.0.0.1:5432") || !redisURL.includes("127.0.0.1:637
   throw new Error("Refusing realtime acceptance outside disposable local CI.");
 }
 const secret = "realtime-local-only-secret-for-integration-test-2026";
-const pool = new Pool({ connectionString: databaseURL, max: 3 });
+const pool = createDatabasePool(databaseURL, { max: 3 });
 const children: ChildProcess[] = [];
 type Envelope = Record<string, unknown>;
 type SocketInbox = {
