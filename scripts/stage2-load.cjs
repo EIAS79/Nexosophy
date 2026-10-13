@@ -24,6 +24,7 @@ async function timedRequest(path, headers = {}) {
 async function runLoad(label, path, total, concurrency, headers, check) {
   const durations = [];
   const failures = [];
+  const statusCounts = new Map();
   let next = 0;
   const workers = Array.from({ length: concurrency }, async () => {
     while (next < total) {
@@ -31,6 +32,7 @@ async function runLoad(label, path, total, concurrency, headers, check) {
       try {
         const response = await timedRequest(path, headers);
         durations.push(response.duration);
+        statusCounts.set(response.status, (statusCounts.get(response.status) ?? 0) + 1);
         check(response, task);
       } catch (error) {
         failures.push(String(error));
@@ -45,6 +47,7 @@ async function runLoad(label, path, total, concurrency, headers, check) {
   assert.ok(p95 < 8000, label + " p95 too high: " + p95.toFixed(0) + " ms");
   console.log("PASS " + label + " " + total + " req / " + concurrency +
     " concurrency / p95=" + p95.toFixed(0) + "ms");
+  return statusCounts;
 }
 
 (async () => {
@@ -66,11 +69,21 @@ async function runLoad(label, path, total, concurrency, headers, check) {
   assert.equal(result.status, 200);
   assert.ok(JSON.parse(result.content)?.session?.id, "Session must resolve through Next proxy");
 
-  await runLoad("authenticated session checks", "/api/auth/get-session", 180, 18,
+  await runLoad("regular authenticated session checks", "/api/auth/get-session", 20, 5,
     { cookie }, (response) => {
       assert.equal(response.status, 200);
       assert.ok(JSON.parse(response.content)?.session?.id);
     });
+
+  const burst = await runLoad("session rate-limit burst", "/api/auth/get-session", 180, 18,
+    { cookie }, (response) => {
+      assert.ok(response.status === 200 || response.status === 429,
+        "Rate limit must protect the session API without 5xx responses; got " + response.status);
+      if (response.status === 200)
+        assert.ok(JSON.parse(response.content)?.session?.id);
+    });
+  assert.ok((burst.get(429) ?? 0) > 0,
+    "Excessive session requests must activate HTTP 429 rate limiting");
 
   await runLoad("anonymous route protection", "/app", 90, 15,
     {}, (response) => {
