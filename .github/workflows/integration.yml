@@ -134,6 +134,11 @@ jobs:
           RUN_OWNED_AUTH_INTEGRATION: '1'
         run: pnpm --filter @nexosophy/api exec vitest run src/academic-isolation.integration.test.ts
 
+      - name: Verify Stage 2 document, history, collaboration and upload isolation
+        env:
+          RUN_STAGE2_INTEGRATION: '1'
+        run: pnpm --filter @nexosophy/api exec vitest run src/stage2-core.integration.test.ts
+
       - name: Verify workspace isolation, RBAC and sharing invariants
         run: pnpm --filter @nexosophy/db test:workspace-integration
 

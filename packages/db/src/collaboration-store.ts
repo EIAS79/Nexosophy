@@ -482,9 +482,22 @@ export async function createComment(
     );
     const row = inserted.rows[0];
     if (!row) throw new Error("COMMENT_CREATE_FAILED");
-    const uniqueMentions = [...new Set(input.mentionUserIds)].filter(
+    const requestedMentions = [...new Set(input.mentionUserIds)].filter(
       (userId) => userId !== input.actorUserId,
     );
+    // Filter unauthorized users BEFORE generating notifications/outbox payloads.
+    // The join prevents leaking comment activity to people outside the workspace.
+    const eligibleMentions = requestedMentions.length
+      ? await client.query<{ user_id: string }>(
+          `select m."user_id" from "workspace_members" m
+           join "users" u on u."id"=m."user_id"
+           where m."workspace_id"=$1 and m."user_id"=any($2::uuid[])
+             and m."status"='active' and
+             u."status" in ('active','pending_onboarding','deletion_requested')`,
+          [input.workspaceId, requestedMentions],
+        )
+      : null;
+    const uniqueMentions = eligibleMentions?.rows.map((row) => row.user_id) ?? [];
     for (const userId of uniqueMentions) {
       await client.query(
         `insert into "collaboration_comment_mentions" ("comment_id", "mentioned_user_id")
