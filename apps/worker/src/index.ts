@@ -210,13 +210,19 @@ async function runContentOperationLoop(): Promise<void> {
 }
 
 
-async function postJson<T>(url: string, payload: unknown): Promise<T> {
+async function postJson<T>(url: string, payload: unknown, mediaAuth = false): Promise<T> {
+  if (mediaAuth && !process.env.MEDIA_SERVICE_TOKEN) {
+    throw new Error("Media service authentication is not configured.");
+  }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 60_000);
   try {
     const response = await fetch(url, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: {
+        "content-type": "application/json",
+        ...(mediaAuth ? { authorization: "Bearer " + process.env.MEDIA_SERVICE_TOKEN } : {}),
+      },
       body: JSON.stringify(payload),
       signal: controller.signal,
     });
@@ -271,7 +277,7 @@ async function processAssetJob(job: Awaited<ReturnType<typeof claimNextAssetJob>
       declaredMime: asset.declaredMime,
       sizeBytes: asset.sizeBytes,
       checksumSha256: asset.checksumSha256,
-    });
+    }, true);
     if (!result.detectedMime) throw new Error("Scanner response omitted detected MIME type.");
     await completeAssetScan(contentPool, {
       jobId: job.id,
@@ -301,7 +307,11 @@ async function processAssetJob(job: Awaited<ReturnType<typeof claimNextAssetJob>
     job.jobType;
   const target = await storage.createUploadUrl({
     key: outputKey,
-    contentType: "application/octet-stream",
+    contentType: ({
+      thumbnail: "image/png", image_preview: "image/png", pdf_preview: "image/png",
+      pdf_text: "text/plain", office_preview: "application/pdf",
+      media_metadata: "application/json", waveform: "image/png", video_poster: "image/png",
+    } as Record<string, string>)[job.jobType] ?? "application/octet-stream",
     expiresInSeconds: 15 * 60,
   });
   const result = await postJson<{
@@ -319,7 +329,7 @@ async function processAssetJob(job: Awaited<ReturnType<typeof claimNextAssetJob>
       sizeBytes: asset.sizeBytes,
     },
     target,
-  });
+  }, true);
 
   await completeAssetVariant(contentPool, {
     jobId: job.id,
