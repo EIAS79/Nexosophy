@@ -4,6 +4,10 @@ import { Pool } from "pg";
 import {
   abortAssetUpload,
   appendCollaborationUpdate,
+  completeAssetScan,
+  failAssetJob,
+  getAsset,
+  listAssetVariants,
   createComment,
   createContentNode,
   createManualDocumentCheckpoint,
@@ -200,6 +204,79 @@ suite("Stage 2 workspace content/history/collaboration / PostgreSQL", () => {
       workspaceId: workspace, sessionId: upload.session.id, userId: owner,
     });
     expect(aborted.objectKey).toBeTruthy();
+  });
+
+  it("keeps unscanned/malformed assets quarantined and never serves unvalidated variants", async () => {
+    // These are scanner-policy integration tests, not claims that a virus
+    // engine or media processor has been deployed in staging.
+    const setupScan = async (filename: string) => {
+      const checksum = "ab".repeat(32);
+      const upload = await initiateAssetUpload(pool, {
+        workspaceId: workspace, userId: owner, parentId: null,
+        filename, mimeType: "image/png", sizeBytes: 512, checksumSha256: checksum,
+      });
+      await pool.query(
+        `update "assets" set "trust_state"='pending_scan'
+         where "workspace_id"=$1 and "id"=$2`,
+        [workspace, upload.asset.id],
+      );
+      await pool.query(
+        `update "upload_sessions" set "status"='scanning'
+         where "workspace_id"=$1 and "id"=$2`,
+        [workspace, upload.session.id],
+      );
+      await pool.query(
+        `insert into "asset_scans" ("workspace_id","asset_id","scanner","status")
+         values ($1,$2,'local-integration','pending')`,
+        [workspace, upload.asset.id],
+      );
+      const job = await pool.query<{ id: string }>(
+        `insert into "asset_processing_jobs" ("workspace_id","asset_id","job_type")
+         values ($1,$2,'scan') returning "id"`,
+        [workspace, upload.asset.id],
+      );
+      return { assetId: upload.asset.id, jobId: job.rows[0]!.id, checksum };
+    };
+
+    const unavailable = await setupScan("scanner-unavailable.png");
+    await failAssetJob(pool, unavailable.jobId, new Error("Scan provider unavailable"), false);
+    expect((await getAsset(pool, workspace, unavailable.assetId))?.trustState).toBe("quarantined");
+    expect(await listAssetVariants(pool, workspace, unavailable.assetId)).toEqual([]);
+
+    const malware = await setupScan("malicious-content.png");
+    await completeAssetScan(pool, {
+      jobId: malware.jobId, workspaceId: workspace, assetId: malware.assetId,
+      clean: false, scanner: "fixture-rejecting-scanner", detectedMime: "image/png",
+      checksumSha256: malware.checksum, resultCode: "malicious-content",
+    });
+    expect((await getAsset(pool, workspace, malware.assetId))?.trustState).toBe("quarantined");
+
+    const spoofed = await setupScan("mime-spoofed.png");
+    await completeAssetScan(pool, {
+      jobId: spoofed.jobId, workspaceId: workspace, assetId: spoofed.assetId,
+      clean: true, scanner: "fixture-mime-check", detectedMime: "application/x-msdownload",
+      checksumSha256: spoofed.checksum,
+    });
+    expect((await getAsset(pool, workspace, spoofed.assetId))?.trustState).toBe("quarantined");
+
+    const missingChecksum = await setupScan("missing-checksum.png");
+    await completeAssetScan(pool, {
+      jobId: missingChecksum.jobId, workspaceId: workspace, assetId: missingChecksum.assetId,
+      clean: true, scanner: "fixture-missing-checksum", detectedMime: "image/png",
+    });
+    expect((await getAsset(pool, workspace, missingChecksum.assetId))?.trustState)
+      .toBe("quarantined");
+
+    const verified = await setupScan("fixture-verified.png");
+    await completeAssetScan(pool, {
+      jobId: verified.jobId, workspaceId: workspace, assetId: verified.assetId,
+      clean: true, scanner: "fixture-verifying-scanner", detectedMime: "image/png",
+      checksumSha256: verified.checksum,
+    });
+    expect((await getAsset(pool, workspace, verified.assetId))?.trustState).toBe("trusted");
+    const variants = await listAssetVariants(pool, workspace, verified.assetId);
+    expect(variants.some((item) => item.kind === "thumbnail" && item.status === "queued")).toBe(true);
+    expect(await getAsset(pool, foreignWorkspace, verified.assetId)).toBeNull();
   });
 
   it("trash and restore roundtrip preserves the original node identity", async () => {
