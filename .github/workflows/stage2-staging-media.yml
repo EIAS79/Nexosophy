@@ -1,0 +1,37 @@
+name: Stage 2 staging antivirus readiness
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - phases-05-07-storage-editor-history
+    paths:
+      - '.github/workflows/stage2-staging-media.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  media-readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - name: Verify scanner HTTP service
+        shell: bash
+        run: |
+          set -euo pipefail
+          status="$(curl --silent --show-error --max-time 60 -o /tmp/media-health.json -w '%{http_code}' https://nexosophy-media-staging.onrender.com/health)"
+          echo "HTTP health: $status"
+          test "$status" = "200"
+      - name: Verify actual ClamAV signatures and clean-file scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in {1..6}; do
+            code="$(curl --silent --show-error --max-time 60 -o /tmp/media-ready.json -w '%{http_code}' https://nexosophy-media-staging.onrender.com/ready || true)"
+            echo "Antivirus readiness attempt $i: HTTP $code"
+            if [ "$code" = "200" ]; then exit 0; fi
+            sleep 30
+          done
+          echo 'Antivirus is not ready. Keep upload scanning quarantined.'
+          exit 1

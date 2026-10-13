@@ -197,12 +197,54 @@ try {
     role: "member",
   });
 
+  const localNodeRows = await pool.query<{ id: string }>(
+    `insert into "content_nodes"
+     ("workspace_id","kind","name","created_by_user_id","updated_by_user_id")
+     values ($1,'document',$2,$3,$3) returning "id"`,
+    [team.id, "Local resource " + Date.now(), owner],
+  );
+  const localNodeId = localNodeRows.rows[0]!.id;
+  const foreign = await createWorkspace(pool, {
+    userId: outsider, name: "Foreign integration tenant", type: "team",
+  });
+  const foreignNodeRows = await pool.query<{ id: string }>(
+    `insert into "content_nodes"
+     ("workspace_id","kind","name","created_by_user_id","updated_by_user_id")
+     values ($1,'document',$2,$3,$3) returning "id"`,
+    [foreign.id, "Unshareable foreign resource " + Date.now(), outsider],
+  );
+  const foreignNodeId = foreignNodeRows.rows[0]!.id;
+  await assert.rejects(createResourceGrant(pool, {
+    workspaceId: team.id, actorUserId: owner, principalUserId: invited,
+    resourceType: "node", resourceId: foreignNodeId, permission: "content.read",
+  }), /RESOURCE_SCOPE_NOT_FOUND/);
+  await assert.rejects(createResourceGrant(pool, {
+    workspaceId: team.id, actorUserId: owner, principalUserId: wrongRecipient,
+    resourceType: "node", resourceId: localNodeId, permission: "content.read",
+  }), /GRANT_PRINCIPAL_NOT_ACTIVE/);
+  await assert.rejects(createShareLink(pool, {
+    workspaceId: team.id, actorUserId: owner,
+    resourceType: "node", resourceId: foreignNodeId, allowDownload: false,
+  }), /RESOURCE_SCOPE_NOT_FOUND/);
+  await assert.rejects(createShareLink(pool, {
+    workspaceId: team.id, actorUserId: owner,
+    resourceType: "unsupported-resource", resourceId: localNodeId, allowDownload: false,
+  }), /RESOURCE_SCOPE_NOT_FOUND/);
+  const validNodeShare = await createShareLink(pool, {
+    workspaceId: team.id, actorUserId: owner,
+    resourceType: "node", resourceId: localNodeId, allowDownload: false,
+  });
+  assert(await resolveShareLink(pool,validNodeShare.token));
+  await pool.query('update "content_nodes" set "trashed_at"=now() where "id"=$1', [localNodeId]);
+  assert.equal(await resolveShareLink(pool,validNodeShare.token),null);
+  await pool.query('update "content_nodes" set "trashed_at"=null where "id"=$1', [localNodeId]);
+
   const grant = await createResourceGrant(pool, {
     workspaceId: team.id,
     actorUserId: owner,
     principalUserId: invited,
     resourceType: "node",
-    resourceId: "test-node",
+    resourceId: localNodeId,
     permission: "content.read",
   });
   assert(grant.id);
@@ -217,7 +259,7 @@ try {
     workspaceId: team.id,
     actorUserId: owner,
     resourceType: "node",
-    resourceId: "test-node",
+    resourceId: localNodeId,
     password: "integration-secret",
     allowDownload: false,
     expiresAt: new Date(Date.now() + 60_000),

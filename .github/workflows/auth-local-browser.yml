@@ -1,0 +1,120 @@
+name: Domain-free authentication browser acceptance
+
+on:
+  pull_request:
+    paths:
+      - 'apps/api/**'
+      - 'apps/web/**'
+      - 'packages/auth/**'
+      - 'packages/db/**'
+      - 'scripts/auth-local-browser.cjs'
+      - 'scripts/stage2-local-browser.cjs'
+      - 'scripts/stage2-browser-upload-smoke.cjs'
+      - 'scripts/stage2-load.cjs'
+      - '.github/workflows/auth-local-browser.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: auth-local-browser-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  chromium:
+    name: PostgreSQL + API + Next + WebAuthn Chromium
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: nexosophy
+          POSTGRES_USER: nexosophy
+          POSTGRES_PASSWORD: nexosophy
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U nexosophy -d nexosophy"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      NODE_ENV: test
+      APP_ENV: local
+      LOG_LEVEL: warn
+      API_HOST: 127.0.0.1
+      API_PORT: '4000'
+      DATABASE_URL: postgresql://nexosophy:nexosophy@127.0.0.1:5432/nexosophy
+      REDIS_URL: redis://127.0.0.1:6379
+      NEXOSOPHY_AUTH_SECRET: local-browser-ci-secret-not-for-production-1234567890
+      NEXOSOPHY_AUTH_URL: http://localhost:3000
+      NEXOSOPHY_AUTH_TRUSTED_ORIGINS: http://localhost:3000
+      NEXOSOPHY_API_URL: http://127.0.0.1:4000
+      REALTIME_TOKEN_SECRET: local-browser-ci-realtime-secret-2026-not-for-production
+      REALTIME_PUBLIC_URL: ws://127.0.0.1:4110
+      AUTH_LOCAL_E2E: '1'
+      AUTH_TEST_PASSWORD: Local-browser-only-2026-password!
+      NODE_PATH: /tmp/nexosophy-playwright/node_modules
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 12.7.0
+          run_install: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install workspace
+        run: pnpm install --frozen-lockfile
+      - name: Apply disposable database migrations
+        run: pnpm --filter @nexosophy/db db:migrate
+      - name: Create verified local-only test accounts without real email
+        run: pnpm --filter @nexosophy/api exec tsx src/auth-browser-fixture.ts
+      - name: Build local API and frontend
+        run: |
+          pnpm --filter @nexosophy/api build
+          pnpm --filter @nexosophy/web build
+      - name: Start services on loopback
+        shell: bash
+        run: |
+          set -euo pipefail
+          (pnpm --filter @nexosophy/api start > /tmp/nexosophy-auth-api.log 2>&1 & echo $! > /tmp/nexosophy-auth-api.pid)
+          (pnpm --filter @nexosophy/web start --port 3000 > /tmp/nexosophy-auth-web.log 2>&1 & echo $! > /tmp/nexosophy-auth-web.pid)
+          for i in {1..60}; do
+            if curl --silent --fail http://127.0.0.1:4000/ready >/dev/null && curl --silent --fail http://localhost:3000/login >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          tail -80 /tmp/nexosophy-auth-api.log || true
+          tail -80 /tmp/nexosophy-auth-web.log || true
+          exit 1
+      - name: Install pinned Playwright Chromium
+        run: |
+          npm install --prefix /tmp/nexosophy-playwright --no-save --ignore-scripts playwright@1.58.2 axe-core@4.10.3
+          node /tmp/nexosophy-playwright/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Browser authentication acceptance
+        run: node scripts/auth-local-browser.cjs
+      - name: Stage 2 workspace, files, editor and trash browser acceptance
+        run: node scripts/stage2-local-browser.cjs
+      - name: Stage 2 bounded frontend, session and proxy load acceptance
+        run: node scripts/stage2-load.cjs
+      - name: Print redacted local service diagnostics on failure
+        if: failure()
+        run: |
+          tail -80 /tmp/nexosophy-auth-api.log 2>/dev/null || true
+          tail -80 /tmp/nexosophy-auth-web.log 2>/dev/null || true

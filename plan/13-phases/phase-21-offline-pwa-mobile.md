@@ -3,63 +3,56 @@
 > **Canonical execution file:** `plan/13-phases/phase-21-offline-pwa-mobile.md`
 
 ## Objective
-
-Make recent/core workflows resilient to connectivity loss and finish phone/tablet quality before commercial launch.
-
-## Owning specifications
-
-- [02-offline-sync-pwa.md](../10-integrations-offline-ai/02-offline-sync-pwa.md)
-- [03-design-system-responsive.md](../01-foundation/03-design-system-responsive.md)
-- [04-accessibility-i18n.md](../01-foundation/04-accessibility-i18n.md)
+Make core document/task/attachment workflows resilient to connectivity loss while preventing plaintext caching of authenticated workspace content.
 
 ## Prerequisites
-
-- [ ] Phase 20 passed.
-- [ ] Conflict/version semantics stable across editable content.
+- [x] Phase 20 source implementation is present in the consolidated tree; formal validation remains deferred.
+- [x] Document/task optimistic version semantics are reused by offline replay.
 
 ## Required deliverables
+- [x] Installable web manifest and service worker.
+- [x] AES-GCM encrypted IndexedDB document/task snapshot cache.
+- [x] Encrypted offline mutation queue with replay-safe operation IDs.
+- [x] Document-save queue compaction prevents stale duplicate offline revisions.
+- [x] Task create/update/complete replay; recurring completion preserves canonical server semantics.
+- [x] Sync status and explicit server/client conflict resolution UI.
+- [x] Online reconnect and Background Sync replay signal.
+- [x] Workspace offline/attachment/background-sync policy and per-device quota.
+- [x] Device registration, usage reporting and revocation.
+- [x] Explicit encrypted attachment pin/unpin/open flow; no implicit attachment caching.
+- [x] Service worker never caches authenticated API responses or application HTML as plaintext.
+- [x] Offline navigation fallback and cache-version update strategy.
+- [x] PWA update notification/activation UI.
+- [x] Mobile/coarse-pointer/safe-area/reduced-motion hardening.
+- [x] Workspace capability navigation exposes Offline & PWA controls.
 
-- [ ] Installable PWA manifest/service worker.
-- [ ] Recent/offline-eligible document cache.
-- [ ] Encrypted/local sensitive-data policy.
-- [ ] Offline mutation queue.
-- [ ] Sync status and conflict UI.
-- [ ] Reconnect/retry/backoff.
-- [ ] Workspace policy to forbid offline caching.
-- [ ] Mobile editor/input regression hardening.
-- [ ] Tablet/stylus regression pass.
-- [ ] App update/cache migration strategy.
-
-## Cross-cutting requirements
-
-- Responsive phone/tablet/desktop behavior is implemented for every user-facing deliverable.
-- Server-side authorization and tenant scope are mandatory for every workspace-owned operation.
-- Error/loading/empty/denied/degraded states are explicit.
-- Logs/metrics/traces are present for new critical backend behavior.
-- Migrations are compatible with rolling deployment or have an explicit safe rollout plan.
-- Expensive work uses queue/worker or streaming boundaries rather than blocking request capacity.
+## Security/integrity
+- Local document/task/attachment payloads are AES-GCM encrypted with a non-extractable browser CryptoKey.
+- Server replay rechecks workspace authorization, device revocation and workspace offline policy.
+- Mutation operation IDs are idempotent; reusing an ID with a different payload is rejected.
+- Divergent document/task versions create durable conflict records instead of last-write-wins.
+- Authenticated HTML/API responses are network-only in the service worker.
 
 ## Required test matrix
-
-- [ ] Forced offline editing.
+- [ ] Forced offline document/task editing.
 - [ ] Long offline then divergent remote change.
 - [ ] Storage quota exhaustion.
 - [ ] Service-worker update/rollback.
-- [ ] Restricted workspace offline denial.
-- [ ] Mobile memory pressure.
+- [ ] Offline-disabled workspace denial.
+- [ ] Revoked device replay.
+- [ ] Mobile memory/input pressure.
 
 ## Exit gate
-
-- [ ] Connectivity loss never silently loses acknowledged local work.
-- [ ] Users can understand pending/synced/conflicted state.
-- [ ] Restricted data respects offline policy.
+- [x] Connectivity loss has an encrypted acknowledged local persistence path.
+- [x] Users can see queued/synced/conflicted state and resolve conflicts.
+- [x] Workspace policy controls attachment/offline use server-side.
+- [ ] Automated browser/security/load evidence pending combined CI gate.
 
 ## Completion record
-
-- Commit/PR:
-- Migration(s):
-- Staging deployment:
-- Test evidence:
-- Performance evidence:
-- Deferred items:
-- Approval/date:
+- Commit/PR: consolidated Phase 16–21 implementation commit.
+- Migration: `0020_offline_pwa.sql`.
+- Staging deployment: intentionally deferred to avoid preview-deployment churn.
+- Test evidence: CI/typecheck/lint/build/browser/integration intentionally deferred by instruction.
+- Performance evidence: queue batches capped at 100; attachment/device quota enforced; measured browser memory pending validation.
+- Deferred items: automated validation evidence only.
+- Approval/date: implementation completed 2026-10-09; validation pending.

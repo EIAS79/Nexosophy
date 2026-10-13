@@ -1,0 +1,35 @@
+name: Staging Authentication Browser Smoke
+
+# Manual only: never consume Vercel preview quota on each repository commit.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    name: Real Chromium authentication staging smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      AUTH_STAGING_URL: ${{ secrets.NEXOSOPHY_STAGING_FRONTEND_URL }}
+      AUTH_SMOKE_EMAIL: ${{ secrets.NEXOSOPHY_SMOKE_EMAIL }}
+      AUTH_SMOKE_PASSWORD: ${{ secrets.NEXOSOPHY_SMOKE_PASSWORD }}
+      NODE_PATH: /tmp/nexosophy-browser/node_modules
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - name: Validate staging address
+        shell: bash
+        run: test -n "$AUTH_STAGING_URL"
+      - name: Install isolated pinned Chromium test runtime
+        shell: bash
+        run: |
+          npm install --prefix /tmp/nexosophy-browser --no-save --ignore-scripts playwright@1.58.2
+          node /tmp/nexosophy-browser/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Execute browser smoke
+        run: node scripts/auth-browser-smoke.cjs

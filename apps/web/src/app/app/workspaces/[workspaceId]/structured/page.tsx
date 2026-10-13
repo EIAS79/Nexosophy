@@ -1,0 +1,1 @@
+import {SpecializedHub} from "../../../../../components/specialized-hub";export default async function Page({params}:{params:Promise<{workspaceId:string}>}){const{workspaceId}=await params;return <SpecializedHub workspaceId={workspaceId}/>;}

@@ -1,0 +1,14 @@
+FROM node:24.21.0-bookworm-slim
+ENV NODE_ENV=production
+ENV PORT=4300
+WORKDIR /srv/media
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      ca-certificates clamav clamav-freshclam file ffmpeg poppler-utils libreoffice-core \
+      libreoffice-writer libreoffice-calc libreoffice-impress && \
+    update-ca-certificates && rm -rf /var/lib/apt/lists/*
+COPY infra/media-service/server.mjs ./server.mjs
+COPY infra/media-service/entrypoint.sh ./entrypoint.sh
+# A small free-tier instance stays fail-closed without repeatedly OOM-killing
+# the server; deployments with adequate RAM update genuine ClamAV signatures.
+CMD ["sh", "/srv/media/entrypoint.sh"]

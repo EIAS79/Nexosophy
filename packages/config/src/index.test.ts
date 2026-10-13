@@ -1,11 +1,5 @@
 import { describe, expect, it } from "vitest";
-
-import {
-  parseApiEnv,
-  parseOptionalClerkEnv,
-  parseRealtimeEnv,
-  parseWorkerEnv,
-} from "./index.js";
+import { parseApiEnv, parseRealtimeEnv, parseWorkerEnv } from "./index.js";
 
 const base = {
   NODE_ENV: "test",
@@ -29,44 +23,15 @@ describe("environment configuration", () => {
   });
 
   it("parses realtime defaults", () => {
-    const env = parseRealtimeEnv(base);
+    const env = parseRealtimeEnv({
+      ...base,
+      REALTIME_TOKEN_SECRET: "test-only-realtime-secret-32-bytes-12345",
+      REALTIME_PUBLIC_URL: "ws://localhost:4100",
+    });
     expect(env.REALTIME_PORT).toBe(4100);
   });
 
-  it("rejects a missing database URL", () => {
-    expect(() =>
-      parseApiEnv({
-        ...base,
-        DATABASE_URL: undefined,
-      }),
-    ).toThrow();
-  });
-
-  it("treats a fully absent Clerk configuration as disabled", () => {
-    expect(parseOptionalClerkEnv({})).toBeNull();
-  });
-
-  it("rejects partially configured Clerk credentials", () => {
-    expect(() =>
-      parseOptionalClerkEnv({
-        CLERK_SECRET_KEY: "sk_test_partial",
-      }),
-    ).toThrow();
-  });
-
-  it("parses and normalizes authorized Clerk parties", () => {
-    const clerk = parseOptionalClerkEnv({
-      CLERK_SECRET_KEY: "sk_test_example",
-      CLERK_PUBLISHABLE_KEY: "pk_test_example",
-      CLERK_JWT_KEY: "-----BEGIN PUBLIC KEY-----example-----END PUBLIC KEY-----",
-      CLERK_WEBHOOK_SIGNING_SECRET: "whsec_example",
-      CLERK_AUTHORIZED_PARTIES:
-        "https://nexosophy.com, http://localhost:3000",
-    });
-
-    expect(clerk?.CLERK_AUTHORIZED_PARTIES).toEqual([
-      "https://nexosophy.com",
-      "http://localhost:3000",
-    ]);
+  it("rejects missing database credentials", () => {
+    expect(() => parseApiEnv({ ...base, DATABASE_URL: undefined })).toThrow();
   });
 });

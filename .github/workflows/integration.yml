@@ -82,6 +82,9 @@ jobs:
       API_PORT: 4000
       DATABASE_URL: postgresql://nexosophy:nexosophy@127.0.0.1:5432/nexosophy
       REDIS_URL: redis://127.0.0.1:6379
+      NEXOSOPHY_AUTH_SECRET: local-ci-only-not-a-production-secret-1234567890
+      NEXOSOPHY_AUTH_URL: http://127.0.0.1:4000
+      NEXOSOPHY_AUTH_TRUSTED_ORIGINS: http://127.0.0.1:4000
 
     steps:
       - name: Checkout
@@ -115,6 +118,39 @@ jobs:
 
       - name: Verify identity concurrency and webhook idempotence
         run: pnpm --filter @nexosophy/db test:identity-integration
+
+      - name: Verify Nexosophy-owned email, session and revocation against PostgreSQL
+        env:
+          RUN_OWNED_AUTH_INTEGRATION: '1'
+        run: pnpm --filter @nexosophy/api exec vitest run src/owned-auth.integration.test.ts
+
+      - name: Verify TOTP second-factor challenge and recovery codes against PostgreSQL
+        env:
+          RUN_OWNED_AUTH_INTEGRATION: '1'
+        run: pnpm --filter @nexosophy/api exec vitest run src/owned-auth.mfa.integration.test.ts
+
+      - name: Verify academic course and grade tenant isolation
+        env:
+          RUN_OWNED_AUTH_INTEGRATION: '1'
+        run: pnpm --filter @nexosophy/api exec vitest run src/academic-isolation.integration.test.ts
+
+      - name: Verify Stage 2 document, history, collaboration and upload isolation
+        env:
+          RUN_STAGE2_INTEGRATION: '1'
+        run: pnpm --filter @nexosophy/api exec vitest run src/stage2-core.integration.test.ts
+
+      - name: Verify local S3 SigV4, multipart, downloads and expiration
+        env:
+          RUN_STAGE2_INTEGRATION: '1'
+        run: pnpm --filter @nexosophy/api exec tsx src/stage2-s3.acceptance.ts
+
+      - name: Verify two realtime replicas, Redis fanout and revoked room access
+        run: |
+          pnpm --filter @nexosophy/realtime build
+          pnpm --filter @nexosophy/realtime exec tsx src/realtime-acceptance.ts
+
+      - name: Media service fail-closed request validation
+        run: node --test infra/media-service/server.test.mjs
 
       - name: Verify workspace isolation, RBAC and sharing invariants
         run: pnpm --filter @nexosophy/db test:workspace-integration

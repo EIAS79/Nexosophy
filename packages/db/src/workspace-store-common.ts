@@ -57,6 +57,39 @@ export async function bumpWorkspacePermissionVersion(
   );
 }
 
+const AUDIT_REDACTED_KEYS = new Set([
+  "body",
+  "document",
+  "content",
+  "password",
+  "token",
+  "secret",
+  "authorization",
+  "cookie",
+  "accessToken",
+  "refreshToken",
+]);
+
+function sanitizeAuditMetadata(value: unknown, depth = 0): unknown {
+  if (depth > 5) return "[truncated]";
+  if (Array.isArray(value)) {
+    return value.slice(0, 50).map((item) => sanitizeAuditMetadata(item, depth + 1));
+  }
+  if (value && typeof value === "object") {
+    const output: Record<string, unknown> = {};
+    for (const [key, nested] of Object.entries(value as Record<string, unknown>).slice(0, 100)) {
+      output[key] = AUDIT_REDACTED_KEYS.has(key)
+        ? "[redacted]"
+        : sanitizeAuditMetadata(nested, depth + 1);
+    }
+    return output;
+  }
+  if (typeof value === "string" && value.length > 2000) {
+    return value.slice(0, 2000) + "…";
+  }
+  return value;
+}
+
 export async function appendWorkspaceAudit(
   db: Queryable,
   input: {
@@ -80,7 +113,7 @@ export async function appendWorkspaceAudit(
       input.targetType,
       input.targetId ?? null,
       input.requestId ?? null,
-      JSON.stringify(input.metadata ?? {}),
+      JSON.stringify(sanitizeAuditMetadata(input.metadata ?? {})),
     ],
   );
 }

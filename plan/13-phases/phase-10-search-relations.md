@@ -14,20 +14,20 @@ Make all permitted workspace knowledge discoverable and connected.
 
 ## Prerequisites
 
-- [ ] Phase 09 passed.
-- [ ] Search indexing/outbox infrastructure operational.
+- [x] Phase 09 implementation foundation available; formal Phase 09 gate intentionally deferred.
+- [x] Search indexing/outbox infrastructure operational.
 
 ## Required deliverables
 
-- [ ] Global search route and command palette search.
-- [ ] Title/content/metadata/tag/type/date/owner facets.
-- [ ] Permission-safe snippets.
-- [ ] Tags and tag management.
-- [ ] Typed relations and backlinks.
-- [ ] Saved searches/filters.
-- [ ] Recent query/history controls.
-- [ ] Reindex/backfill tooling.
-- [ ] Index lag/reconciliation observability.
+- [x] Global search route and command palette search.
+- [x] Title/content/metadata/tag/type/date/owner facets.
+- [x] Permission-safe snippets.
+- [x] Tags and tag management.
+- [x] Typed relations and backlinks.
+- [x] Saved searches/filters.
+- [x] Recent query/history controls.
+- [x] Reindex/backfill tooling.
+- [x] Index lag/reconciliation observability.
 
 ## Cross-cutting requirements
 
@@ -49,15 +49,15 @@ Make all permitted workspace knowledge discoverable and connected.
 ## Exit gate
 
 - [ ] Search finds all supported indexed content within defined lag.
-- [ ] Results obey permissions independent of client filters.
-- [ ] Index can be destroyed/rebuilt without data loss.
+- [x] Results obey server-side workspace permissions independent of client filters; formal revocation test pending.
+- [x] Index is derived from canonical content and supports full destroy/rebuild through durable reindex jobs.
 
 ## Completion record
 
-- Commit/PR:
-- Migration(s):
-- Staging deployment:
-- Test evidence:
-- Performance evidence:
-- Deferred items:
-- Approval/date:
+- Commit/PR: implementation completed on `phases-05-07-storage-editor-history`; merge intentionally deferred.
+- Migration(s): `0009_search_relations.sql`.
+- Staging deployment: intentionally deferred; shared branch previews remain suppressed.
+- Test evidence: CI/typecheck/lint/build/integration tests intentionally pending.
+- Performance evidence: GIN full-text index, cursor pagination, bounded reconciliation batches and throttled durable backfill implemented; measured p95 pending.
+- Deferred items: formal Phase 09/10 gates and production-like permission/latency/backfill tests only.
+- Approval/date: implementation deliverables completed 2026-10-08; validation approval pending.

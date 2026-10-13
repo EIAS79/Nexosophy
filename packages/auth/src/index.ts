@@ -83,10 +83,7 @@ export interface IdentityProvider {
 }
 
 export interface IdentityStorePort {
-  findByProviderUserId(
-    provider: string,
-    providerUserId: string,
-  ): Promise<InternalIdentity | null>;
+  findByProviderUserId(provider: string, providerUserId: string): Promise<InternalIdentity | null>;
 
   provision(snapshot: ProviderIdentitySnapshot): Promise<{
     internalUserId: string;
@@ -112,29 +109,19 @@ export function hasRecentFactorVerification(
 
   const [firstFactorAge, secondFactorAge] = ages;
 
-  if (
-    !Number.isFinite(firstFactorAge) ||
-    firstFactorAge < 0 ||
-    firstFactorAge > maxAgeMinutes
-  ) {
+  if (!Number.isFinite(firstFactorAge) || firstFactorAge < 0 || firstFactorAge > maxAgeMinutes) {
     return false;
   }
 
   if (secondFactorAge === -1) return true;
 
   return (
-    Number.isFinite(secondFactorAge) &&
-    secondFactorAge >= 0 &&
-    secondFactorAge <= maxAgeMinutes
+    Number.isFinite(secondFactorAge) && secondFactorAge >= 0 && secondFactorAge <= maxAgeMinutes
   );
 }
 
 export function canAuthenticateInternalAccount(state: InternalAccountState): boolean {
-  return (
-    state === "pending_onboarding" ||
-    state === "active" ||
-    state === "deletion_requested"
-  );
+  return state === "pending_onboarding" || state === "active" || state === "deletion_requested";
 }
 
 function deniedReason(state: InternalAccountState): AuthFailureReason {
@@ -190,9 +177,7 @@ export function createInternalAuthVerifier(
           internalUserId: identity.internalUserId,
           providerUserId: identity.providerUserId,
           ...(session.sessionId ? { sessionId: session.sessionId } : {}),
-          ...(session.authenticatedAt
-            ? { authenticatedAt: session.authenticatedAt }
-            : {}),
+          ...(session.authenticatedAt ? { authenticatedAt: session.authenticatedAt } : {}),
           ...(session.factorVerificationAge !== undefined
             ? { factorVerificationAge: session.factorVerificationAge }
             : {}),
@@ -231,9 +216,6 @@ export function safeReturnTo(raw: string | null | undefined, fallback = "/app"):
   }
 }
 
-export {
-  createClerkIdentityProvider,
-  type ClerkIdentityProviderConfig,
-} from "./clerk.js";
-
 export * from "./workspace-policy.js";
+
+export * from "./realtime-token.js";

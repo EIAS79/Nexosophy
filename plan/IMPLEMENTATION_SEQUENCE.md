@@ -2,6 +2,7 @@
 
 > **Canonical order:** Phase 00 → Phase 24.  
 > **Rule:** do not start a dependent phase against fake persistence, fake authorization, temporary schemas, or infrastructure intended to be thrown away.
+> **2026-10-11 release scope:** verify and release Phases 00–21 including owned-auth Phase 02B. Phases 22–24 are postponed by the owner; minimum security, tenant isolation, auth, and recovery testing still gate any production merge. See plan/CORE_RELEASE_AUDIT_00_21.md.
 
 ## Global sequencing rules
 
@@ -24,7 +25,7 @@
 
 ## Phase 02 — Authentication, accounts & security baseline
 
-**Outcome:** Clerk integration, signup/signin, verification/recovery, Google/Microsoft OAuth where configured, internal user mapping, sessions/devices, security events, profile/settings baseline.
+**Outcome:** Nexosophy-owned self-hosted authentication (Phase 02B) with PostgreSQL identities/sessions, signup/signin, verification/recovery, OAuth providers (Google, GitHub, Facebook, Apple as configured), MFA/passkeys, internal user mapping, session revocation, security events, profiles and settings. The former Clerk design is retired; its earlier checkboxes are not acceptance evidence.
 
 ## Phase 03 — Workspaces, membership, RBAC & sharing
 

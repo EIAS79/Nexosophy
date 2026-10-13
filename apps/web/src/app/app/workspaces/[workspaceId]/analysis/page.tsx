@@ -1,0 +1,1 @@
+import{AnalysisHub}from"../../../../../components/analysis-hub";export default async function Page({params}:{params:Promise<{workspaceId:string}>}){const{workspaceId}=await params;return <AnalysisHub workspaceId={workspaceId}/>} 

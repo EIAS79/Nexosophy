@@ -1,0 +1,14 @@
+import{z}from"zod";const uuid=z.string().uuid();
+export const investigationSchema=z.object({title:z.string().trim().min(1).max(500),summary:z.string().max(300000).default(""),classification:z.enum(["internal","confidential","restricted","public"]).default("internal"),embargoUntil:z.string().datetime().optional()});
+export const leadSchema=z.object({investigationId:uuid.optional(),title:z.string().trim().min(1).max(500),description:z.string().max(200000).default("")});
+export const sourceSchema=z.object({displayName:z.string().trim().min(1).max(500),confidentiality:z.enum(["public","internal","confidential","restricted"]).default("confidential"),contactMode:z.string().max(120).default("on_record"),publicProfile:z.record(z.string(),z.unknown()).default({}),sensitiveProfile:z.record(z.string(),z.unknown()).default({})});
+export const interviewSchema=z.object({investigationId:uuid,sourceId:uuid.optional(),title:z.string().trim().min(1).max(500),occurredAt:z.string().datetime().optional(),audioAssetId:uuid.optional(),consent:z.record(z.string(),z.unknown()).default({})});
+export const evidenceSchema=z.object({investigationId:uuid,title:z.string().trim().min(1).max(500),kind:z.string().max(120),nodeId:uuid.optional(),assetId:uuid.optional(),provenance:z.record(z.string(),z.unknown())}).refine(v=>Boolean(v.nodeId)!==Boolean(v.assetId),{message:"Evidence must use exactly one canonical source."});
+export const claimSchema=z.object({investigationId:uuid,claim:z.string().trim().min(1).max(300000)});
+export const claimReviewSchema=z.object({status:z.enum(["unverified","in_review","supported","disputed","false","inconclusive"]),reviewerNotes:z.string().max(300000).default(""),expectedVersion:z.number().int().positive()});
+export const claimEvidenceSchema=z.object({evidenceId:uuid,relationship:z.string().max(120).default("supports")});
+export const timelineEventSchema=z.object({investigationId:uuid,occurredAt:z.string().datetime(),title:z.string().trim().min(1).max(500),description:z.string().max(200000).default(""),evidenceId:uuid.optional(),sourceId:uuid.optional()});
+export const reportSchema=z.object({investigationId:uuid.optional(),title:z.string().trim().min(1).max(500),visibility:z.enum(["private","workspace","public"]).default("private")});
+export const reportReviewSchema=z.object({reviewerUserId:uuid,status:z.enum(["pending","approved","changes_requested"]).default("pending"),notes:z.string().max(300000).default("")});
+export const reportStatusSchema=z.object({status:z.enum(["draft","review","approved","published","withdrawn"]),expectedVersion:z.number().int().positive()});
+export const redactionSchema=z.object({blockId:z.string().max(200).optional(),pattern:z.string().max(1000).optional(),replacement:z.string().max(1000).default("[REDACTED]"),reason:z.string().trim().min(1).max(10000)});

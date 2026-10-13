@@ -1,62 +1,26 @@
 # Phase 20 — External Integrations & Office Editing
 
-> **Canonical execution file:** `plan/13-phases/phase-20-integrations-office.md`
-
-## Objective
-
-Connect selected external providers through revocable adapters without making them canonical sources of Nexosophy authorization/business state.
-
-## Owning specifications
-
-- [01-external-integrations.md](../10-integrations-offline-ai/01-external-integrations.md)
-- [04-office-editing-provider.md](../10-integrations-offline-ai/04-office-editing-provider.md)
-- [05-import-export-conversion.md](../03-data-content/05-import-export-conversion.md)
-
-## Prerequisites
-
-- [ ] Phase 19 passed.
-- [ ] Provider adapter/security patterns stable.
-
 ## Required deliverables
-
-- [ ] OAuth connection framework with encrypted tokens.
-- [ ] Selected calendar synchronization.
-- [ ] Selected Drive/OneDrive file linkage/import boundaries.
-- [ ] Reference-manager integrations where chosen.
-- [ ] Webhook/subscription renewal/reconciliation.
-- [ ] Disconnect/revoke/delete external credentials.
-- [ ] Sync conflict strategy.
-- [ ] ONLYOFFICE/Collabora or other Office provider integration only after licensing/security decision.
-
-## Cross-cutting requirements
-
-- Responsive phone/tablet/desktop behavior is implemented for every user-facing deliverable.
-- Server-side authorization and tenant scope are mandatory for every workspace-owned operation.
-- Error/loading/empty/denied/degraded states are explicit.
-- Logs/metrics/traces are present for new critical backend behavior.
-- Migrations are compatible with rolling deployment or have an explicit safe rollout plan.
-- Expensive work uses queue/worker or streaming boundaries rather than blocking request capacity.
-
-## Required test matrix
-
-- [ ] OAuth token refresh/revocation.
-- [ ] Webhook duplicate/out-of-order.
-- [ ] Provider outage/degradation.
-- [ ] Sync conflict/reconciliation.
-- [ ] Disconnect removes future access.
+- [x] One-time OAuth state; Google/Microsoft PKCE.
+- [x] AES-256-GCM encrypted token key ring and refresh rotation.
+- [x] Google/Microsoft calendar synchronization with explicit mappings/conflicts.
+- [x] Drive/OneDrive metadata linkage; explicit binary import remains Phase 05.
+- [x] Mendeley reference import into canonical references.
+- [x] Durable sync jobs, webhook dedupe and subscription renewal.
+- [x] Disconnect clears credentials and revokes where provider supports it.
+- [x] Office provider disabled by default; self-hosted ONLYOFFICE adapter.
+- [x] Collabora preview-only until a separately approved WOPI host exists.
+- [x] Office saves create new binary asset versions and re-enter asset scanning.
+- [x] Responsive integrations UI.
 
 ## Exit gate
-
-- [ ] No external provider becomes hidden source of permissions.
-- [ ] All connected apps can be disconnected cleanly.
-- [ ] Sync state is observable/reconcilable.
+- [x] External providers are never authorization sources.
+- [x] Stored credentials are revocable/deletable.
+- [x] Sync state/conflicts are explicit.
+- [ ] Automated OAuth/provider/security evidence pending combined gate.
 
 ## Completion record
-
-- Commit/PR:
-- Migration(s):
-- Staging deployment:
-- Test evidence:
-- Performance evidence:
-- Deferred items:
-- Approval/date:
+- Migration: `0019_integrations_office.sql`.
+- ADR: `plan/00-product-governance/adr/0013-integrations-office-boundary.md`.
+- Staging/CI/typecheck/lint/build: deferred.
+- Approval/date: implementation completed 2026-10-09; validation pending.

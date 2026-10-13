@@ -1,0 +1,1 @@
+import{OfflineCenter}from"../../../../../components/offline-center";export default async function Page({params}:{params:Promise<{workspaceId:string}>}){const{workspaceId}=await params;return <OfflineCenter workspaceId={workspaceId}/>} 

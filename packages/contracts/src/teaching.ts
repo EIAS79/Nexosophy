@@ -1,0 +1,10 @@
+import{z}from"zod";const uuid=z.string().uuid();
+export const teachingCourseSchema=z.object({courseId:uuid});
+export const teachingMemberSchema=z.object({userId:uuid,role:z.enum(["instructor","assistant","student","supervisee"])});
+export const teachingResourceSchema=z.object({courseId:uuid,nodeId:uuid,title:z.string().trim().min(1).max(500),state:z.enum(["draft","scheduled","released","withdrawn"]).default("draft"),releaseAt:z.string().datetime().optional(),audience:z.record(z.string(),z.unknown()).default({roles:["student","supervisee"]})});
+export const teachingFeedbackSchema=z.object({assignmentId:uuid,studentUserId:uuid,feedback:z.string().max(300000).default(""),rubricResult:z.record(z.string(),z.unknown()).default({}),score:z.number().optional(),maxScore:z.number().positive().optional(),state:z.enum(["draft","submitted","released"]).default("draft"),expectedVersion:z.number().int().positive().optional()});
+export const supervisionSchema=z.object({superviseeUserId:uuid,title:z.string().trim().min(1).max(500)});
+export const supervisionMilestoneSchema=z.object({relationshipId:uuid,title:z.string().trim().min(1).max(500),description:z.string().max(200000).default(""),dueAt:z.string().datetime().optional(),linkedNodeId:uuid.optional()});
+export const supervisionMeetingSchema=z.object({relationshipId:uuid,title:z.string().trim().min(1).max(500),occurredAt:z.string().datetime(),sharedSummary:z.string().max(300000).default(""),privateSupervisorNote:z.string().max(300000).default("")});
+export const officeHourSchema=z.object({courseId:uuid.optional(),startsAt:z.string().datetime(),endsAt:z.string().datetime(),timezone:z.string().max(120).default("UTC"),location:z.string().max(500).optional(),meetingUrl:z.string().url().max(2000).optional(),capacity:z.number().int().positive().max(100).default(1)});
+export const officeHourBookingSchema=z.object({windowId:uuid,note:z.string().max(10000).default("")});

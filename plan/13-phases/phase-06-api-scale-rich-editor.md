@@ -18,24 +18,24 @@ Complete the high-concurrency API platform and first native editor so later feat
 ## Prerequisites
 
 - [ ] Phase 05 exit gate passed.
-- [ ] Node/content identity stable.
+- [x] Node/content identity stable.
 - [ ] Redis/cache and durable queue configured in staging.
-- [ ] Editor document persistence format decision accepted.
+- [x] Editor document persistence format decision accepted.
 
 ## Required deliverables
 
-- [ ] Versioned typed /v1 API conventions and OpenAPI generation.
-- [ ] Cursor pagination/error/idempotency middleware.
-- [ ] Shared Redis rate limiting and backpressure.
-- [ ] Durable queue/outbox foundation and DLQ tooling.
-- [ ] Bounded DB pool configuration and pool observability.
-- [ ] Stateless API horizontal-scaling configuration.
-- [ ] Universal editor runtime: title/header, capability registry, autosave state machine, undo/redo contract, selection, dirty/saved/offline/error states.
-- [ ] First rich-document schema and rendering/editor engine.
-- [ ] Optimistic concurrency/version checks.
-- [ ] Large-document virtualization/performance strategy.
-- [ ] Editor autosave/history hooks for Phase 07.
-- [ ] Load-test harness and initial mixed-workload scenario.
+- [x] Versioned typed /v1 API conventions and OpenAPI generation.
+- [x] Cursor pagination/error/idempotency middleware.
+- [x] Shared Redis rate limiting and backpressure.
+- [x] Durable queue/outbox foundation and DLQ tooling.
+- [x] Bounded DB pool configuration and pool observability.
+- [x] Stateless API horizontal-scaling configuration.
+- [x] Universal editor runtime: title/header, capability registry, autosave state machine, undo/redo contract, selection, dirty/saved/offline/error states.
+- [x] First rich-document schema and rendering/editor engine.
+- [x] Optimistic concurrency/version checks.
+- [x] Large-document virtualization/performance strategy.
+- [x] Editor autosave/history hooks for Phase 07.
+- [x] Load-test harness and initial mixed-workload scenario.
 
 ## Scale / resilience rules
 
@@ -68,10 +68,10 @@ Complete the high-concurrency API platform and first native editor so later feat
 
 ## Phase completion record
 
-- Commit/PR:
-- Migration version(s):
-- Staging deployment:
-- Test report:
-- Load/performance evidence where applicable:
-- Known deferred items (must not violate exit gate):
-- Approval/date:
+- Commit/PR: implementation staged on branch `phases-05-07-storage-editor-history`; merge intentionally deferred until the combined Phase 05–10 validation tranche.
+- Migration version(s): `0005_api_editor_jobs.sql`.
+- Staging deployment: deferred to the combined Phase 05–10 validation/staging pass.
+- Test report: required test matrix intentionally remains open until the combined Phase 05–10 CI/integration run.
+- Load/performance evidence where applicable: repeatable k6 mixed-workload scenario committed at `infra/load/phase06-mixed-workload.js`; execution evidence is deferred to the combined staging gate.
+- Known deferred items (must not violate exit gate): staging Redis/queue capacity configuration and production-like load execution remain environment validation tasks, not missing implementation.
+- Approval/date: implementation deliverables completed in the shared Phase 05–07 branch; phase validation/approval intentionally deferred.
