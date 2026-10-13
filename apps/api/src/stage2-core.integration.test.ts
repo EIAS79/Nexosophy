@@ -209,9 +209,9 @@ suite("Stage 2 workspace content/history/collaboration / PostgreSQL", () => {
     });
     await trashContentSubtree(pool, { workspaceId: workspace, actorUserId: owner, nodeId: folder.id });
     const trashed = await listWorkspaceTrash(pool, { workspaceId: workspace });
-    expect(trashed.items.some((item) => item.id === folder.id)).toBe(true);
+    expect(trashed.items.some((item) => item.nodeId === folder.id)).toBe(true);
     await restoreContentSubtree(pool, { workspaceId: workspace, actorUserId: owner, nodeId: folder.id });
     const after = await listWorkspaceTrash(pool, { workspaceId: workspace });
-    expect(after.items.some((item) => item.id === folder.id)).toBe(false);
+    expect(after.items.some((item) => item.nodeId === folder.id)).toBe(false);
   });
 });
