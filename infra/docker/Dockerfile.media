@@ -4,9 +4,9 @@ ENV PORT=4300
 WORKDIR /srv/media
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-      clamav clamav-freshclam file ffmpeg poppler-utils libreoffice-core \
+      ca-certificates clamav clamav-freshclam file ffmpeg poppler-utils libreoffice-core \
       libreoffice-writer libreoffice-calc libreoffice-impress && \
-    rm -rf /var/lib/apt/lists/*
+    update-ca-certificates && rm -rf /var/lib/apt/lists/*
 COPY infra/media-service/server.mjs ./server.mjs
 # Never mark unscanned files clean when signature database is unavailable.
 # Freshclam failures leave /ready at 503 and scanning fails closed.
