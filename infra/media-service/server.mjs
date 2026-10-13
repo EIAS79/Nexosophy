@@ -1,6 +1,6 @@
 import { createServer } from "node:http";
 import { createHash, timingSafeEqual } from "node:crypto";
-import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { copyFile, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { execFile } from "node:child_process";
@@ -123,9 +123,18 @@ async function processMedia(path,output,kind,mime) {
       "application/vnd.ms-powerpoint",
     ].includes(mime))throw new Error("UNSUPPORTED_PREVIEW");
     const outdir=resolve(output,"..");
+    const extensions={
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document":".docx",
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation":".pptx",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":".xlsx",
+      "application/msword":".doc", "application/vnd.ms-excel":".xls",
+      "application/vnd.ms-powerpoint":".ppt",
+    };
+    const inputWithExtension=join(outdir,"document"+extensions[mime]);
+    await copyFile(path,inputWithExtension);
     await command("libreoffice",["-env:UserInstallation=file:///tmp/nx-lo-"+
-      process.pid,"--headless","--convert-to","pdf","--outdir",outdir,path],60000);
-    const generated=join(outdir,"original.pdf");
+      process.pid,"--headless","--convert-to","pdf","--outdir",outdir,inputWithExtension],60000);
+    const generated=join(outdir,"document.pdf");
     const bytes=await readFile(generated);
     await writeFile(output,bytes);
     return "application/pdf";

@@ -215,7 +215,7 @@ async function postJson<T>(url: string, payload: unknown, mediaAuth = false): Pr
     throw new Error("Media service authentication is not configured.");
   }
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 60_000);
+  const timer = setTimeout(() => controller.abort(), mediaAuth ? 120_000 : 60_000);
   try {
     const response = await fetch(url, {
       method: "POST",
