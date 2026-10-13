@@ -61,7 +61,7 @@ try {
     key: singleKey, contentType: "text/plain", expiresInSeconds: 50,
   });
   const putReply = await fetch(put.url, {
-    method: "PUT", headers: put.headers, body: content,
+    method: "PUT", ...(put.headers ? { headers: put.headers } : {}), body: content,
   });
   assert.equal(putReply.status, 200, "Presigned PUT must reach the storage provider");
   const head = await store.headObject(singleKey);

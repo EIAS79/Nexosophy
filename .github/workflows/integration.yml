@@ -147,7 +147,7 @@ jobs:
             -p 127.0.0.1:9000:9000 \
             -e MINIO_ROOT_USER=nexosophytest \
             -e MINIO_ROOT_PASSWORD=nexosophy-local-object-store-secret \
-            minio/minio:RELEASE.2025-09-07T16-13-09Z server /data
+            quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z server /data
           for i in {1..45}; do
             if curl --silent --fail http://127.0.0.1:9000/minio/health/live >/dev/null; then exit 0; fi
             sleep 2
