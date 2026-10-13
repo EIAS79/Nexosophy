@@ -1000,6 +1000,92 @@ export async function completeAssetVariant(
   });
 }
 
+/** Retry ONLY a provider-failed malware scan. Never requeue an infected,
+ * checksum-invalid or MIME-rejected asset, and never make it trusted directly.
+ * Original uploader only; bounded to three attempts across scan records.
+ */
+export async function retryFailedAssetScan(
+  pool: Pool,
+  input: { workspaceId: string; assetId: string; userId: string; requestId?: string | undefined },
+): Promise<{ queued: true }> {
+  return withWorkspaceTransaction(pool, async (client) => {
+    const asset = await client.query<{ id: string; node_id: string | null }>(
+      `select a."id", a."node_id" from "assets" a
+       join "upload_sessions" s on s."asset_id"=a."id"
+       where a."workspace_id"=$1 and a."id"=$2
+         and a."trust_state"='quarantined'
+         and s."user_id"=$3 and s."status"='failed'
+       for update of a`,
+      [input.workspaceId, input.assetId, input.userId],
+    );
+    const row = asset.rows[0];
+    if (!row) throw new Error("ASSET_RESCAN_UNAVAILABLE");
+
+    const previous = await client.query<{
+      status: string;
+      result_code: string | null;
+      total: string;
+    }>(
+      `select s."status", s."result_code",
+        (select count(*)::text from "asset_scans" where
+           "workspace_id"=$1 and "asset_id"=$2) as "total"
+       from "asset_scans" s
+       where s."workspace_id"=$1 and s."asset_id"=$2
+       order by s."created_at" desc, s."id" desc limit 1`,
+      [input.workspaceId, input.assetId],
+    );
+    const latest = previous.rows[0];
+    if (!latest || latest.status !== "error" || latest.result_code !== "scanner_failure") {
+      throw new Error("ASSET_RESCAN_UNAVAILABLE");
+    }
+    if (Number(latest.total) >= 3) throw new Error("ASSET_RESCAN_LIMIT");
+
+    const job = await client.query(
+      `update "asset_processing_jobs"
+       set "status"='queued', "attempts"=0, "run_after"=now(),
+           "last_error"=null, "locked_at"=null, "locked_by"=null, "updated_at"=now()
+       where "workspace_id"=$1 and "asset_id"=$2
+         and "job_type"='scan' and "status"='failed'
+       returning "id"`,
+      [input.workspaceId, input.assetId],
+    );
+    if (!job.rowCount) throw new Error("ASSET_RESCAN_UNAVAILABLE");
+
+    await client.query(
+      `insert into "asset_scans" ("workspace_id","asset_id","scanner","status")
+       values ($1,$2,'remote-policy','pending')`,
+      [input.workspaceId, input.assetId],
+    );
+    await client.query(
+      `update "assets" set "trust_state"='pending_scan',"updated_at"=now()
+       where "workspace_id"=$1 and "id"=$2`,
+      [input.workspaceId, input.assetId],
+    );
+    await client.query(
+      `update "upload_sessions"
+       set "status"='scanning',"last_error"=null,"updated_at"=now()
+       where "workspace_id"=$1 and "asset_id"=$2`,
+      [input.workspaceId, input.assetId],
+    );
+    if (row.node_id) {
+      await client.query(
+        `update "content_nodes"
+         set "metadata"="metadata" || $3::jsonb,
+             "updated_at"=now(), "version"="version"+1
+         where "workspace_id"=$1 and "id"=$2`,
+        [input.workspaceId, row.node_id,
+          JSON.stringify({ uploadStatus: "scanning", assetTrustState: "pending_scan" })],
+      );
+    }
+    await appendWorkspaceAudit(client, {
+      workspaceId: input.workspaceId, actorUserId: input.userId,
+      action: "asset.scan_retry_requested", targetType: "asset",
+      targetId: input.assetId, requestId: input.requestId,
+    });
+    return { queued: true };
+  });
+}
+
 export async function failAssetJob(
   pool: Pool,
   jobId: string,

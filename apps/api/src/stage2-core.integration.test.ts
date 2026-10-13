@@ -6,6 +6,7 @@ import {
   appendCollaborationUpdate,
   completeAssetScan,
   failAssetJob,
+  retryFailedAssetScan,
   getAsset,
   listAssetVariants,
   createComment,
@@ -241,6 +242,16 @@ suite("Stage 2 workspace content/history/collaboration / PostgreSQL", () => {
     const unavailable = await setupScan("scanner-unavailable.png");
     await failAssetJob(pool, unavailable.jobId, new Error("Scan provider unavailable"), false);
     expect((await getAsset(pool, workspace, unavailable.assetId))?.trustState).toBe("quarantined");
+    await expect(retryFailedAssetScan(pool, {
+      workspaceId: foreignWorkspace, assetId: unavailable.assetId, userId: foreignOwner,
+    })).rejects.toThrow("ASSET_RESCAN_UNAVAILABLE");
+    expect(await retryFailedAssetScan(pool, {
+      workspaceId: workspace, assetId: unavailable.assetId, userId: owner,
+    })).toEqual({ queued: true });
+    expect((await getAsset(pool, workspace, unavailable.assetId))?.trustState).toBe("pending_scan");
+    await expect(retryFailedAssetScan(pool, {
+      workspaceId: workspace, assetId: unavailable.assetId, userId: owner,
+    })).rejects.toThrow("ASSET_RESCAN_UNAVAILABLE");
     expect(await listAssetVariants(pool, workspace, unavailable.assetId)).toEqual([]);
 
     const malware = await setupScan("malicious-content.png");

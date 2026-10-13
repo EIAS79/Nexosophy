@@ -20,6 +20,7 @@ import {
   markUploadVerified,
   recordUploadPart,
   requestAssetDeletion,
+  retryFailedAssetScan,
 } from "@nexosophy/db";
 import type { StorageAdapter } from "@nexosophy/storage";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
@@ -89,6 +90,16 @@ function sendAssetError(
       status: 422,
       code: "UPLOAD_CHECKSUM_MISMATCH",
       message: "The uploaded object checksum does not match the declared checksum.",
+    },
+    ASSET_RESCAN_UNAVAILABLE: {
+      status: 409,
+      code: "ASSET_RESCAN_UNAVAILABLE",
+      message: "Only a failed scanner-provider check can be retried by the uploader.",
+    },
+    ASSET_RESCAN_LIMIT: {
+      status: 429,
+      code: "ASSET_RESCAN_LIMIT",
+      message: "This asset has reached the maximum number of scanner retries.",
     },
   };
 
@@ -498,6 +509,23 @@ export async function registerAssetRoutes(
       };
     },
   );
+
+  app.post("/v1/workspaces/:workspaceId/assets/:assetId/retry-scan", async (request, reply) => {
+    const { workspaceId, assetId } = assetParamsSchema.parse(request.params);
+    const principal = await requireWorkspacePrincipal(request, reply, verifier);
+    if (!principal) return;
+    if (!(await authorizeWorkspace(pool, principal, workspaceId, "content.create", request, reply))) return;
+    try {
+      const queued = await retryFailedAssetScan(pool, {
+        workspaceId, assetId, userId: principal.internalUserId, requestId: request.id,
+      });
+      reply.code(202);
+      return queued;
+    } catch (error) {
+      if (sendAssetError(error, request, reply)) return;
+      throw error;
+    }
+  });
 
   app.delete("/v1/workspaces/:workspaceId/assets/:assetId", async (request, reply) => {
     const { workspaceId, assetId } = assetParamsSchema.parse(request.params);
