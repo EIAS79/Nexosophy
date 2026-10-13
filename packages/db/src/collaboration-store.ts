@@ -576,7 +576,7 @@ export async function resolveComment(
     const result = await client.query<CommentRow>(
       `update "collaboration_comments"
        set "resolved_at" = case when $5::boolean then now() else null end,
-           "resolved_by_user_id" = case when $5::boolean then $4 else null end,
+           "resolved_by_user_id" = case when $5::boolean then $4::uuid else null::uuid end,
            "updated_at" = now()
        where "workspace_id" = $1 and "node_id" = $2 and "id" = $3
        returning "id", "workspace_id", "node_id", "parent_comment_id", "body", "anchor",
