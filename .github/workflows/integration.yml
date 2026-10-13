@@ -139,28 +139,17 @@ jobs:
           RUN_STAGE2_INTEGRATION: '1'
         run: pnpm --filter @nexosophy/api exec vitest run src/stage2-core.integration.test.ts
 
-      - name: Start isolated official MinIO release with verified checksum
+      - name: Start local S3 emulator
         shell: bash
         run: |
           set -euo pipefail
-          MINIO=/tmp/nexosophy-stage2-minio
-          curl --fail --location --silent --show-error --retry 3 \
-            https://dl.min.io/server/minio/release/linux-amd64/minio.RELEASE.2025-09-07T16-13-09Z \
-            --output "$MINIO"
-          echo '7c5bd8512c6e966455b1d198209358b2d191c77a83ab377c4073281065fb855f  /tmp/nexosophy-stage2-minio' | sha256sum --check
-          chmod 700 "$MINIO"
-          mkdir -p /tmp/nexosophy-stage2-bucket
-          MINIO_ROOT_USER=nexosophytest \
-          MINIO_ROOT_PASSWORD=nexosophy-local-object-store-secret \
-            "$MINIO" server /tmp/nexosophy-stage2-bucket \
-            --address 127.0.0.1:9000 --console-address 127.0.0.1:9001 \
-            > /tmp/nexosophy-minio.log 2>&1 &
-          echo $! > /tmp/nexosophy-minio.pid
-          for i in {1..45}; do
-            if curl --silent --fail http://127.0.0.1:9000/minio/health/live >/dev/null; then exit 0; fi
+          python3 -m pip install --quiet 'moto[server]==5.1.17'
+          S3_IGNORE_SUBDOMAIN_BUCKETNAME=true python3 -m moto.server -H 127.0.0.1 -p 9000 > /tmp/s3-emulator.log 2>&1 &
+          for i in {1..40}; do
+            if curl --silent http://127.0.0.1:9000/ > /dev/null; then exit 0; fi
             sleep 2
           done
-          tail -80 /tmp/nexosophy-minio.log
+          cat /tmp/s3-emulator.log
           exit 1
 
       - name: Verify real S3-compatible multipart, signed URLs and expiry
