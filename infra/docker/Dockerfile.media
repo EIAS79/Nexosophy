@@ -10,4 +10,4 @@ RUN apt-get update && \
 COPY infra/media-service/server.mjs ./server.mjs
 # Never mark unscanned files clean when signature database is unavailable.
 # Freshclam failures leave /ready at 503 and scanning fails closed.
-CMD ["sh", "-c", "freshclam --quiet || true; (freshclam -d --quiet || true) & node /srv/media/server.mjs"]
+CMD ["sh", "-c", "(freshclam --quiet || true; freshclam -d --quiet || true) & exec node /srv/media/server.mjs"]
