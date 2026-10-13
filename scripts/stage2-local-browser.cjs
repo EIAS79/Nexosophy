@@ -80,6 +80,17 @@ const origin = "http://localhost:3000";
     await card.getByRole("button", { name: "Restore", exact: true }).click();
     await page.getByText(docName + " restored.", { exact: true }).waitFor();
     console.log("PASS Stage 2 delete, trash UI and restore");
+    // Responsive and keyboard acceptance on the same authenticated app.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(origin + "/app/workspaces/" + workspaceId + "/files");
+    await page.getByRole("heading", { name: "Files & knowledge" }).waitFor();
+    await page.getByRole("button", { name: "New", exact: true }).click();
+    await page.getByRole("dialog").getByRole("heading", { name: "Create content" }).waitFor();
+    await page.keyboard.press("Escape");
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await page.goto(origin + "/app/workspaces/" + workspaceId);
+    await page.getByRole("heading", { name, exact: true }).waitFor();
+    console.log("PASS Stage 2 mobile and tablet viewport navigation and dialog accessibility");
     await context.close();
   } finally {
     await browser.close();

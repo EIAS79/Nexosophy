@@ -139,6 +139,27 @@ jobs:
           RUN_STAGE2_INTEGRATION: '1'
         run: pnpm --filter @nexosophy/api exec vitest run src/stage2-core.integration.test.ts
 
+      - name: Start disposable S3-compatible object storage
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name nexosophy-minio-ci --rm \
+            -p 127.0.0.1:9000:9000 \
+            -e MINIO_ROOT_USER=nexosophytest \
+            -e MINIO_ROOT_PASSWORD=nexosophy-local-object-store-secret \
+            minio/minio:RELEASE.2025-09-07T16-13-09Z server /data
+          for i in {1..45}; do
+            if curl --silent --fail http://127.0.0.1:9000/minio/health/live >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          docker logs nexosophy-minio-ci
+          exit 1
+
+      - name: Verify real S3-compatible multipart, signed URLs and expiry
+        env:
+          RUN_STAGE2_INTEGRATION: '1'
+        run: pnpm --filter @nexosophy/api exec tsx src/stage2-s3.acceptance.ts
+
       - name: Verify two realtime replicas, Redis fanout and revoked room access
         run: |
           pnpm --filter @nexosophy/realtime build

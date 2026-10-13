@@ -173,7 +173,25 @@ try {
     setTimeout(()=>reject(new Error("Permission-version change not enforced")),6000).unref();
   });
   assert.equal(firstClose,4003);
-  console.log("PASS two real realtime replicas, Redis cross-replica update, idempotence, read-only denial, outsider exclusion, and permission revocation.");
+  // Confirm that durable collaboration data survives a replica process restart,
+  // even though ephemeral cursor/presence state is intentionally not durable.
+  const oldReplica = children.find((child) => child.spawnargs.includes("dist/index.mjs") &&
+    child.pid !== children[0]?.pid);
+  assert.ok(oldReplica);
+  oldReplica.kill("SIGTERM");
+  await Promise.race([
+    new Promise<void>((resolve) => oldReplica.once("exit", () => resolve())),
+    sleep(5000).then(() => { throw new Error("Realtime replica failed to exit"); }),
+  ]);
+  await startup(4111);
+  const reconnected = await socketInbox("ws://127.0.0.1:4111" + base,
+    token(workspace,node,own,["read","write","comment"],2));
+  const restartSync = await reconnected.next("sync");
+  const snapshots = restartSync.state as { updates?: Array<{clientId?:string}> };
+  assert.ok(snapshots.updates?.some(x=>x.clientId === update.clientId),
+    "Persisted CRDT update was lost after replica restart");
+  reconnected.socket.close();
+  console.log("PASS two real realtime replicas, Redis fanout, idempotence, read-only denial, outsider exclusion, revocation and restart durability.");
 } finally {
   for (const child of children) child.kill("SIGTERM");
   await pool.end();
