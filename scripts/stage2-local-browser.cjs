@@ -134,6 +134,33 @@ const origin = "http://localhost:3000";
     );
     console.log("PASS Stage 2 keyboard command palette and RTL direction smoke");
 
+    // Reproducible local Chromium baseline, not a claim about global field CWV.
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(origin + "/", { waitUntil: "load" });
+    const metrics = await page.evaluate(async () => {
+      const nav = performance.getEntriesByType("navigation")[0];
+      const fcp = performance.getEntriesByType("paint")
+        .find((entry) => entry.name === "first-contentful-paint")?.startTime ?? null;
+      let cls = 0, lcp = 0;
+      const observer = new PerformanceObserver((entries) => {
+        for (const entry of entries.getEntries()) {
+          if (entry.entryType === "layout-shift" && !entry.hadRecentInput) cls += entry.value;
+          if (entry.entryType === "largest-contentful-paint") lcp = Math.max(lcp, entry.startTime);
+        }
+      });
+      try {
+        observer.observe({ type: "layout-shift", buffered: true });
+        observer.observe({ type: "largest-contentful-paint", buffered: true });
+      } catch { /* Unsupported metrics retain neutral values in Chromium. */ }
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      observer.disconnect();
+      return { fcp, lcp, cls, domContentLoaded: nav?.domContentLoadedEventEnd ?? null };
+    });
+    assert.ok(metrics.fcp !== null && metrics.fcp < 4000,
+      "Local marketing page FCP baseline exceeds 4 seconds");
+    assert.ok(metrics.cls < 0.25,
+      "Local cumulative layout shift exceeds 0.25");
+    console.log("PASS Stage 2 local Core Web Vitals baseline", JSON.stringify(metrics));
     await context.close();
   } finally {
     await browser.close();

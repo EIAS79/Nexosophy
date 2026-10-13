@@ -290,6 +290,35 @@ suite("Stage 2 workspace content/history/collaboration / PostgreSQL", () => {
     expect(await getAsset(pool, foreignWorkspace, verified.assetId)).toBeNull();
   });
 
+  it("enforces concurrent upload quota atomically and frees reservations after abort", async () => {
+    const started = await Promise.allSettled(
+      Array.from({ length: 5 }, (_, index) => initiateAssetUpload(pool, {
+        workspaceId: foreignWorkspace, userId: foreignOwner, parentId: null,
+        filename: "parallel-upload-" + index + ".png",
+        mimeType: "image/png", sizeBytes: 1024,
+      })),
+    );
+    const accepted = started.flatMap((item) => item.status === "fulfilled" ? [item.value] : []);
+    const denied = started.flatMap((item) => item.status === "rejected" ? [item.reason] : []);
+    expect(accepted).toHaveLength(4);
+    expect(denied).toHaveLength(1);
+    expect(String(denied[0])).toContain("UPLOAD_CONCURRENCY_LIMIT");
+    for (const upload of accepted) {
+      await abortAssetUpload(pool, {
+        workspaceId: foreignWorkspace, sessionId: upload.session.id,
+        userId: foreignOwner,
+      });
+    }
+    const resumed = await initiateAssetUpload(pool, {
+      workspaceId: foreignWorkspace, userId: foreignOwner, parentId: null,
+      filename: "quota-freed.png", mimeType: "image/png", sizeBytes: 1024,
+    });
+    expect(resumed.session.id).toBeTruthy();
+    await abortAssetUpload(pool, {
+      workspaceId: foreignWorkspace, sessionId: resumed.session.id, userId: foreignOwner,
+    });
+  });
+
   it("trash and restore roundtrip preserves the original node identity", async () => {
     const folder = await createContentNode(pool, {
       workspaceId: workspace, actorUserId: owner, parentId: null,
