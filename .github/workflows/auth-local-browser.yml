@@ -9,6 +9,7 @@ on:
       - 'packages/db/**'
       - 'scripts/auth-local-browser.cjs'
       - 'scripts/stage2-local-browser.cjs'
+      - 'scripts/stage2-load.cjs'
       - '.github/workflows/auth-local-browser.yml'
   workflow_dispatch:
 
@@ -107,6 +108,8 @@ jobs:
         run: node scripts/auth-local-browser.cjs
       - name: Stage 2 workspace, files, editor and trash browser acceptance
         run: node scripts/stage2-local-browser.cjs
+      - name: Stage 2 bounded frontend, session and proxy load acceptance
+        run: node scripts/stage2-load.cjs
       - name: Print redacted local service diagnostics on failure
         if: failure()
         run: |
