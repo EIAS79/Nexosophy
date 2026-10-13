@@ -29,6 +29,8 @@ export class WebSocketPeer {
   private closed = false;
   private messageHandler: MessageHandler | null = null;
   private closeHandler: CloseHandler | null = null;
+  // Serialize incoming frames so async collaboration writes retain wire order.
+  private pendingMessage: Promise<void> = Promise.resolve();
 
   constructor(
     readonly socket: Duplex,
@@ -41,7 +43,10 @@ export class WebSocketPeer {
       this.closeHandler?.();
     });
     socket.on("error", () => {
+      if (this.closed) return;
       this.closed = true;
+      // A transport error must release the room's maps and presence immediately.
+      this.closeHandler?.();
     });
   }
 
@@ -136,9 +141,13 @@ export class WebSocketPeer {
       }
 
       const message = payload.toString("utf8");
-      void Promise.resolve(this.messageHandler?.(message)).catch(() => {
-        this.close(1011, "message handler failed");
-      });
+      this.pendingMessage = this.pendingMessage
+        .then(async () => {
+          if (!this.closed) await this.messageHandler?.(message);
+        })
+        .catch(() => {
+          this.close(1011, "message handler failed");
+        });
     }
   }
 }
