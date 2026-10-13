@@ -139,20 +139,7 @@ jobs:
           RUN_STAGE2_INTEGRATION: '1'
         run: pnpm --filter @nexosophy/api exec vitest run src/stage2-core.integration.test.ts
 
-      - name: Start local S3 emulator
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 -m pip install --quiet 'moto[server]==5.1.17'
-          S3_IGNORE_SUBDOMAIN_BUCKETNAME=true python3 -m moto.server -H 127.0.0.1 -p 9000 > /tmp/s3-emulator.log 2>&1 &
-          for i in {1..40}; do
-            if curl --silent http://127.0.0.1:9000/ > /dev/null; then exit 0; fi
-            sleep 2
-          done
-          cat /tmp/s3-emulator.log
-          exit 1
-
-      - name: Verify real S3-compatible multipart, signed URLs and expiry
+      - name: Verify local S3 SigV4, multipart, downloads and expiration
         env:
           RUN_STAGE2_INTEGRATION: '1'
         run: pnpm --filter @nexosophy/api exec tsx src/stage2-s3.acceptance.ts

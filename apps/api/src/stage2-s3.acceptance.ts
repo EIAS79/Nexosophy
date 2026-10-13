@@ -1,10 +1,11 @@
-/** Isolated, real S3-compatible object-store acceptance on disposable local MinIO.
+/** Isolated S3-compatible acceptance with independent local SigV4 receiver.
  * No domain, cloud storage keys, production data or external credentials.
  */
 import assert from "node:assert/strict";
 import { createHash, createHmac, randomBytes } from "node:crypto";
 import { setTimeout as sleep } from "node:timers/promises";
 import { S3CompatibleStorageAdapter } from "@nexosophy/storage";
+import { startS3AcceptanceServer } from "./stage2-s3.mock-server.js";
 
 const endpoint = "http://127.0.0.1:9000";
 const region = "us-east-1";
@@ -47,6 +48,7 @@ async function createDisposableBucket() {
   assert.ok(result.ok || result.status === 409,
     "Local bucket could not be created: HTTP " + result.status + " " + (await result.text()).slice(0,400));
 }
+const stopServer = await startS3AcceptanceServer();
 await createDisposableBucket();
 const store = new S3CompatibleStorageAdapter({
   endpoint, region, bucket, accessKeyId, secretAccessKey,
@@ -111,13 +113,14 @@ try {
     key: singleKey, expiresInSeconds: 1,
   });
   assert.equal(new URL(quicklyExpiring.url).searchParams.get("X-Amz-Expires"), "1");
-  // The local emulator verifies multipart persistence but not provider URL expiry;
-  // reserve the HTTP expiration assertion for external storage acceptance.
-  await sleep(50);
-  console.log("PASS S3 multipart abort and one-second presigned TTL parameter");
+  await sleep(2100);
+  assert.equal((await fetch(quicklyExpiring.url)).status, 403,
+    "Expired one-second presigned URL must be rejected by SigV4 receiver");
+  console.log("PASS S3 multipart abort and cryptographically checked presigned expiry");
 } finally {
   await Promise.allSettled([
     store.deleteObject(singleKey),
     store.deleteObject(multipartKey),
   ]);
+  await stopServer();
 }
