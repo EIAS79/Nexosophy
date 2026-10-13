@@ -14,3 +14,22 @@ Standalone first-party media service; no custom domain is necessary. Deploy on a
 The service accepts **only exact-hostname HTTPS presigned storage URLs**, does not follow redirects, caps payload/file sizes, scans using ClamAV with signatures and fails closed when virus data is unavailable. Processes previews with ffmpeg, Poppler and LibreOffice. Do not declare upload trust or derivative readiness without a successful response. Retain tenant-scoped asset downloads and quarantine policies in the API.
 
 Security concerns requiring deployment acceptance: ClamAV memory budget and signature update health; rendering malicious documents in an isolated container; a live EICAR-positive rejection test; scanned checksum/detected MIME; valid thumbnail and PDF conversions; timed API/worker retries; resource limits and log redaction. Real deployment is a Stage 2 blocker until proven.
+
+## Reproducible local verification (2026-10-14)
+
+The owned Stage 2 media Docker image passed a **local-only** integration acceptance on Ubuntu with a 3 GiB scanner memory cap and genuine Freshclam signatures (daily, main, bytecode). Run from the checkout root after Docker is ready:
+
+```sh
+docker build -t nexosophy-media-stage2-local -f infra/docker/Dockerfile.media .
+mkdir -p "$HOME/nx-stage2-clamav-db"
+chmod 777 "$HOME/nx-stage2-clamav-db" # local disposable fixture only
+# Freshclam drops privileges inside the container; never apply chmod 777 to production assets.
+docker run --rm --memory 3g -v "$HOME/nx-stage2-clamav-db:/var/lib/clamav" \\
+  nexosophy-media-stage2-local freshclam --verbose
+STAGE2_LOCAL_ACCEPTANCE=1 MEDIA_TEST_CLAM_DB="$HOME/nx-stage2-clamav-db" \\
+  python3 scripts/stage2-media-acceptance.py
+```
+
+The ephemeral test uses a localhost-only HTTPS fixture store with self-signed test certificates and a presigned-URL-shaped query parameter. It checks genuine ClamAV clean-file and EICAR verdicts; scanned SHA-256; image, PDF, text, Word, waveform, metadata and video conversions; auth denial; transfer checksum verification; and test-container teardown. This is **not** a real S3 signature-verification test. The local Chromium upload fixture in `scripts/stage2-browser-upload-smoke.cjs` separately verifies multipart UI interactions and quarantine messaging, without claiming live backend or scanner execution.
+
+**Live Stage 2 remains blocked:** the Render free media instance is capped at 512 MiB and explicitly returns scanner-unavailable HTTP 503. The full browser → real S3 → worker → scanner → derivatives → authorized download staging acceptance cannot pass until an adequately sized, continuously available scanner is connected to the staging worker and tested. Do not merge/release on local fixture results alone, disable antivirus or trust unscanned uploads. No paid upgrade or domain purchase has been authorized.

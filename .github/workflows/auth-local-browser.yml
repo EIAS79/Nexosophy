@@ -9,6 +9,7 @@ on:
       - 'packages/db/**'
       - 'scripts/auth-local-browser.cjs'
       - 'scripts/stage2-local-browser.cjs'
+      - 'scripts/stage2-browser-upload-smoke.cjs'
       - 'scripts/stage2-load.cjs'
       - '.github/workflows/auth-local-browser.yml'
   workflow_dispatch:

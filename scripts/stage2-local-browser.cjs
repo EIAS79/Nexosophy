@@ -3,6 +3,7 @@
  */
 const assert = require("node:assert/strict");
 const { chromium } = require("playwright");
+const { checkUploadBrowser } = require("./stage2-browser-upload-smoke.cjs");
 
 if (process.env.AUTH_LOCAL_E2E !== "1" || !process.env.AUTH_TEST_PASSWORD)
   throw new Error("Stage 2 browser acceptance is local-CI-only.");
@@ -39,6 +40,10 @@ const origin = "http://localhost:3000";
     await page.getByRole("heading", { name, exact: true }).waitFor();
     console.log("PASS Stage 2 workspace creation and authenticated route");
 
+    // Test the real browser upload component against isolated transport fixtures.
+    // Real ClamAV/S3/worker acceptance is separately verified and is never mocked here.
+    await checkUploadBrowser(page, workspaceId, origin);
+
     await page.goto(origin + "/app/workspaces/" + workspaceId + "/files");
     await page.getByRole("heading", { name: "Files & knowledge" }).waitFor();
     await page.getByRole("button", { name: "New", exact: true }).click();
@@ -59,11 +64,15 @@ const origin = "http://localhost:3000";
     await editor.getByRole("button", { name: "Save now" }).click();
     await editor.locator('[data-state="saved"]').waitFor();
     await page.reload({ waitUntil: "domcontentloaded" });
-    await page.getByRole("region", { name: "Document editor" })
-      .getByRole("textbox", { name: "paragraph block 1" }).waitFor();
+    await page
+      .getByRole("region", { name: "Document editor" })
+      .getByRole("textbox", { name: "paragraph block 1" })
+      .waitFor();
     assert.equal(
-      await page.getByRole("region", { name: "Document editor" })
-        .getByRole("textbox", { name: "paragraph block 1" }).inputValue(),
+      await page
+        .getByRole("region", { name: "Document editor" })
+        .getByRole("textbox", { name: "paragraph block 1" })
+        .inputValue(),
       text,
       "Acknowledged document edits must survive navigation/reopen",
     );
@@ -102,12 +111,15 @@ const origin = "http://localhost:3000";
         await page.addScriptTag({ path: axeScript });
         const audit = await page.evaluate(async () => {
           const result = await window.axe.run(document, {
-            runOnly: { type: "tag", values: ["wcag2a","wcag2aa","wcag21a","wcag21aa"] },
+            runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"] },
           });
           return result.violations
             .filter((item) => item.impact === "critical" || item.impact === "serious")
-            .map((item) => ({ id: item.id, impact: item.impact,
-              targets: item.nodes.map((node) => node.target).slice(0, 3) }));
+            .map((item) => ({
+              id: item.id,
+              impact: item.impact,
+              targets: item.nodes.map((node) => node.target).slice(0, 3),
+            }));
         });
         assert.deepEqual(audit, [], "Critical WCAG failures on " + path + " @" + width + "px");
         const overflow = await page.evaluate(
@@ -129,7 +141,7 @@ const origin = "http://localhost:3000";
     await page.evaluate(() => document.documentElement.setAttribute("dir", "rtl"));
     await page.getByRole("navigation", { name: "Mobile application navigation" }).count();
     assert.ok(
-      await page.evaluate(() => getComputedStyle(document.documentElement).direction) === "rtl",
+      (await page.evaluate(() => getComputedStyle(document.documentElement).direction)) === "rtl",
       "RTL direction must propagate to app shell",
     );
     console.log("PASS Stage 2 keyboard command palette and RTL direction smoke");
@@ -139,9 +151,12 @@ const origin = "http://localhost:3000";
     await page.goto(origin + "/", { waitUntil: "load" });
     const metrics = await page.evaluate(async () => {
       const nav = performance.getEntriesByType("navigation")[0];
-      const fcp = performance.getEntriesByType("paint")
-        .find((entry) => entry.name === "first-contentful-paint")?.startTime ?? null;
-      let cls = 0, lcp = 0;
+      const fcp =
+        performance
+          .getEntriesByType("paint")
+          .find((entry) => entry.name === "first-contentful-paint")?.startTime ?? null;
+      let cls = 0,
+        lcp = 0;
       const observer = new PerformanceObserver((entries) => {
         for (const entry of entries.getEntries()) {
           if (entry.entryType === "layout-shift" && !entry.hadRecentInput) cls += entry.value;
@@ -151,15 +166,18 @@ const origin = "http://localhost:3000";
       try {
         observer.observe({ type: "layout-shift", buffered: true });
         observer.observe({ type: "largest-contentful-paint", buffered: true });
-      } catch { /* Unsupported metrics retain neutral values in Chromium. */ }
+      } catch {
+        /* Unsupported metrics retain neutral values in Chromium. */
+      }
       await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       observer.disconnect();
       return { fcp, lcp, cls, domContentLoaded: nav?.domContentLoadedEventEnd ?? null };
     });
-    assert.ok(metrics.fcp !== null && metrics.fcp < 4000,
-      "Local marketing page FCP baseline exceeds 4 seconds");
-    assert.ok(metrics.cls < 0.25,
-      "Local cumulative layout shift exceeds 0.25");
+    assert.ok(
+      metrics.fcp !== null && metrics.fcp < 4000,
+      "Local marketing page FCP baseline exceeds 4 seconds",
+    );
+    assert.ok(metrics.cls < 0.25, "Local cumulative layout shift exceeds 0.25");
     console.log("PASS Stage 2 local Core Web Vitals baseline", JSON.stringify(metrics));
     await context.close();
   } finally {
