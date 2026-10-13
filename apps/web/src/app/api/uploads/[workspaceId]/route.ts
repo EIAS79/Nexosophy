@@ -52,6 +52,7 @@ type ActionBody = {
     | "abort"
     | "download"
     | "variantDownload"
+    | "retryScan"
     | "delete";
   uploadSessionId?: string;
   assetId?: string;
@@ -147,6 +148,14 @@ export async function POST(
             )}/variants/${encodeURIComponent(body.variantKind ?? "")}/download-url`,
             { method: "POST" },
           ),
+        );
+      case "retryScan":
+        return NextResponse.json(
+          await nexosophyApi(
+            `/v1/workspaces/${workspaceId}/assets/${encodeURIComponent(body.assetId ?? "")}/retry-scan`,
+            { method: "POST" },
+          ),
+          { status: 202 },
         );
       case "delete":
         return NextResponse.json(

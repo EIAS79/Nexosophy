@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@nexosophy/ui";
 
@@ -15,6 +15,7 @@ type UploadState = {
   uploadedBytes: number;
   totalBytes: number;
   message?: string;
+  scanFailed?: boolean;
 };
 
 type InitiateResponse = {
@@ -34,6 +35,7 @@ type SessionResponse = {
     status: string;
   };
   parts: Array<{ partNumber: number; sizeBytes: number }>;
+  asset?: { id: string; trustState: string };
 };
 
 type SignedPart = {
@@ -88,6 +90,9 @@ export function UploadManager({
 }) {
   const [items, setItems] = useState<UploadState[]>([]);
   const controllers = useRef(new Map<string, AbortController>());
+  useEffect(() => () => {
+    for (const controller of controllers.current.values()) controller.abort();
+  }, []);
   const activeCount = useMemo(
     () => items.filter((item) => item.status === "uploading").length,
     [items],
@@ -118,6 +123,56 @@ export function UploadManager({
     }
   }
 
+  async function monitorScan(itemId: string, sessionId: string, signal: AbortSignal) {
+    for (let attempt = 0; attempt < 60 && !signal.aborted; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      if (signal.aborted) return;
+      const response = await fetch(
+        `/api/uploads/${workspaceId}?uploadSessionId=${encodeURIComponent(sessionId)}`,
+        { cache: "no-store", signal },
+      );
+      if (!response.ok) throw new Error("Could not confirm the scanner status.");
+      const result = (await response.json()) as SessionResponse;
+      if (result.session.status === "complete") {
+        patch(itemId, { status: "complete", message: "Upload verified and ready.", scanFailed: false });
+        return;
+      }
+      if (result.session.status === "failed") {
+        patch(itemId, {
+          status: "failed",
+          assetId: result.asset?.id,
+          scanFailed: result.asset?.trustState === "quarantined",
+          message: "Security validation failed. The file remains quarantined.",
+        });
+        return;
+      }
+    }
+    if (!signal.aborted) {
+      patch(itemId, {
+        status: "scanning",
+        message: "Processing is taking longer than usual. Open the file explorer to check its status.",
+      });
+    }
+  }
+
+  async function retrySecurityScan(item: UploadState) {
+    if (!item.assetId || !item.uploadSessionId) return;
+    const controller = new AbortController();
+    controllers.current.set(item.id, controller);
+    patch(item.id, { status: "scanning", scanFailed: false, message: "Retrying security validation…" });
+    try {
+      await api(workspaceId, { action: "retryScan", assetId: item.assetId });
+      await monitorScan(item.id, item.uploadSessionId, controller.signal);
+    } catch (error) {
+      if (!controller.signal.aborted) patch(item.id, {
+        status: "failed", scanFailed: true,
+        message: error instanceof Error ? error.message : "Security scan retry failed.",
+      });
+    } finally {
+      controllers.current.delete(item.id);
+    }
+  }
+
   async function uploadFile(item: UploadState) {
     const controller = new AbortController();
     controllers.current.set(item.id, controller);
@@ -138,6 +193,8 @@ export function UploadManager({
         sessionId = resumed.session.id;
         partSize = resumed.session.partSizeBytes;
         expectedParts = resumed.session.expectedParts;
+        assetId = resumed.asset?.id;
+        if (assetId) patch(item.id, { assetId });
         completedParts = new Set(resumed.parts.map((part) => part.partNumber));
         patch(item.id, {
           uploadSessionId: sessionId,
@@ -225,6 +282,7 @@ export function UploadManager({
         uploadedBytes: item.file.size,
         message: "Upload complete. Security scan and previews are processing.",
       });
+      await monitorScan(item.id, sessionId, controller.signal);
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
         patch(item.id, { status: "cancelled", message: "Upload cancelled." });
@@ -328,9 +386,11 @@ export function UploadManager({
                     {item.status === "failed" ? (
                       <Button
                         variant="secondary"
-                        onClick={() => retry(item)}
+                        onClick={() => item.scanFailed
+                          ? void retrySecurityScan(item)
+                          : retry(item)}
                       >
-                        Retry
+                        {item.scanFailed ? "Retry security scan" : "Retry upload"}
                       </Button>
                     ) : null}
                     {item.status === "scanning" ? (
