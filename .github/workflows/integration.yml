@@ -149,7 +149,10 @@ jobs:
           pnpm --filter @nexosophy/realtime build
           pnpm --filter @nexosophy/realtime exec tsx src/realtime-acceptance.ts
 
-      - name: Media service fail-closed request validation\n        run: node --test infra/media-service/server.test.mjs\n\n      - name: Verify workspace isolation, RBAC and sharing invariants
+      - name: Media service fail-closed request validation
+        run: node --test infra/media-service/server.test.mjs
+
+      - name: Verify workspace isolation, RBAC and sharing invariants
         run: pnpm --filter @nexosophy/db test:workspace-integration
 
       - name: Verify recursive content tree, scale and job invariants
