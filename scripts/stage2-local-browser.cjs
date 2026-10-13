@@ -1,0 +1,90 @@
+/* Stage 2 browser acceptance uses only ephemeral local PostgreSQL and a local
+ * Playwright browser. It never touches the production or staging databases.
+ */
+const assert = require("node:assert/strict");
+const { chromium } = require("playwright");
+
+if (process.env.AUTH_LOCAL_E2E !== "1" || !process.env.AUTH_TEST_PASSWORD)
+  throw new Error("Stage 2 browser acceptance is local-CI-only.");
+const origin = "http://localhost:3000";
+
+(async () => {
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await page.goto(origin + "/login");
+    await page.locator('input[name="email"]').fill("first@local.nexosophy.test");
+    await page.locator('input[name="password"]').fill(process.env.AUTH_TEST_PASSWORD);
+    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await page.waitForURL(/\/(?:onboarding|app)(?:\?|$)/);
+    if (page.url().includes("/onboarding")) {
+      await page.getByRole("button", { name: "Skip for now" }).click();
+      await page.waitForURL(/\/app(?:\?|$)/);
+    }
+    await page.goto(origin + "/app");
+    await page.getByRole("heading", { name: "Your knowledge, in context." }).waitFor();
+    await page.getByRole("heading", { name: "Workspaces", exact: true }).waitFor();
+    console.log("PASS Stage 2 live-data workspace dashboard");
+
+    await page.goto(origin + "/app/workspaces");
+    await page.getByRole("heading", { name: "Create workspace" }).waitFor();
+    const name = "Browser-stage2-" + Date.now();
+    await page.locator('input[name="name"]').fill(name);
+    await page.locator('select[name="type"]').selectOption("team");
+    await page.getByRole("button", { name: "Create workspace" }).click();
+    await page.waitForURL(/\/app\/workspaces\/[0-9a-f-]{36}(?:\?|$)/);
+    const workspaceId = page.url().match(/workspaces\/([0-9a-f-]{36})/)?.[1];
+    assert.ok(workspaceId, "Workspace creation must yield an actual UUID route");
+    await page.getByRole("heading", { name, exact: true }).waitFor();
+    console.log("PASS Stage 2 workspace creation and authenticated route");
+
+    await page.goto(origin + "/app/workspaces/" + workspaceId + "/files");
+    await page.getByRole("heading", { name: "Files & knowledge" }).waitFor();
+    await page.getByRole("button", { name: "New", exact: true }).click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByRole("heading", { name: "Create content" }).waitFor();
+    const docName = "Stage2 document " + Date.now();
+    await dialog.locator('input[name="name"]').fill(docName);
+    await dialog.locator('select[name="kind"]').selectOption("document");
+    await dialog.getByRole("button", { name: "Create", exact: true }).click();
+    await page.getByText("Created.", { exact: true }).waitFor();
+    await page.getByRole("link", { name: "Open", exact: true }).click();
+    await page.getByRole("heading", { name: docName, exact: true }).waitFor();
+    const editor = page.getByRole("region", { name: "Document editor" });
+    await editor.waitFor();
+    await editor.getByRole("button", { name: "Start writing" }).click();
+    const text = "Persisted through real browser save " + Date.now();
+    await editor.getByRole("textbox", { name: "paragraph block 1" }).fill(text);
+    await editor.getByRole("button", { name: "Save now" }).click();
+    await editor.locator('[data-state="saved"]').waitFor();
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.getByRole("region", { name: "Document editor" })
+      .getByRole("textbox", { name: "paragraph block 1" }).waitFor();
+    assert.equal(
+      await page.getByRole("region", { name: "Document editor" })
+        .getByRole("textbox", { name: "paragraph block 1" }).inputValue(),
+      text,
+      "Acknowledged document edits must survive navigation/reopen",
+    );
+    console.log("PASS Stage 2 recursive content creation and durable document editor");
+
+    await page.goto(origin + "/app/workspaces/" + workspaceId + "/files");
+    await page.getByRole("heading", { name: "Files & knowledge" }).waitFor();
+    await page.getByRole("button", { name: docName, exact: true }).first().click();
+    await page.getByRole("button", { name: "Trash", exact: true }).click();
+    await page.getByText("Moved to trash.", { exact: true }).waitFor();
+    await page.goto(origin + "/app/workspaces/" + workspaceId + "/trash");
+    await page.getByRole("heading", { name: "Trash", exact: true }).waitFor();
+    const card = page.locator("article").filter({ hasText: docName }).first();
+    await card.getByRole("button", { name: "Restore", exact: true }).click();
+    await page.getByText(docName + " restored.", { exact: true }).waitFor();
+    console.log("PASS Stage 2 delete, trash UI and restore");
+    await context.close();
+  } finally {
+    await browser.close();
+  }
+})().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

@@ -8,6 +8,7 @@ on:
       - 'packages/auth/**'
       - 'packages/db/**'
       - 'scripts/auth-local-browser.cjs'
+      - 'scripts/stage2-local-browser.cjs'
       - '.github/workflows/auth-local-browser.yml'
   workflow_dispatch:
 
@@ -104,6 +105,8 @@ jobs:
           node /tmp/nexosophy-playwright/node_modules/playwright/cli.js install --with-deps chromium
       - name: Browser authentication acceptance
         run: node scripts/auth-local-browser.cjs
+      - name: Stage 2 workspace, files, editor and trash browser acceptance
+        run: node scripts/stage2-local-browser.cjs
       - name: Print redacted local service diagnostics on failure
         if: failure()
         run: |
