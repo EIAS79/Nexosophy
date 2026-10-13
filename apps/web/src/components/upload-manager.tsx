@@ -140,7 +140,7 @@ export function UploadManager({
       if (result.session.status === "failed") {
         patch(itemId, {
           status: "failed",
-          assetId: result.asset?.id,
+          ...(result.asset ? { assetId: result.asset.id } : {}),
           scanFailed: result.asset?.trustState === "quarantined",
           message: "Security validation failed. The file remains quarantined.",
         });
