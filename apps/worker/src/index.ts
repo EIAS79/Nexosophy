@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { parseMediaServicesEnv, parseNotificationDeliveryEnv, parseOptionalStorageEnv, parseWorkerEnv } from "@nexosophy/config";
 import {
   claimDeletionJob,
@@ -739,6 +741,40 @@ async function shutdown(signal: string) {
 
 process.once("SIGINT", () => void shutdown("SIGINT"));
 process.once("SIGTERM", () => void shutdown("SIGTERM"));
+
+// Opt-in staging-only S3 provider acceptance. Never exposes AWS credentials or
+// turns on production probes; one small random private object is always deleted.
+if (env.APP_ENV === "staging" && process.env.STAGING_STORAGE_PROBE === "1") {
+  if (!storage) throw new Error("Staging storage probe requires an S3 adapter.");
+  const key = "__nexosophy/probes/" + randomUUID() + ".txt";
+  const payload = "Nexosophy private S3 staging round-trip";
+  try {
+    const signed = await storage.createUploadUrl({
+      key, contentType: "text/plain", expiresInSeconds: 90,
+    });
+    const uploaded = await fetch(signed.url, {
+      method: "PUT",
+      ...(signed.headers ? { headers: signed.headers } : {}),
+      body: payload,
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!uploaded.ok) throw new Error("S3 staging upload failed (HTTP " + uploaded.status + ")");
+    const head = await storage.headObject(key);
+    if (head.size !== Buffer.byteLength(payload)) {
+      throw new Error("S3 staging HEAD returned unexpected object size.");
+    }
+    const download = await storage.createDownloadUrl({ key, expiresInSeconds: 90 });
+    const retrieved = await fetch(download.url, { signal: AbortSignal.timeout(15_000) });
+    if (!retrieved.ok || (await retrieved.text()) !== payload) {
+      throw new Error("S3 staging downloaded content does not match uploaded content.");
+    }
+    logger.info({ bucket: storage.bucket }, "Staging private S3 upload/head/download probe passed");
+  } finally {
+    await storage.deleteObject(key).catch((error) => {
+      logger.warn({ err: error }, "Staging private S3 probe cleanup failed");
+    });
+  }
+}
 
 await health.listen({
   host: env.WORKER_HEALTH_HOST,
