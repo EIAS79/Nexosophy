@@ -122,12 +122,16 @@ export class S3CompatibleStorageAdapter implements StorageAdapter {
   }
 
   private canonicalQuery(params: URLSearchParams): string {
+    // AWS SigV4 orders percent-encoded bytes, NOT locale-aware collations.
+    // localeCompare sorts lowercase multipart partNumber/uploadId ahead of X-Amz
+    // and produces signatures real S3 implementations correctly reject.
     return Array.from(params.entries())
+      .map(([key, value]) => [awsEncode(key), awsEncode(value)] as const)
       .sort(([aKey, aValue], [bKey, bValue]) => {
-        const keyCompare = aKey.localeCompare(bKey);
-        return keyCompare === 0 ? aValue.localeCompare(bValue) : keyCompare;
+        if (aKey !== bKey) return aKey < bKey ? -1 : 1;
+        return aValue === bValue ? 0 : aValue < bValue ? -1 : 1;
       })
-      .map(([key, value]) => awsEncode(key) + "=" + awsEncode(value))
+      .map(([key, value]) => key + "=" + value)
       .join("&");
   }
 
