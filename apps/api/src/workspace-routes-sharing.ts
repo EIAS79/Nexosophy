@@ -21,6 +21,23 @@ import {
   sendWorkspaceError,
 } from "./workspace-route-common.js";
 
+function handleSharingScopeError(
+  reply: import("fastify").FastifyReply,
+  requestId: string,
+  error: unknown,
+): boolean {
+  if (!(error instanceof Error)) return false;
+  if (error.message === "RESOURCE_SCOPE_NOT_FOUND") {
+    sendWorkspaceError(reply, requestId, 404, "RESOURCE_SCOPE_NOT_FOUND", "This resource is not available in the selected workspace.");
+    return true;
+  }
+  if (error.message === "GRANT_PRINCIPAL_NOT_ACTIVE") {
+    sendWorkspaceError(reply, requestId, 422, "GRANT_PRINCIPAL_NOT_ACTIVE", "The recipient must be an active workspace member.");
+    return true;
+  }
+  return false;
+}
+
 export async function registerWorkspaceSharingRoutes(
   app: FastifyInstance,
   pool: DatabasePool,
@@ -38,15 +55,21 @@ export async function registerWorkspaceSharingRoutes(
     if (parsed.data.permission === "workspace.delete") {
       return sendWorkspaceError(reply, request.id, 422, "GRANT_SCOPE_INVALID", "Workspace deletion cannot be delegated through a resource grant.");
     }
-    reply.code(201);
-    return createResourceGrant(pool, {
+    try {
+      const grant = await createResourceGrant(pool, {
       workspaceId,
       actorUserId: principal.internalUserId,
       principalUserId: parsed.data.principalUserId,
       resourceType: parsed.data.resourceType,
       resourceId: parsed.data.resourceId,
       permission: parsed.data.permission,
-    });
+      });
+      reply.code(201);
+      return grant;
+    } catch (error) {
+      if (handleSharingScopeError(reply, request.id, error)) return;
+      throw error;
+    }
   });
 
   app.get("/v1/workspaces/:workspaceId/resource-grants", async (request, reply) => {
@@ -80,7 +103,8 @@ export async function registerWorkspaceSharingRoutes(
     if (!parsed.success) {
       return sendWorkspaceError(reply, request.id, 400, "VALIDATION_ERROR", "Share-link input is invalid.");
     }
-    const share = await createShareLink(pool, {
+    try {
+      const share = await createShareLink(pool, {
       workspaceId,
       actorUserId: principal.internalUserId,
       resourceType: parsed.data.resourceType,
@@ -89,8 +113,12 @@ export async function registerWorkspaceSharingRoutes(
       ...(parsed.data.password ? { password: parsed.data.password } : {}),
       ...(parsed.data.expiresAt ? { expiresAt: new Date(parsed.data.expiresAt) } : {}),
     });
-    reply.code(201);
-    return share;
+      reply.code(201);
+      return share;
+    } catch (error) {
+      if (handleSharingScopeError(reply, request.id, error)) return;
+      throw error;
+    }
   });
 
   app.delete("/v1/workspaces/:workspaceId/share-links/:shareLinkId", async (request, reply) => {

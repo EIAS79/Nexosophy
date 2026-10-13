@@ -315,7 +315,8 @@ export async function getRealtimePermissionState(
     node_active: boolean;
   }>(
     `select w."permission_version",
-            coalesce(m."status" = 'active', false) as "member_active",
+            coalesce(m."status"='active' and w."archived_at" is null
+              and u."status" in ('active','pending_onboarding','deletion_requested'),false) as "member_active",
             exists(
               select 1 from "content_nodes" n
               where n."workspace_id" = w."id" and n."id" = $2 and n."trashed_at" is null
@@ -323,6 +324,7 @@ export async function getRealtimePermissionState(
      from "workspaces" w
      left join "workspace_members" m
        on m."workspace_id" = w."id" and m."user_id" = $3
+     left join "users" u on u."id"=m."user_id"
      where w."id" = $1
      limit 1`,
     [input.workspaceId, input.nodeId, input.userId],

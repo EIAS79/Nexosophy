@@ -158,6 +158,12 @@ async function handleMessage(connection: Connection, raw: string): Promise<void>
     return;
   }
 
+  // A valid token does not override a subsequent membership, account or node revocation.
+  if (!(await permissionStillValid(connection))) {
+    connection.peer.close(4003, "permission changed");
+    return;
+  }
+
   if (message.type === "sync") {
     const state = await getCollaborationRoomState(
       pool,
@@ -473,6 +479,7 @@ const permissionTimer = setInterval(() => {
         if (!valid) connection.peer.close(4003, "permission changed");
       })
       .catch((error) => {
+        connection.peer.close(4003, "permission cannot be verified");
         logger.warn(
           { err: error, connectionId: connection.id },
           "Realtime permission revalidation failed",
