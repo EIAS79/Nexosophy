@@ -101,7 +101,7 @@ jobs:
           exit 1
       - name: Install pinned Playwright Chromium
         run: |
-          npm install --prefix /tmp/nexosophy-playwright --no-save --ignore-scripts playwright@1.58.2
+          npm install --prefix /tmp/nexosophy-playwright --no-save --ignore-scripts playwright@1.58.2 axe-core@4.10.3
           node /tmp/nexosophy-playwright/node_modules/playwright/cli.js install --with-deps chromium
       - name: Browser authentication acceptance
         run: node scripts/auth-local-browser.cjs

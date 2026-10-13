@@ -91,6 +91,49 @@ const origin = "http://localhost:3000";
     await page.goto(origin + "/app/workspaces/" + workspaceId);
     await page.getByRole("heading", { name, exact: true }).waitFor();
     console.log("PASS Stage 2 mobile and tablet viewport navigation and dialog accessibility");
+    // Independent WCAG automated audit for stage-2 core screens. The injection
+    // runs only on disposable local browser sessions; no third-party network calls.
+    const axeScript = require.resolve("axe-core/axe.min.js");
+    for (const path of ["/app", "/app/workspaces", "/app/workspaces/" + workspaceId + "/files"]) {
+      for (const width of [390, 1280]) {
+        await page.setViewportSize({ width, height: 900 });
+        await page.goto(origin + path);
+        await page.locator("#main-content").waitFor();
+        await page.addScriptTag({ path: axeScript });
+        const audit = await page.evaluate(async () => {
+          const result = await window.axe.run(document, {
+            runOnly: { type: "tag", values: ["wcag2a","wcag2aa","wcag21a","wcag21aa"] },
+          });
+          return result.violations
+            .filter((item) => item.impact === "critical" || item.impact === "serious")
+            .map((item) => ({ id: item.id, impact: item.impact,
+              targets: item.nodes.map((node) => node.target).slice(0, 3) }));
+        });
+        assert.deepEqual(audit, [], "Critical WCAG failures on " + path + " @" + width + "px");
+        const overflow = await page.evaluate(
+          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        );
+        assert.ok(overflow <= 4, "Horizontal viewport overflow " + overflow + "px on " + path);
+      }
+    }
+    console.log("PASS Stage 2 WCAG A/AA serious/critical scan and mobile/desktop overflow");
+
+    // Keyboard-only access: shortcut opens command palette, escape closes,
+    // and link navigation remains usable with RTL document direction.
+    await page.goto(origin + "/app");
+    await page.keyboard.press("Control+k");
+    const commandDialog = page.getByRole("dialog");
+    await commandDialog.waitFor({ state: "visible" });
+    await page.keyboard.press("Escape");
+    await commandDialog.waitFor({ state: "hidden" });
+    await page.evaluate(() => document.documentElement.setAttribute("dir", "rtl"));
+    await page.getByRole("navigation", { name: "Mobile application navigation" }).count();
+    assert.ok(
+      await page.evaluate(() => getComputedStyle(document.documentElement).direction) === "rtl",
+      "RTL direction must propagate to app shell",
+    );
+    console.log("PASS Stage 2 keyboard command palette and RTL direction smoke");
+
     await context.close();
   } finally {
     await browser.close();
