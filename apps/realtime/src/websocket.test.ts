@@ -30,7 +30,7 @@ describe("Realtime WebSocket framing and revocation lifecycle", () => {
     const socket = new SocketFixture();
     const peer = new WebSocketPeer(socket, 1024);
     const calls: string[] = [];
-    let releaseFirst = () => undefined;
+    let releaseFirst: () => void = () => {};
     const firstGate = new Promise<void>((resolve) => { releaseFirst = resolve; });
     peer.onMessage(async (value) => {
       calls.push("start:" + value);
