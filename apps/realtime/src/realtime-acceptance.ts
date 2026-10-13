@@ -191,6 +191,56 @@ try {
   assert.ok(snapshots.updates?.some(x=>x.clientId === update.clientId),
     "Persisted CRDT update was lost after replica restart");
   reconnected.socket.close();
+  // Simulate a 1,000-socket collaboration workload on the ephemeral CI cluster.
+  // Split across ten rooms to respect default per-room caps and verify fanout.
+  const stressNodes: string[] = [];
+  for (let index = 0; index < 10; index += 1) {
+    const row = await pool.query<{ id: string }>(
+      `insert into "content_nodes" ("workspace_id","kind","name","created_by_user_id","updated_by_user_id")
+       values ($1,'document',$2,$3,$3) returning "id"`,
+      [workspace, "Stage2 socket load " + index, own],
+    );
+    stressNodes.push(row.rows[0]!.id);
+  }
+  const stressConnections: SocketInbox[] = [];
+  const startStress = Date.now();
+  try {
+    for (let offset = 0; offset < 1000; offset += 20) {
+      const group = await Promise.all(
+        Array.from({ length: 20 }, async (_, index) => {
+          const ordinal = offset + index;
+          const roomNode = stressNodes[ordinal % stressNodes.length]!;
+          const url = "ws://127.0.0.1:" + (ordinal % 2 ? "4111" : "4110") +
+            `/v1/rooms/${workspace}/${roomNode}`;
+          const peer = await socketInbox(url, token(workspace,roomNode,own,["read","write"],2));
+          await peer.next("sync");
+          return peer;
+        }),
+      );
+      stressConnections.push(...group);
+    }
+    const health = await Promise.all([4110,4111].map(async (port) => {
+      const response = await fetch("http://127.0.0.1:" + port + "/health");
+      assert.equal(response.status, 200);
+      return (await response.json()) as { connections: number };
+    }));
+    const totalActive = health.reduce((sum, state) => sum + state.connections, 0);
+    assert.ok(totalActive >= 1000, "Connected socket count below expected 1000: " + totalActive);
+    const source = stressConnections[0]!, peer = stressConnections[10]!;
+    const loadUpdateId = "stage2-load-" + randomUUID();
+    source.socket.send(JSON.stringify({
+      type: "update",
+      update: { clientId: loadUpdateId, clock: 1,
+        registers: [{ key:"stress",value:"fanout",deleted:false,lamport:1,actor:own }] },
+    }));
+    await source.next("ack", (msg) => msg.clientId === loadUpdateId);
+    await peer.next("update", (msg) =>
+      (msg.update as Envelope)?.clientId === loadUpdateId);
+    console.log("PASS 1,000 simultaneous local sockets across two replicas / ten rooms; verified cross-replica hot-room fanout; elapsed=" +
+      (Date.now() - startStress) + "ms");
+  } finally {
+    for (const peer of stressConnections) peer.socket.close();
+  }
   console.log("PASS two real realtime replicas, Redis fanout, idempotence, read-only denial, outsider exclusion, revocation and restart durability.");
 } finally {
   for (const child of children) child.kill("SIGTERM");
