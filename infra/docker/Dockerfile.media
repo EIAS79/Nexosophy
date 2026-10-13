@@ -8,6 +8,7 @@ RUN apt-get update && \
       libreoffice-writer libreoffice-calc libreoffice-impress && \
     update-ca-certificates && rm -rf /var/lib/apt/lists/*
 COPY infra/media-service/server.mjs ./server.mjs
-# Never mark unscanned files clean when signature database is unavailable.
-# Freshclam failures leave /ready at 503 and scanning fails closed.
-CMD ["sh", "-c", "(freshclam --quiet || true; freshclam -d --quiet || true) & exec node /srv/media/server.mjs"]
+COPY infra/media-service/entrypoint.sh ./entrypoint.sh
+# A small free-tier instance stays fail-closed without repeatedly OOM-killing
+# the server; deployments with adequate RAM update genuine ClamAV signatures.
+CMD ["sh", "/srv/media/entrypoint.sh"]

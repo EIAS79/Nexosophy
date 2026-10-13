@@ -7,6 +7,26 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
 const exec = promisify(execFile);
+// Full ClamAV signature scanning can exhaust a 512 MiB Render instance.
+// Reject inadequate cgroup limits before spawning clamscan; never downgrade
+// signatures, pretend that a file was scanned, or trust a filename instead.
+const MIN_CLAMAV_MEMORY_BYTES = 1024n * 1024n * 1024n;
+export function scannerMemoryBudgetAllows(limit) {
+  const value = String(limit).trim();
+  if (value === "max") return true;
+  return /^\d+$/.test(value) && BigInt(value) >= MIN_CLAMAV_MEMORY_BYTES;
+}
+async function scannerHasAdequateMemory() {
+  for (const path of ["/sys/fs/cgroup/memory.max", "/sys/fs/cgroup/memory/memory.limit_in_bytes"]) {
+    try {
+      return scannerMemoryBudgetAllows(await readFile(path, "utf8"));
+    } catch (error) {
+      if (error?.code !== "ENOENT") return false;
+    }
+  }
+  // Outside Linux cgroups, let the real scanner decide; it still fails closed.
+  return true;
+}
 const MAX_BYTES = Math.min(100 * 1024 * 1024, Number(process.env.MEDIA_MAX_BYTES || 50 * 1024 * 1024));
 const STORAGE_HOST = process.env.MEDIA_STORAGE_HOST || "";
 const TOKEN = process.env.MEDIA_SERVICE_TOKEN || "";
@@ -62,6 +82,7 @@ async function detectMime(path){
 }
 async function scan(path) {
   // No fallback to file extensions or a pretend 'clean' verdict.
+  if (!await scannerHasAdequateMemory()) throw new Error("ANTIVIRUS_NOT_READY");
   try{
     await command("clamscan",["--no-summary","--stdout","--infected",path],90000);
     return {clean:true,resultCode:"clean"};
@@ -189,6 +210,9 @@ export function makeServer() {
     if(req.method==="GET"&&req.url==="/health")return reply(200,{status:"ok"});
     if(req.method==="GET"&&req.url==="/ready"){
       try{
+        if (!await scannerHasAdequateMemory()) {
+          return reply(503,{status:"scanner_unavailable",reason:"insufficient_scanner_memory"});
+        }
         await command("clamscan",["--version"],4000);
         await command("file",["--version"],4000);
         // clamscan --version alone is not proof that signature database works.
@@ -201,6 +225,8 @@ export function makeServer() {
     if(req.method!=="POST"||!["/scan","/process"].includes(req.url||""))
       return reply(404,{error:"NOT_FOUND"});
     if(!safeToken(req.headers.authorization))return reply(401,{error:"UNAUTHORIZED"});
+    if(req.url==="/scan"&&!await scannerHasAdequateMemory())
+      return reply(503,{error:"ANTIVIRUS_NOT_READY"});
     let size=0;const parts=[];
     try{
       for await(const part of req){

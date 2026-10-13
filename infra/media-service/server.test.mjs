@@ -1,6 +1,15 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { makeServer, safeToken, validateStorageUrl } from "./server.mjs";
+import { makeServer, safeToken, scannerMemoryBudgetAllows, validateStorageUrl } from "./server.mjs";
+
+test("scanner rejects insufficient cgroup memory without trusting unscanned uploads", () => {
+  assert.equal(scannerMemoryBudgetAllows("536870912"), false);
+  assert.equal(scannerMemoryBudgetAllows("805306368"), false);
+  assert.equal(scannerMemoryBudgetAllows("1073741824"), true);
+  assert.equal(scannerMemoryBudgetAllows("2147483648"), true);
+  assert.equal(scannerMemoryBudgetAllows("max"), true);
+  assert.equal(scannerMemoryBudgetAllows("invalid"), false);
+});
 
 test("media calls require a bearer secret and do not accept absent auth",()=>{
   assert.equal(safeToken(undefined,"valid-secret-0123456789"),false);
