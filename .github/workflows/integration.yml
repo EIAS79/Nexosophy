@@ -139,6 +139,11 @@ jobs:
           RUN_STAGE2_INTEGRATION: '1'
         run: pnpm --filter @nexosophy/api exec vitest run src/stage2-core.integration.test.ts
 
+      - name: Verify two realtime replicas, Redis fanout and revoked room access
+        run: |
+          pnpm --filter @nexosophy/realtime build
+          pnpm --filter @nexosophy/realtime exec tsx src/realtime-acceptance.ts
+
       - name: Verify workspace isolation, RBAC and sharing invariants
         run: pnpm --filter @nexosophy/db test:workspace-integration
 
